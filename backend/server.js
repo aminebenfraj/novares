@@ -4,6 +4,8 @@ const cors = require("cors")
 require("dotenv").config()
 const ProductDesignationRoutes = require('./routes/productDesignationRoutes');
 const userRoutes = require('./routes/userRoutes');
+const authRoutes = require("./routes/authRoutes"); // ✅ Add this line
+
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -25,6 +27,7 @@ app.get("/", (req, res) => {
 })
 app.use("/api/pd", ProductDesignationRoutes);
 app.use("/api/users", userRoutes); 
+app.use("/api/auth", authRoutes); // ✅ Now authRoutes is correctly defined
 
 app.listen(PORT, () => {
   console.log(`Server is running on port: ${PORT}`)
