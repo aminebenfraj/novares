@@ -4,128 +4,116 @@ import { faIdCard, faUser, faEnvelope, faLock } from "@fortawesome/free-solid-sv
 
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { registerSchema } from "../../utils/AuthValidation"; // ✅ Import Register Schema
 import { useState } from "react";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register: authRegister } = useAuth();
+  const [serverError, setServerError] = useState("");
 
-  const [formData, setFormData] = useState({
-    lisence: "",  // ✅ Added lisence field as required by schema
-    username: "",
-    email: "",
-    password: "",
-    passwordConfirmation: "",
+  // ✅ Use React Hook Form with external validation schema
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(registerSchema),
   });
 
-  const [error, setError] = useState("");
-
-  const handleChange = (event) => {
-    setFormData({ ...formData, [event.target.name]: event.target.value });
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setError("");
-
-    if (formData.password !== formData.passwordConfirmation) {
-      setError("Passwords do not match.");
-      return;
-    }
+  // ✅ Handle form submission
+  const onSubmit = async (data) => {
+    setServerError("");
 
     try {
-      await register(formData.lisence, formData.username, formData.email, formData.password);
+      await authRegister(data.license, data.username, data.email, data.password);
       navigate("/login");
     } catch (error) {
       console.error("Registration failed:", error);
-      setError(error.message || "Registration failed. Please try again.");
+      setServerError(error.message || "Registration failed. Please try again.");
     }
   };
 
   return (
-    <div
-      className="flex flex-col justify-between min-h-screen">
-    
-
-      {/* Registration Form */}
+    <div className="flex flex-col justify-between min-h-screen">
       <div className="flex flex-col justify-center items-center font-[sans-serif] h-[700px] p-20 bg-white">
         <div className="max-w-md w-full mx-auto">
           <form
-            onSubmit={handleSubmit}
+            onSubmit={handleSubmit(onSubmit)}
             className="bg-white rounded-2xl p-6 shadow-[0_2px_13px_-3px_rgba(0,0,0,0.15)]"
           >
             <div className="mb-6">
               <h3 className="text-violet-700 text-3xl font-extrabold">Register</h3>
             </div>
 
-            {/* Display Error Message */}
-            {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
+            {/* 🔴 Display Server Error */}
+            {serverError && <p className="text-red-600 text-sm text-center mb-4">{serverError}</p>}
 
+            {/* License Input */}
             <div className="relative flex items-center">
               <FontAwesomeIcon icon={faIdCard} className="absolute left-2 text-violet-700" />
               <input
-                name="lisence"
+                {...register("license")}
                 type="text"
-                required
                 className="bg-transparent w-full text-sm text-gray-800 border-b border-gray-400 focus:border-gray-800 pl-8 py-3 outline-none placeholder:text-gray-800"
                 placeholder="Enter license"
-                onChange={handleChange}
-                value={formData.lisence}
               />
             </div>
+            {errors.license && <p className="text-red-500 text-xs">{errors.license.message}</p>}
 
+            {/* Username Input */}
             <div className="relative flex items-center mt-6">
               <FontAwesomeIcon icon={faUser} className="absolute left-2 text-violet-700" />
               <input
-                name="username"
+                {...register("username")}
                 type="text"
-                required
                 className="bg-transparent w-full text-sm text-gray-800 border-b border-gray-400 focus:border-gray-800 pl-8 py-3 outline-none placeholder:text-gray-800"
                 placeholder="Enter username"
-                onChange={handleChange}
-                value={formData.username}
               />
             </div>
+            {errors.username && <p className="text-red-500 text-xs">{errors.username.message}</p>}
 
+            {/* Email Input */}
             <div className="relative flex items-center mt-6">
               <FontAwesomeIcon icon={faEnvelope} className="absolute left-2 text-violet-700" />
               <input
-                name="email"
+                {...register("email")}
                 type="email"
-                required
                 className="bg-transparent w-full text-sm text-gray-800 border-b border-gray-400 focus:border-gray-800 pl-8 py-3 outline-none placeholder:text-gray-800"
                 placeholder="Enter email"
-                onChange={handleChange}
-                value={formData.email}
               />
             </div>
+            {errors.email && <p className="text-red-500 text-xs">{errors.email.message}</p>}
 
+            {/* Password Input */}
             <div className="relative flex items-center mt-6">
               <FontAwesomeIcon icon={faLock} className="absolute left-2 text-violet-700" />
               <input
-                name="password"
+                {...register("password")}
                 type="password"
-                required
                 className="bg-transparent w-full text-sm text-gray-800 border-b border-gray-400 focus:border-gray-800 pl-8 py-3 outline-none placeholder:text-gray-800"
                 placeholder="Enter password"
-                onChange={handleChange}
-                value={formData.password}
               />
             </div>
+            {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
 
+            {/* Password Confirmation Input */}
             <div className="relative flex items-center mt-6">
               <FontAwesomeIcon icon={faLock} className="absolute left-2 text-violet-700" />
               <input
-                name="passwordConfirmation"
+                {...register("passwordConfirmation")}
                 type="password"
-                required
                 className="bg-transparent w-full text-sm text-gray-800 border-b border-gray-400 focus:border-gray-800 pl-8 py-3 outline-none placeholder:text-gray-800"
                 placeholder="Confirm password"
-                onChange={handleChange}
-                value={formData.passwordConfirmation}
               />
             </div>
+            {errors.passwordConfirmation && (
+              <p className="text-red-500 text-xs">{errors.passwordConfirmation.message}</p>
+            )}
 
+            {/* Submit Button */}
             <div className="mt-8">
               <button
                 type="submit"
