@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { productSchema } from "../context/schema";
 import { Loader2 } from "lucide-react";
-import { createPD } from "../utils/productDesignation-api";
+import { createPD } from "../utils/ProductDesignation-api";
 export default function ProductForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);

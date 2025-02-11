@@ -68,18 +68,18 @@ exports.registerUser = async (req, res) => {
 
 exports.loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { lisence, password } = req.body;
     console.log("🔍 Login Request Received:");
-    console.log("📧 Email:", email);
+    console.log("📧 lisence:", lisence);
     console.log("🔑 Entered Password:", password);
 
     // 1️⃣ Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ lisence });
     console.log("👤 User Found in Database:", user);
 
     if (!user) {
-      console.log("❌ No user found with this email");
-      return res.status(400).json({ error: "Invalid email or password" });
+      console.log("❌ No user found with this lisence");
+      return res.status(400).json({ error: "Invalid lisence or password" });
     }
 
     // 2️⃣ Compare passwords
@@ -88,10 +88,13 @@ exports.loginUser = async (req, res) => {
     
     const isMatch = await bcrypt.compare(password, user.password);
     console.log("🔑 Password Match Status:", isMatch);
-
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    console.log(hashedPassword);
+    
     if (!isMatch) {
       console.log("❌ Password does not match");
-      return res.status(400).json({ error: "Invalid email or password" });
+      return res.status(400).json({ error: "Invalid lisence or password" });
     }
 
     // 3️⃣ Generate Token
