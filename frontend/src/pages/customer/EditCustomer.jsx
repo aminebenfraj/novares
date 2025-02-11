@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCustomerById, updateCustomer } from "../../utils/apis/customerApi";
 import { customerSchema } from "../../utils/customerValidation"; // ✅ Import Zod Schema
@@ -13,14 +13,14 @@ export default function EditCustomer() {
     address: "",
     company: "",
   });
+
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
 
-  useEffect(() => {
-    fetchCustomer();
-  }, []);
+  // ✅ Memoize `fetchCustomer` to prevent unnecessary re-creation
+  const fetchCustomer = useCallback(async () => {
+    if (!id) return; // Ensure ID is valid before making API call
 
-  const fetchCustomer = async () => {
     try {
       const response = await getCustomerById(id);
       setFormData(response);
@@ -28,7 +28,11 @@ export default function EditCustomer() {
       console.error("Error fetching customer:", error);
       setServerError("Failed to load customer details.");
     }
-  };
+  }, [id]); // ✅ `fetchCustomer` only depends on `id`
+
+  useEffect(() => {
+    fetchCustomer();
+  }, [fetchCustomer]); // ✅ Fixes missing dependency issue
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -49,7 +53,7 @@ export default function EditCustomer() {
 
     try {
       await updateCustomer(id, formData);
-      navigate("/customers"); // Redirect to customer list
+      navigate("/customers"); // ✅ Redirect to customer list
     } catch (error) {
       console.error("Error updating customer:", error);
       setServerError("Failed to update customer. Please try again.");
@@ -64,6 +68,7 @@ export default function EditCustomer() {
         {serverError && <p className="text-red-500 text-sm text-center mb-4">{serverError}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Name */}
           <div>
             <input
               type="text"
@@ -76,6 +81,7 @@ export default function EditCustomer() {
             {errors.name && <p className="text-red-500 text-xs">{errors.name._errors[0]}</p>}
           </div>
 
+          {/* Email (Disabled) */}
           <div>
             <input
               type="email"
@@ -84,11 +90,12 @@ export default function EditCustomer() {
               onChange={handleChange}
               placeholder="Email"
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-              disabled // Email should not be editable
+              disabled // ✅ Email should not be editable
             />
             {errors.email && <p className="text-red-500 text-xs">{errors.email._errors[0]}</p>}
           </div>
 
+          {/* Phone */}
           <div>
             <input
               type="text"
@@ -101,6 +108,7 @@ export default function EditCustomer() {
             {errors.phone && <p className="text-red-500 text-xs">{errors.phone._errors[0]}</p>}
           </div>
 
+          {/* Address */}
           <div>
             <input
               type="text"
@@ -113,6 +121,7 @@ export default function EditCustomer() {
             {errors.address && <p className="text-red-500 text-xs">{errors.address._errors[0]}</p>}
           </div>
 
+          {/* Company */}
           <div>
             <input
               type="text"
@@ -125,6 +134,7 @@ export default function EditCustomer() {
             {errors.company && <p className="text-red-500 text-xs">{errors.company._errors[0]}</p>}
           </div>
 
+          {/* Submit Button */}
           <button
             type="submit"
             className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
@@ -132,6 +142,7 @@ export default function EditCustomer() {
             Update Customer
           </button>
 
+          {/* Cancel Button */}
           <button
             type="button"
             onClick={() => navigate("/customers")}

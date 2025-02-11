@@ -1,145 +1,108 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { getCustomerById, updateCustomer } from "../../utils/apis/customerApi";
-import { customerSchema } from "../../utils/customerValidation"; 
+import { useEffect, useState, useCallback } from "react";
+import { getAllCustomers, deleteCustomer } from "../../utils/apis/customerApi";
+import { useNavigate } from "react-router-dom";
 
-export default function EditCustomer() {
-  const { id } = useParams();
+export default function CustomerList() {
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    company: "",
-  });
-  const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState("");
 
-  useEffect(() => {
-    fetchCustomer();
+  // ✅ Memoized fetchCustomers function to avoid unnecessary re-renders
+  const fetchCustomers = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await getAllCustomers();
+      setCustomers(response);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      setError("Failed to load customers.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const fetchCustomer = async () => {
-    try {
-      const response = await getCustomerById(id);
-      setFormData(response);
-    } catch (error) {
-      console.error("Error fetching customer:", error);
-      setServerError("Failed to load customer details.");
-    }
-  };
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrors({});
-    setServerError("");
-
-    // ✅ Validate data using Zod
-    const validationResult = customerSchema.safeParse(formData);
-    if (!validationResult.success) {
-      const formattedErrors = validationResult.error.format();
-      setErrors(formattedErrors);
-      return;
-    }
-
-    try {
-      await updateCustomer(id, formData);
-      navigate("/customers"); // Redirect to customer list
-    } catch (error) {
-      console.error("Error updating customer:", error);
-      setServerError("Failed to update customer. Please try again.");
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this customer?")) {
+      try {
+        await deleteCustomer(id);
+        setCustomers((prevCustomers) => prevCustomers.filter((customer) => customer._id !== id));
+      } catch (error) {
+        console.error("Error deleting customer:", error);
+        setError("Failed to delete customer.");
+      }
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Edit Customer</h2>
+    <div className="min-h-screen p-8 bg-gray-100">
+      <div className="max-w-5xl mx-auto bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">Customer List</h2>
 
-        {serverError && <p className="text-red-500 text-sm text-center mb-4">{serverError}</p>}
+        {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Full Name"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-            {errors.name && <p className="text-red-500 text-xs">{errors.name._errors[0]}</p>}
+        {/* Add Customer Button */}
+        <button
+          onClick={() => navigate("/customers/create")}
+          className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+        >
+          Add Customer
+        </button>
+
+        {/* Loading State */}
+        {loading ? (
+          <p className="text-center text-gray-600">Loading customers...</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse border border-gray-200">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border border-gray-300 px-4 py-2">Name</th>
+                  <th className="border border-gray-300 px-4 py-2">Email</th>
+                  <th className="border border-gray-300 px-4 py-2">Phone</th>
+                  <th className="border border-gray-300 px-4 py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customers.length > 0 ? (
+                  customers.map((customer) => (
+                    <tr key={customer._id} className="border border-gray-200 hover:bg-gray-50">
+                      <td className="px-4 py-2">{customer.name}</td>
+                      <td className="px-4 py-2">{customer.email}</td>
+                      <td className="px-4 py-2">{customer.phone}</td>
+                      <td className="px-4 py-2 flex gap-4">
+                        <button
+                          onClick={() => navigate(`/customers/edit/${customer._id}`)}
+                          className="text-blue-500 hover:underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(customer._id)}
+                          className="text-red-500 hover:underline"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="text-center text-gray-600 py-4">
+                      No customers found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-
-          <div>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Email"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-              disabled // Email should not be editable
-            />
-            {errors.email && <p className="text-red-500 text-xs">{errors.email._errors[0]}</p>}
-          </div>
-
-          <div>
-            <input
-              type="text"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="Phone Number"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-            {errors.phone && <p className="text-red-500 text-xs">{errors.phone._errors[0]}</p>}
-          </div>
-
-          <div>
-            <input
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              placeholder="Address"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-            {errors.address && <p className="text-red-500 text-xs">{errors.address._errors[0]}</p>}
-          </div>
-
-          <div>
-            <input
-              type="text"
-              name="company"
-              value={formData.company}
-              onChange={handleChange}
-              placeholder="Company"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-            {errors.company && <p className="text-red-500 text-xs">{errors.company._errors[0]}</p>}
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
-          >
-            Update Customer
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/customers")}
-            className="w-full bg-gray-500 text-white py-2 mt-2 rounded-lg hover:bg-gray-600 transition"
-          >
-            Cancel
-          </button>
-        </form>
+        )}
       </div>
     </div>
   );
