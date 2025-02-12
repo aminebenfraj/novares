@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { getAllCustomers } from "../../utils/apis/customerApi"
 import { getAllpd } from "../../utils/apis/ProductDesignation-api"
+import { createMassProduction } from "../../utils/apis/massProductionApi"
 
 export default function MassProductionForm() {
   const [formData, setFormData] = useState({
@@ -42,6 +43,8 @@ export default function MassProductionForm() {
 
   const [customers, setCustomers] = useState([])
   const [productDesignations, setProductDesignations] = useState([])
+  const [message, setMessage] = useState("")
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     getAllCustomers()
@@ -85,16 +88,31 @@ export default function MassProductionForm() {
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log("Submitted Data:", formData)
-    // Here you would typically send the data to your API
+    setLoading(true)
+    setMessage("")
+
+    try {
+      const response = await createMassProduction(formData)
+      setMessage("Mass production created successfully!")
+      setFormData({ ...formData, id: "" }) // Reset form if needed
+    } catch (error) {
+      console.error("Error creating mass production:", error)
+      setMessage(error.response?.data?.message || "Error creating mass production. Please try again.")
+    }
+
+    setLoading(false)
   }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-blue-50">
       <div className="w-full max-w-4xl p-8 bg-white rounded-lg shadow-lg">
         <h2 className="mb-6 text-3xl font-bold text-center text-blue-800">Mass Production Form</h2>
+
+        {message && (
+          <div className="p-4 mb-4 text-sm text-center text-green-700 bg-green-100 rounded-lg">{message}</div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -199,7 +217,7 @@ export default function MassProductionForm() {
               >
                 <option value="">Select Customer</option>
                 {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
+                  <option key={customer._id} value={customer._id}>
                     {customer.name}
                   </option>
                 ))}
@@ -376,8 +394,9 @@ export default function MassProductionForm() {
           <button
             type="submit"
             className="w-full py-3 text-lg font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            disabled={loading}
           >
-            Submit
+            {loading ? "Submitting..." : "Submit"}
           </button>
         </form>
       </div>
