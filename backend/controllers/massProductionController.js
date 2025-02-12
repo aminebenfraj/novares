@@ -40,15 +40,27 @@ exports.createMassProduction = async (req, res) => {
     } = req.body;
 
     // ✅ Ensure customer exists and is a "customer" role
-    const customerExists = await User.findOne({ _id: customer, role: "customer" });
-    if (!customerExists) {
+    const customerExists = await User.findById(customer);
+    if (!customerExists || customerExists.role !== "customer") {
       return res.status(400).json({ error: "Invalid customer ID or user is not a customer" });
     }
 
     // ✅ Ensure all product designations exist
+    if (!Array.isArray(product_designation)) {
+      return res.status(400).json({ error: "Product designation must be an array of IDs" });
+    }
+
     const validProducts = await ProductDesignation.find({ _id: { $in: product_designation } });
     if (validProducts.length !== product_designation.length) {
       return res.status(400).json({ error: "Some product designations are invalid" });
+    }
+
+    // ✅ Calculate days until PPAP submission
+    let days_until_ppap_submission = null;
+    if (ppap_submission_date) {
+      const today = new Date();
+      const ppapDate = new Date(ppap_submission_date);
+      days_until_ppap_submission = Math.max(0, Math.ceil((ppapDate - today) / (1000 * 60 * 60 * 24))); // Convert to days
     }
 
     // ✅ Create new MassProduction entry
@@ -84,13 +96,14 @@ exports.createMassProduction = async (req, res) => {
       pt1,
       pt2,
       sop,
+      days_until_ppap_submission, // ✅ Include computed field
     });
 
     await newMassProduction.save();
     res.status(201).json(newMassProduction);
   } catch (error) {
     console.error("❌ Error creating MassProduction:", error);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Server error", details: error.message });
   }
 };
 
@@ -138,12 +151,39 @@ exports.getMassProductionById = async (req, res) => {
 // ✅ Update a MassProduction entry
 exports.updateMassProduction = async (req, res) => {
   try {
-    const updatedData = req.body;
+    let updatedData = req.body;
+
+    // ✅ Ensure customer exists if updating it
+    if (updatedData.customer) {
+      const customerExists = await User.findById(updatedData.customer);
+      if (!customerExists || customerExists.role !== "customer") {
+        return res.status(400).json({ error: "Invalid customer ID or user is not a customer" });
+      }
+    }
+
+    // ✅ Ensure all product designations exist if updating
+    if (updatedData.product_designation) {
+      if (!Array.isArray(updatedData.product_designation)) {
+        return res.status(400).json({ error: "Product designation must be an array of IDs" });
+      }
+
+      const validProducts = await ProductDesignation.find({ _id: { $in: updatedData.product_designation } });
+      if (validProducts.length !== updatedData.product_designation.length) {
+        return res.status(400).json({ error: "Some product designations are invalid" });
+      }
+    }
+
+    // ✅ Calculate days until PPAP submission if updated
+    if (updatedData.ppap_submission_date) {
+      const today = new Date();
+      const ppapDate = new Date(updatedData.ppap_submission_date);
+      updatedData.days_until_ppap_submission = Math.max(0, Math.ceil((ppapDate - today) / (1000 * 60 * 60 * 24))); // Convert to days
+    }
 
     const updatedMassProduction = await MassProduction.findByIdAndUpdate(
       req.params.id,
-      updatedData,
-      { new: true }
+      { $set: updatedData },
+      { new: true, runValidators: true } // ✅ Ensures validation on update
     );
 
     if (!updatedMassProduction) {
