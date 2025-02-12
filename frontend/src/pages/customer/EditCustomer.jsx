@@ -11,7 +11,6 @@ export default function EditCustomer() {
     email: "",
     phone: "",
     address: "",
-    company: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -61,11 +60,11 @@ export default function EditCustomer() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Edit Customer</h2>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
+        <h2 className="mb-6 text-2xl font-bold text-center text-gray-800">Edit Customer</h2>
 
-        {serverError && <p className="text-red-500 text-sm text-center mb-4">{serverError}</p>}
+        {serverError && <p className="mb-4 text-sm text-center text-red-500">{serverError}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
@@ -78,7 +77,7 @@ export default function EditCustomer() {
               placeholder="Full Name"
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
             />
-            {errors.name && <p className="text-red-500 text-xs">{errors.name._errors[0]}</p>}
+            {errors.name && <p className="text-xs text-red-500">{errors.name._errors[0]}</p>}
           </div>
 
           {/* Email (Disabled) */}
@@ -92,7 +91,7 @@ export default function EditCustomer() {
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
               disabled // ✅ Email should not be editable
             />
-            {errors.email && <p className="text-red-500 text-xs">{errors.email._errors[0]}</p>}
+            {errors.email && <p className="text-xs text-red-500">{errors.email._errors[0]}</p>}
           </div>
 
           {/* Phone */}
@@ -105,7 +104,7 @@ export default function EditCustomer() {
               placeholder="Phone Number"
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
             />
-            {errors.phone && <p className="text-red-500 text-xs">{errors.phone._errors[0]}</p>}
+            {errors.phone && <p className="text-xs text-red-500">{errors.phone._errors[0]}</p>}
           </div>
 
           {/* Address */}
@@ -118,26 +117,14 @@ export default function EditCustomer() {
               placeholder="Address"
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
             />
-            {errors.address && <p className="text-red-500 text-xs">{errors.address._errors[0]}</p>}
+            {errors.address && <p className="text-xs text-red-500">{errors.address._errors[0]}</p>}
           </div>
 
-          {/* Company */}
-          <div>
-            <input
-              type="text"
-              name="company"
-              value={formData.company}
-              onChange={handleChange}
-              placeholder="Company"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-            {errors.company && <p className="text-red-500 text-xs">{errors.company._errors[0]}</p>}
-          </div>
-
+         
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
+            className="w-full py-2 text-white transition bg-green-500 rounded-lg hover:bg-green-600"
           >
             Update Customer
           </button>
@@ -146,7 +133,7 @@ export default function EditCustomer() {
           <button
             type="button"
             onClick={() => navigate("/customers")}
-            className="w-full bg-gray-500 text-white py-2 mt-2 rounded-lg hover:bg-gray-600 transition"
+            className="w-full py-2 mt-2 text-white transition bg-gray-500 rounded-lg hover:bg-gray-600"
           >
             Cancel
           </button>
