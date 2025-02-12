@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { getAllCustomers, deleteCustomer } from "../../utils/apis/customerApi";
 import { useNavigate } from "react-router-dom";
+import { Navbar } from "../../components/Navbar"
+
 
 export default function CustomerList() {
   const [customers, setCustomers] = useState([]);
@@ -41,16 +43,19 @@ export default function CustomerList() {
   };
 
   return (
+    
+    <div className="min-h-screen bg-gray-100">
+      <Navbar />
     <div className="min-h-screen p-8 bg-gray-100">
-      <div className="max-w-5xl mx-auto bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Customer List</h2>
+      <div className="max-w-5xl p-6 mx-auto bg-white rounded-lg shadow-md">
+        <h2 className="mb-6 text-2xl font-bold text-gray-800">Customer List</h2>
 
-        {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
+        {error && <p className="mb-4 text-sm text-center text-red-500">{error}</p>}
 
         {/* Add Customer Button */}
         <button
           onClick={() => navigate("/customers/create")}
-          className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+          className="px-4 py-2 mb-4 text-white transition bg-blue-500 rounded-lg hover:bg-blue-600"
         >
           Add Customer
         </button>
@@ -60,13 +65,13 @@ export default function CustomerList() {
           <p className="text-center text-gray-600">Loading customers...</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-200">
+            <table className="w-full border border-collapse border-gray-200">
               <thead>
                 <tr className="bg-gray-200">
-                  <th className="border border-gray-300 px-4 py-2">Name</th>
-                  <th className="border border-gray-300 px-4 py-2">Email</th>
-                  <th className="border border-gray-300 px-4 py-2">Phone</th>
-                  <th className="border border-gray-300 px-4 py-2">Actions</th>
+                  <th className="px-4 py-2 border border-gray-300">Name</th>
+                  <th className="px-4 py-2 border border-gray-300">Email</th>
+                  <th className="px-4 py-2 border border-gray-300">Phone</th>
+                  <th className="px-4 py-2 border border-gray-300">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -76,7 +81,7 @@ export default function CustomerList() {
                       <td className="px-4 py-2">{customer.name}</td>
                       <td className="px-4 py-2">{customer.email}</td>
                       <td className="px-4 py-2">{customer.phone}</td>
-                      <td className="px-4 py-2 flex gap-4">
+                      <td className="flex gap-4 px-4 py-2">
                         <button
                           onClick={() => navigate(`/customers/edit/${customer._id}`)}
                           className="text-blue-500 hover:underline"
@@ -94,7 +99,7 @@ export default function CustomerList() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="text-center text-gray-600 py-4">
+                    <td colSpan="4" className="py-4 text-center text-gray-600">
                       No customers found.
                     </td>
                   </tr>
@@ -104,6 +109,7 @@ export default function CustomerList() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

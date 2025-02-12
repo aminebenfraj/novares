@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCustomerById, updateCustomer } from "../../utils/apis/customerApi";
 import { customerSchema } from "../../utils/customerValidation"; // ✅ Import Zod Schema
+import { Navbar } from "../../components/Navbar"
 
 export default function EditCustomer() {
   const { id } = useParams();
@@ -60,6 +61,9 @@ export default function EditCustomer() {
   };
 
   return (
+    
+    <div className="min-h-screen bg-gray-100">
+      <Navbar />
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
         <h2 className="mb-6 text-2xl font-bold text-center text-gray-800">Edit Customer</h2>
@@ -139,6 +143,7 @@ export default function EditCustomer() {
           </button>
         </form>
       </div>
+    </div>
     </div>
   );
 }

@@ -6,6 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { productSchema } from "../../utils/PdValidation";
 import { Loader2 } from "lucide-react";
 import { createPD } from "../../utils/apis/ProductDesignation-api";
+import { Navbar } from "../../components/Navbar"
+
+
 export default function ProductForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -45,6 +48,9 @@ export default function ProductForm() {
   };
 
   return (
+    
+    <div className="min-h-screen bg-gray-100">
+      <Navbar />
     <div className="p-8 sm:p-12">
       <div className="mb-8 text-center">
         <h2 className="text-3xl font-bold text-[#0066CC]">Product Designation</h2>
@@ -56,7 +62,7 @@ export default function ProductForm() {
         <div className="space-y-4">
           {["id", "part_name", "reference"].map((field) => (
             <div key={field}>
-              <label htmlFor={field} className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor={field} className="block mb-1 text-sm font-medium text-gray-700">
                 {field === "id" ? "Product ID" : field === "part_name" ? "Part Name" : "Reference (Optional)"}
               </label>
               <input
@@ -87,7 +93,7 @@ export default function ProductForm() {
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Submitting
               </>
             ) : (
@@ -95,19 +101,22 @@ export default function ProductForm() {
             )}
           </button>
         </div>
+        
       </form>
+      </div>
+
 
       {/* 🔹 Success Message */}
       {submitSuccess && (
-        <div className="p-4 mt-8 rounded-md bg-green-50 border border-green-200">
-          <p className="text-sm text-green-600 text-center">Product designation submitted successfully!</p>
+        <div className="p-4 mt-8 border border-green-200 rounded-md bg-green-50">
+          <p className="text-sm text-center text-green-600">Product designation submitted successfully!</p>
         </div>
       )}
 
       {/* 🔹 Error Message */}
       {errorMessage && (
-        <div className="p-4 mt-8 rounded-md bg-red-50 border border-red-200">
-          <p className="text-sm text-red-600 text-center">{errorMessage}</p>
+        <div className="p-4 mt-8 border border-red-200 rounded-md bg-red-50">
+          <p className="text-sm text-center text-red-600">{errorMessage}</p>
         </div>
       )}
     </div>

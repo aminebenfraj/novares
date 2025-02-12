@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { getAllCustomers } from "../../utils/apis/customerApi"
 import { getAllpd } from "../../utils/apis/ProductDesignation-api"
 import { createMassProduction } from "../../utils/apis/massProductionApi"
+import { Navbar } from "../../components/Navbar"
+
 
 export default function MassProductionForm() {
   const [formData, setFormData] = useState({
@@ -106,6 +108,9 @@ export default function MassProductionForm() {
   }
 
   return (
+    
+    <div className="min-h-screen bg-gray-100">
+      <Navbar />
     <div className="flex items-center justify-center min-h-screen bg-blue-50">
       <div className="w-full max-w-4xl p-8 bg-white rounded-lg shadow-lg">
         <h2 className="mb-6 text-3xl font-bold text-center text-blue-800">Mass Production Form</h2>
@@ -400,6 +405,7 @@ export default function MassProductionForm() {
           </button>
         </form>
       </div>
+    </div>
     </div>
   )
 }

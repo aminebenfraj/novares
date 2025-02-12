@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createCustomer } from "../../utils/apis/customerApi";
 import { customerSchema } from "../../utils/customerValidation"; // ✅ Import Zod Schema
+import { Navbar } from "../../components/Navbar"
 
 export default function CustomerForm() {
   const [formData, setFormData] = useState({
@@ -41,7 +42,10 @@ export default function CustomerForm() {
   };
 
   return (
+    <div className="min-h-screen bg-gray-100">
+      <Navbar />
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
+
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
         <h2 className="mb-6 text-2xl font-bold text-center text-gray-800">Add Customer</h2>
 
@@ -111,6 +115,7 @@ export default function CustomerForm() {
           </button>
         </form>
       </div>
+    </div>
     </div>
   );
 }
