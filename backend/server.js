@@ -24,9 +24,6 @@ mongoose.connect(process.env.MONGODB_URI, {
     console.error('MongoDB connection failed:', error);
   });
   
-app.get("/", (req, res) => {
-  res.send("Welcome to the Project Novares API")
-})
 app.use("/api/pd", ProductDesignationRoutes);
 app.use("/api/users", userRoutes); 
 app.use("/api/auth", authRoutes); 

@@ -50,7 +50,7 @@ exports.createMassProduction = async (req, res) => {
       return res.status(400).json({ error: "Product designation must be an array of IDs" });
     }
 
-    const validProducts = await ProductDesignation.find({ _id: { $in: product_designation } });
+    const validProducts = await ProductDesignation.find({ id: { $in: product_designation } });
     if (validProducts.length !== product_designation.length) {
       return res.status(400).json({ error: "Some product designations are invalid" });
     }
@@ -62,6 +62,7 @@ exports.createMassProduction = async (req, res) => {
       const ppapDate = new Date(ppap_submission_date);
       days_until_ppap_submission = Math.max(0, Math.ceil((ppapDate - today) / (1000 * 60 * 60 * 24))); // Convert to days
     }
+console.log(validProducts);
 
     // ✅ Create new MassProduction entry
     const newMassProduction = new MassProduction({
@@ -69,7 +70,7 @@ exports.createMassProduction = async (req, res) => {
       status,
       status_type,
       project_n,
-      product_designation,
+      product_designation:validProducts.map(product => product._id),
       description,
       customer,
       technical_skill,

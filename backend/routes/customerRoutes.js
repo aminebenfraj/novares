@@ -1,20 +1,19 @@
 const express = require("express");
 const router = express.Router();
-const CustomerController = require("../controllers/customerController");
+const { protect, verifyAdmin } = require("../middlewares/authMiddleware");
+const { getAllCustomers, createCustomer, updateCustomer, deleteCustomer } = require("../controllers/customerController");
 
-// ✅ Create a customer
-router.post("/", CustomerController.createCustomer);
 
-// ✅ Get all customers
-router.get("/", CustomerController.getAllCustomers);
+// 🟢 Get all customers (Admin only)
+router.get("/", protect, verifyAdmin, getAllCustomers);
 
-// ✅ Get a customer by ID
-router.get("/:id", CustomerController.getCustomerById);
+// 🔵 Create a new customer (Admin only)
+router.post("/", protect, verifyAdmin, createCustomer);
 
-// ✅ Update a customer
-router.put("/:id", CustomerController.updateCustomer);
+// 🟠 Update a customer by ID (Admin only)
+router.put("/:id", protect, verifyAdmin, updateCustomer);
 
-// ✅ Delete a customer
-router.delete("/:id", CustomerController.deleteCustomer);
+// 🔴 Delete a customer by ID (Admin only)
+router.delete("/:id", protect, verifyAdmin, deleteCustomer);
 
 module.exports = router;

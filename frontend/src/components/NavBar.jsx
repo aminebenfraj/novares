@@ -42,8 +42,8 @@ const NavItem = ({ title, links }) => {
 
       {/* Dropdown Menu */}
       <div
-        className={`absolute left-0 z-10 w-48 mt-2 bg-white rounded-md shadow-lg transform transition-all duration-300 ease-in-out ${
-          isOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-2 pointer-events-none"
+        className={`absolute left-0 z-10 w-48  bg-white rounded-md shadow-lg transform transition-all duration-300 ease-in-out ${
+          isOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95  pointer-events-none"
         }`}
       >
         <div className="py-2">

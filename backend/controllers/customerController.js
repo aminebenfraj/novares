@@ -1,80 +1,73 @@
-const Customer = require("../models/CustomerModel");
+const User = require("../models/UserModel");
+const bcrypt = require("bcryptjs");
 
-// ✅ Create a new Customer
-exports.createCustomer = async (req, res) => {
-  try {
-    const { name, email, phone, address } = req.body;
-
-    // Check if customer already exists
-    const existingCustomer = await Customer.findOne({ email });
-    if (existingCustomer) {
-      return res.status(400).json({ message: "Customer with this email already exists." });
-    }
-
-    const newCustomer = new Customer({ name, email, phone, address });
-    await newCustomer.save();
-
-    res.status(201).json({ message: "Customer created successfully", data: newCustomer });
-  } catch (error) {
-    res.status(500).json({ message: "Error creating customer", error: error.message });
-  }
-};
-
-// ✅ Get all customers
+// 🟢 Get all customers
 exports.getAllCustomers = async (req, res) => {
   try {
-    const customers = await Customer.find();
-    res.status(200).json(customers);
+    const customers = await User.find({ role: "customer" });
+    res.json(customers);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching customers", error: error.message });
+    res.status(500).json({ error: "Failed to fetch customers" });
   }
 };
 
-// ✅ Get a single customer by ID
-exports.getCustomerById = async (req, res) => {
+// 🔵 Create a new customer
+exports.createCustomer = async (req, res) => {
   try {
-    const customer = await Customer.findById(req.params.id);
-    if (!customer) {
-      return res.status(404).json({ message: "Customer not found" });
-    }
-    res.status(200).json(customer);
+    const { username, email, password } = req.body;
+
+    // Check if the email already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ error: "Email already in use" });
+
+    // Hash the password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newCustomer = new User({
+      lisence: "N/A", // Default value (modify as needed)
+      username,
+      email,
+      password: hashedPassword,
+      role: "customer",
+    });
+
+    await newCustomer.save();
+    res.status(201).json({ message: "Customer created successfully", newCustomer });
   } catch (error) {
-    res.status(500).json({ message: "Error fetching customer", error: error.message });
+    res.status(500).json({ error: "Failed to create customer" });
   }
 };
 
-// ✅ Update a customer
+// 🟠 Update a customer
 exports.updateCustomer = async (req, res) => {
   try {
-    const { name, phone, address } = req.body;
+    const { id } = req.params;
+    const { username, email } = req.body;
 
-    const updatedCustomer = await Customer.findByIdAndUpdate(
-      req.params.id,
-      { name, phone, address },
-      { new: true, runValidators: true }
+    const updatedCustomer = await User.findByIdAndUpdate(
+      id,
+      { username, email },
+      { new: true }
     );
 
-    if (!updatedCustomer) {
-      return res.status(404).json({ message: "Customer not found" });
-    }
+    if (!updatedCustomer) return res.status(404).json({ error: "Customer not found" });
 
-    res.status(200).json({ message: "Customer updated successfully", data: updatedCustomer });
+    res.json({ message: "Customer updated successfully", updatedCustomer });
   } catch (error) {
-    res.status(500).json({ message: "Error updating customer", error: error.message });
+    res.status(500).json({ error: "Failed to update customer" });
   }
 };
 
-// ✅ Delete a customer
+// 🔴 Delete a customer
 exports.deleteCustomer = async (req, res) => {
   try {
-    const deletedCustomer = await Customer.findByIdAndDelete(req.params.id);
+    const { id } = req.params;
+    const deletedCustomer = await User.findByIdAndDelete(id);
 
-    if (!deletedCustomer) {
-      return res.status(404).json({ message: "Customer not found" });
-    }
+    if (!deletedCustomer) return res.status(404).json({ error: "Customer not found" });
 
-    res.status(200).json({ message: "Customer deleted successfully" });
+    res.json({ message: "Customer deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Error deleting customer", error: error.message });
+    res.status(500).json({ error: "Failed to delete customer" });
   }
 };
