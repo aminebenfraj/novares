@@ -5,6 +5,7 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import { AuthProvider } from './context/AuthContext';
 import MassProductionForm from './pages/MassProductionForm/MassProductionForm';
+import MassProductionEdit from './pages/MassProductionForm/EditMassProductionForm';
 import MassProductionTable from './pages/MassProductionForm/MassProductionList'
 import CustomerList from './pages/customer/CustomerList';
 import CreateCustomer from './pages/customer/CustomerForm';
@@ -21,9 +22,10 @@ function App() {
       <AuthProvider>
     <Routes>
           <Route path='/' element={<Home />} />
-          <Route path="/pd" element={<Showpd />} />
-          <Route path="/pd/create" element={<Createpd />} />
+          <Route path="/pd/create" element={<Showpd />} />
+          <Route path="/pd" element={<Createpd />} />
           <Route path="/masspd/create" element={<MassProductionForm />} />
+          <Route path="/masspd/edit/:id" element={<MassProductionEdit />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/customers" element={<CustomerList />} />

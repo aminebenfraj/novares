@@ -1,13 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useParams, useNavigate } from "react-router-dom"
+import { getMassProductionById, updateMassProduction } from "../../utils/apis/massProductionApi"
 import { getAllCustomers } from "../../utils/apis/customerApi"
 import { getAllpd } from "../../utils/apis/ProductDesignation-api"
-import { createMassProduction } from "../../utils/apis/massProductionApi"
 import { Navbar } from "../../components/Navbar"
 import ContactUs from "../../components/ContactUs"
 
-export default function MassProductionForm() {
+export default function EditMassProductionForm() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+
   const [formData, setFormData] = useState({
     id: "",
     status: "",
@@ -46,17 +50,37 @@ export default function MassProductionForm() {
   const [customers, setCustomers] = useState([])
   const [productDesignations, setProductDesignations] = useState([])
   const [message, setMessage] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
   useEffect(() => {
-    getAllCustomers()
-      .then((data) => setCustomers(data))
-      .catch((error) => console.error("Error fetching customers:", error))
+    if (id) {
+      fetchMassProduction()
+      fetchCustomersAndProductDesignations()
+    }
+  }, [id])
 
-    getAllpd()
-      .then((data) => setProductDesignations(data))
-      .catch((error) => console.error("Error fetching product designations:", error))
-  }, [])
+  const fetchMassProduction = async () => {
+    try {
+      const data = await getMassProductionById(id)
+      setFormData(data)
+      setLoading(false)
+    } catch (error) {
+      console.error("Error fetching mass production:", error)
+      setError("Failed to load mass production data. Please try again.")
+      setLoading(false)
+    }
+  }
+
+  const fetchCustomersAndProductDesignations = async () => {
+    try {
+      const [customersData, pdData] = await Promise.all([getAllCustomers(), getAllpd()])
+      setCustomers(customersData)
+      setProductDesignations(pdData)
+    } catch (error) {
+      console.error("Error fetching customers or product designations:", error)
+    }
+  }
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -105,22 +129,30 @@ export default function MassProductionForm() {
     setMessage("")
 
     try {
-      const response = await createMassProduction(formData)
-      setMessage("Mass production created successfully!")
-      setFormData({ ...formData, id: "" }) // Reset form if needed
+      await updateMassProduction(id, formData)
+      setMessage("Mass production updated successfully!")
+      navigate("/mass-productions") // Redirect to the list page after successful update
     } catch (error) {
-      console.error("Error creating mass production:", error)
-      setMessage(error.response?.data?.message || "Error creating mass production. Please try again.")
+      console.error("Error updating mass production:", error)
+      setMessage(error.response?.data?.message || "Error updating mass production. Please try again.")
     }
 
     setLoading(false)
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
+  }
+
+  if (error) {
+    return <div className="flex items-center justify-center min-h-screen text-red-500">{error}</div>
   }
 
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar />
       <div className="container px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <h1 className="mb-6 text-3xl font-bold text-gray-900">Create Mass Production</h1>
+        <h1 className="mb-6 text-3xl font-bold text-gray-900">Edit Mass Production</h1>
         <div className="overflow-hidden bg-white rounded-lg shadow-xl">
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {message && (
@@ -141,6 +173,7 @@ export default function MassProductionForm() {
                   onChange={handleChange}
                   className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
+                  readOnly
                 />
               </div>
 
@@ -447,7 +480,7 @@ export default function MassProductionForm() {
                 className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 disabled={loading}
               >
-                {loading ? "Submitting..." : "Submit"}
+                {loading ? "Updating..." : "Update Mass Production"}
               </button>
             </div>
           </form>

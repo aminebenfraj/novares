@@ -1,121 +1,139 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { createCustomer } from "../../utils/apis/customerApi";
-import { customerSchema } from "../../utils/customerValidation"; // ✅ Import Zod Schema
+"use client"
+
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { createCustomer } from "../../utils/apis/customerApi"
+import { customerSchema } from "../../utils/customerValidation"
 import { Navbar } from "../../components/Navbar"
+import ContactUs from "../../components/ContactUs";
 
 export default function CustomerForm() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    address: "",});
+    address: "",
+  })
 
-  const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState("");
-  const navigate = useNavigate();
+  const [errors, setErrors] = useState({})
+  const [serverError, setServerError] = useState("")
+  const navigate = useNavigate()
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrors({});
-    setServerError("");
+    e.preventDefault()
+    setErrors({})
+    setServerError("")
 
-    // ✅ Validate data using Zod
-    const validationResult = customerSchema.safeParse(formData);
+    const validationResult = customerSchema.safeParse(formData)
     if (!validationResult.success) {
-      const formattedErrors = validationResult.error.format();
-      setErrors(formattedErrors);
-      return;
+      setErrors(validationResult.error.format())
+      return
     }
 
     try {
-      await createCustomer(formData);
-      navigate("/customers"); // Redirect to customer list
+      await createCustomer(formData)
+      navigate("/customers")
     } catch (error) {
-      console.error("Error creating customer:", error);
-      setServerError("Failed to create customer. Please try again.");
+      console.error("Error creating customer:", error)
+      setServerError("Failed to create customer. Please try again.")
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar />
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-        <h2 className="mb-6 text-2xl font-bold text-center text-gray-800">Add Customer</h2>
-
-        {serverError && <p className="mb-4 text-sm text-center text-red-500">{serverError}</p>}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Full Name"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-            {errors.name && <p className="text-xs text-red-500">{errors.name._errors[0]}</p>}
+      <div className="container max-w-2xl px-4 py-8 mx-auto">
+        <div className="overflow-hidden bg-white rounded-lg shadow-md">
+          <div className="px-6 py-8">
+            <h2 className="mb-6 text-2xl font-bold text-center text-gray-800">Add Customer</h2>
+            {serverError && <p className="mb-4 text-sm text-center text-red-500">{serverError}</p>}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="name" className="block mb-1 text-sm font-medium text-gray-700">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="John Doe"
+                />
+                {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name._errors[0]}</p>}
+              </div>
+              <div>
+                <label htmlFor="email" className="block mb-1 text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="john@example.com"
+                />
+                {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email._errors[0]}</p>}
+              </div>
+              <div>
+                <label htmlFor="phone" className="block mb-1 text-sm font-medium text-gray-700">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="(123) 456-7890"
+                />
+                {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone._errors[0]}</p>}
+              </div>
+              <div>
+                <label htmlFor="address" className="block mb-1 text-sm font-medium text-gray-700">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="123 Main St, City, State, ZIP"
+                />
+                {errors.address && <p className="mt-1 text-xs text-red-500">{errors.address._errors[0]}</p>}
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => navigate("/customers")}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Add Customer
+                </button>
+              </div>
+            </form>
           </div>
-
-          <div>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Email"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-            {errors.email && <p className="text-xs text-red-500">{errors.email._errors[0]}</p>}
-          </div>
-
-          <div>
-            <input
-              type="text"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="Phone Number"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-            {errors.phone && <p className="text-xs text-red-500">{errors.phone._errors[0]}</p>}
-          </div>
-
-          <div>
-            <input
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              placeholder="Address"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-            {errors.address && <p className="text-xs text-red-500">{errors.address._errors[0]}</p>}
-          </div>
-          <button
-            type="submit"
-            className="w-full py-2 text-white transition bg-blue-500 rounded-lg hover:bg-blue-600"
-          >
-            Add Customer
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/customers")}
-            className="w-full py-2 mt-2 text-white transition bg-gray-500 rounded-lg hover:bg-gray-600"
-          >
-            Cancel
-          </button>
-        </form>
+        </div>
       </div>
+      <ContactUs />
+
     </div>
-    </div>
-  );
+  )
 }
+

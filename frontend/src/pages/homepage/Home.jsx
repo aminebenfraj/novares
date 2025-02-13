@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Navbar } from "../../components/Navbar";
+import ContactUs from "../../components/ContactUs";
 
 export const Home = () => {
   return (
@@ -45,6 +46,7 @@ export const Home = () => {
           </Link>
         </div>
       </div>
+      <ContactUs />
     </div>
   );
 };

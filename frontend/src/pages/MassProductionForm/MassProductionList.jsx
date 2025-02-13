@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { getAllMassProductions, deleteMassProduction } from "../../utils/apis/massProductionApi"
 import { Navbar } from "../../components/Navbar"
+import ContactUs from "../../components/ContactUs";
 
 export default function MassProductionList() {
   const [massProductions, setMassProductions] = useState([])
@@ -209,6 +210,8 @@ export default function MassProductionList() {
         </div>
       )}
     </div>
+    
+    <ContactUs />
   </div>
   )
 }

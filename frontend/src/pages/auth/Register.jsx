@@ -1,7 +1,7 @@
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faIdCard, faUser, faEnvelope, faLock } from "@fortawesome/free-solid-svg-icons";
-
+import ContactUs from "../../components/ContactUs";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useForm } from "react-hook-form";
@@ -39,17 +39,17 @@ export default function Register() {
   return (
     <div className="flex flex-col justify-between min-h-screen">
       <div className="flex flex-col justify-center items-center font-[sans-serif] h-[700px] p-20 bg-white">
-        <div className="max-w-md w-full mx-auto">
+        <div className="w-full max-w-md mx-auto">
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="bg-white rounded-2xl p-6 shadow-[0_2px_13px_-3px_rgba(0,0,0,0.15)]"
           >
             <div className="mb-6">
-              <h3 className="text-violet-700 text-3xl font-extrabold">Register</h3>
+              <h3 className="text-3xl font-extrabold text-violet-700">Register</h3>
             </div>
 
             {/* 🔴 Display Server Error */}
-            {serverError && <p className="text-red-600 text-sm text-center mb-4">{serverError}</p>}
+            {serverError && <p className="mb-4 text-sm text-center text-red-600">{serverError}</p>}
 
             {/* License Input */}
             <div className="relative flex items-center">
@@ -57,11 +57,11 @@ export default function Register() {
               <input
                 {...register("license")}
                 type="text"
-                className="bg-transparent w-full text-sm text-gray-800 border-b border-gray-400 focus:border-gray-800 pl-8 py-3 outline-none placeholder:text-gray-800"
+                className="w-full py-3 pl-8 text-sm text-gray-800 bg-transparent border-b border-gray-400 outline-none focus:border-gray-800 placeholder:text-gray-800"
                 placeholder="Enter license"
               />
             </div>
-            {errors.license && <p className="text-red-500 text-xs">{errors.license.message}</p>}
+            {errors.license && <p className="text-xs text-red-500">{errors.license.message}</p>}
 
             {/* Username Input */}
             <div className="relative flex items-center mt-6">
@@ -69,11 +69,11 @@ export default function Register() {
               <input
                 {...register("username")}
                 type="text"
-                className="bg-transparent w-full text-sm text-gray-800 border-b border-gray-400 focus:border-gray-800 pl-8 py-3 outline-none placeholder:text-gray-800"
+                className="w-full py-3 pl-8 text-sm text-gray-800 bg-transparent border-b border-gray-400 outline-none focus:border-gray-800 placeholder:text-gray-800"
                 placeholder="Enter username"
               />
             </div>
-            {errors.username && <p className="text-red-500 text-xs">{errors.username.message}</p>}
+            {errors.username && <p className="text-xs text-red-500">{errors.username.message}</p>}
 
             {/* Email Input */}
             <div className="relative flex items-center mt-6">
@@ -81,11 +81,11 @@ export default function Register() {
               <input
                 {...register("email")}
                 type="email"
-                className="bg-transparent w-full text-sm text-gray-800 border-b border-gray-400 focus:border-gray-800 pl-8 py-3 outline-none placeholder:text-gray-800"
+                className="w-full py-3 pl-8 text-sm text-gray-800 bg-transparent border-b border-gray-400 outline-none focus:border-gray-800 placeholder:text-gray-800"
                 placeholder="Enter email"
               />
             </div>
-            {errors.email && <p className="text-red-500 text-xs">{errors.email.message}</p>}
+            {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
 
             {/* Password Input */}
             <div className="relative flex items-center mt-6">
@@ -93,11 +93,11 @@ export default function Register() {
               <input
                 {...register("password")}
                 type="password"
-                className="bg-transparent w-full text-sm text-gray-800 border-b border-gray-400 focus:border-gray-800 pl-8 py-3 outline-none placeholder:text-gray-800"
+                className="w-full py-3 pl-8 text-sm text-gray-800 bg-transparent border-b border-gray-400 outline-none focus:border-gray-800 placeholder:text-gray-800"
                 placeholder="Enter password"
               />
             </div>
-            {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
+            {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
 
             {/* Password Confirmation Input */}
             <div className="relative flex items-center mt-6">
@@ -105,12 +105,12 @@ export default function Register() {
               <input
                 {...register("passwordConfirmation")}
                 type="password"
-                className="bg-transparent w-full text-sm text-gray-800 border-b border-gray-400 focus:border-gray-800 pl-8 py-3 outline-none placeholder:text-gray-800"
+                className="w-full py-3 pl-8 text-sm text-gray-800 bg-transparent border-b border-gray-400 outline-none focus:border-gray-800 placeholder:text-gray-800"
                 placeholder="Confirm password"
               />
             </div>
             {errors.passwordConfirmation && (
-              <p className="text-red-500 text-xs">{errors.passwordConfirmation.message}</p>
+              <p className="text-xs text-red-500">{errors.passwordConfirmation.message}</p>
             )}
 
             {/* Submit Button */}
@@ -121,11 +121,11 @@ export default function Register() {
               >
                 Register
               </button>
-              <p className="text-gray-800 text-sm text-center mt-6">
+              <p className="mt-6 text-sm text-center text-gray-800">
                 Already have an account?
                 <Link
                   to="/login"
-                  className="text-violet-700 font-semibold hover:underline ml-1 whitespace-nowrap"
+                  className="ml-1 font-semibold text-violet-700 hover:underline whitespace-nowrap"
                 >
                   Sign in here
                 </Link>
@@ -134,6 +134,7 @@ export default function Register() {
           </form>
         </div>
       </div>
+      <ContactUs />
     </div>
   );
 }

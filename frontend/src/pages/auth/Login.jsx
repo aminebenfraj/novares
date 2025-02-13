@@ -1,7 +1,7 @@
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEnvelope, faLock } from "@fortawesome/free-solid-svg-icons";
-
+import ContactUs from "../../components/ContactUs";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useForm } from "react-hook-form";
@@ -38,41 +38,41 @@ export default function Login() {
   return (
     <div className="flex flex-col justify-between min-h-screen bg-[#125671]">
       <div className="flex justify-center items-center font-[sans-serif] h-[700px] min-h-max p-4 bg-white">
-        <div className="max-w-md w-full mx-auto">
+        <div className="w-full max-w-md mx-auto">
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="bg-white rounded-2xl p-6 shadow-[0_2px_13px_-3px_rgba(0,0,0,0.2)]"
           >
             <div className="mb-6">
-              <h3 className="text-violet-700 text-3xl font-extrabold">Sign in</h3>
+              <h3 className="text-3xl font-extrabold text-violet-700">Sign in</h3>
             </div>
 
             {/* 🔴 Display Server Error */}
-            {serverError && <p className="text-red-600 text-sm mb-4">{serverError}</p>}
+            {serverError && <p className="mb-4 text-sm text-red-600">{serverError}</p>}
 
             {/* License Input */}
             <div className="relative flex items-center">
               <input
                 {...register("license")}
                 type="text"
-                className="bg-transparent w-full text-sm text-gray-800 border-b border-gray-400 focus:border-gray-800 px-2 py-3 outline-none placeholder:text-gray-800"
+                className="w-full px-2 py-3 text-sm text-gray-800 bg-transparent border-b border-gray-400 outline-none focus:border-gray-800 placeholder:text-gray-800"
                 placeholder="Enter license"
               />
               <FontAwesomeIcon icon={faEnvelope} className="absolute right-2 text-violet-700" />
             </div>
-            {errors.license && <p className="text-red-500 text-xs">{errors.license.message}</p>}
+            {errors.license && <p className="text-xs text-red-500">{errors.license.message}</p>}
 
             {/* Password Input */}
             <div className="relative flex items-center mt-6">
               <input
                 {...register("password")}
                 type="password"
-                className="bg-transparent w-full text-sm text-gray-800 border-b border-gray-400 focus:border-gray-800 px-2 py-3 outline-none placeholder:text-gray-800"
+                className="w-full px-2 py-3 text-sm text-gray-800 bg-transparent border-b border-gray-400 outline-none focus:border-gray-800 placeholder:text-gray-800"
                 placeholder="Enter password"
               />
-              <FontAwesomeIcon icon={faLock} className="absolute right-2 text-violet-700 cursor-pointer" />
+              <FontAwesomeIcon icon={faLock} className="absolute cursor-pointer right-2 text-violet-700" />
             </div>
-            {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
+            {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
 
             {/* Remember Me & Forgot Password */}
             <div className="flex flex-wrap items-center justify-between gap-4 mt-6">
@@ -81,13 +81,13 @@ export default function Login() {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 shrink-0 border-gray-300 rounded"
+                  className="w-4 h-4 border-gray-300 rounded shrink-0"
                 />
-                <label htmlFor="remember-me" className="ml-3 block text-sm text-gray-800">
+                <label htmlFor="remember-me" className="block ml-3 text-sm text-gray-800">
                   Remember me
                 </label>
               </div>
-              <Link to="/forgot-password" className="text-purple-500 text-sm font-semibold hover:underline">
+              <Link to="/forgot-password" className="text-sm font-semibold text-purple-500 hover:underline">
                 Forgot Password?
               </Link>
             </div>
@@ -100,9 +100,9 @@ export default function Login() {
               >
                 Sign in
               </button>
-              <p className="text-gray-800 text-sm text-center mt-6">
+              <p className="mt-6 text-sm text-center text-gray-800">
                 Dont have an account?
-                <Link to="/register" className="text-purple-500 font-semibold hover:underline ml-1">
+                <Link to="/register" className="ml-1 font-semibold text-purple-500 hover:underline">
                   {" "}Register here
                 </Link>
               </p>
@@ -110,6 +110,8 @@ export default function Login() {
           </form>
         </div>
       </div>
+            <ContactUs />
+      
     </div>
   );
 }

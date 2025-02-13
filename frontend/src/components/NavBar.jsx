@@ -1,29 +1,42 @@
-"use client";
+"use client"
 
-import { useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useState, useCallback, useRef, useEffect } from "react"
+import { Link } from "react-router-dom"
+import { FaSearch } from "react-icons/fa"
 
 // Dropdown Nav Item
 const NavItem = ({ title, links }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef(null)
 
-  const handleMouseEnter = useCallback(() => setIsOpen(true), []);
-  const handleMouseLeave = useCallback(() => setIsOpen(false), []);
+  const handleMouseEnter = useCallback(() => setIsOpen(true), [])
+  const handleMouseLeave = useCallback(() => setIsOpen(false), [])
+
   const handleKeyDown = useCallback((e) => {
-    if (e.key === "Enter" || e.key === " ") setIsOpen((prev) => !prev);
-    if (e.key === "Escape") setIsOpen(false);
-  }, []);
+    if (e.key === "Enter" || e.key === " ") setIsOpen((prev) => !prev)
+    if (e.key === "Escape") setIsOpen(false)
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
 
   return (
-    <div
-      className="relative group"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-      onBlur={() => setIsOpen(false)}
-    >
-      <button className="px-4 py-2 text-sm font-medium text-white transition-all duration-300 rounded-md hover:bg-white/20">
+    <div className="relative group" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} ref={dropdownRef}>
+      <button
+        className="px-4 py-2 text-sm font-medium text-gray-700 transition-all duration-300 rounded-md hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+        onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={handleKeyDown}
+      >
         {title}
       </button>
 
@@ -38,7 +51,8 @@ const NavItem = ({ title, links }) => {
             <Link
               key={to}
               to={to}
-              className="block px-4 py-2 text-sm text-gray-700 transition-all duration-300 hover:bg-gray-100 hover:text-gray-900"
+              className="block px-4 py-2 text-sm text-gray-700 transition-all duration-300 hover:bg-gray-100 hover:text-primary"
+              onClick={() => setIsOpen(false)}
             >
               {label}
             </Link>
@@ -46,45 +60,81 @@ const NavItem = ({ title, links }) => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 export const Navbar = () => {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+
+  const toggleSearch = () => {
+    setIsSearchOpen(!isSearchOpen)
+  }
 
   return (
-    <>
-      {/* Navbar */}
-      <nav className="z-50 flex items-center w-full h-16 text-white bg-gray-900 shadow-md">
-        <div className="container flex items-center justify-between px-4 mx-auto">
-          {/* Logo */}
-          <Link to="/" className="flex items-center text-xl font-bold">
-            Your App 🚀
-          </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden space-x-6 md:flex">
-            <NavItem
-              title="Products"
-              links={[
-                { to: "/pd", label: "View Products" },
-                { to: "/pd/create", label: "Create Product" },
-              ]}
-            />
-            <NavItem
-              title="Customers"
-              links={[
-                { to: "/customers", label: "View Customers" },
-                { to: "/customers/create", label: "Create Customer" },
-              ]}
-            />
-            <NavItem
-              title="Mass Production"
-              links={[
-                { to: "/masspd", label: "View Mass Production" },
-                { to: "/masspd/create", label: "Create Mass Production" },
-              ]}
-            />
+    <header className="bg-white shadow-md">
+      <div className="w-full max-w-[1180px] mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <Link to="/">
+            <img src="/novares-logo.webp" alt="Novares" className="w-auto h-10" />
+            </Link>
+            <nav className="hidden space-x-6 md:flex">
+              <NavItem
+                title="Products"
+                links={[
+                  { to: "/pd", label: "View Products" },
+                  { to: "/pd/create", label: "Create Product" },
+                ]}
+              />
+              <NavItem
+                title="Customers"
+                links={[
+                  { to: "/customers", label: "View Customers" },
+                  { to: "/customers/create", label: "Create Customer" },
+                ]}
+              />
+              <NavItem
+                title="Mass Production"
+                links={[
+                  { to: "/masspd", label: "View Mass Production" },
+                  { to: "/masspd/create", label: "Create Mass Production" },
+                ]}
+              />
+              <NavItem
+                title="Tests"
+                links={[
+                  { to: "/test", label: "Test" },
+                  { to: "/test1", label: "Test 1" },
+                  { to: "/test2", label: "Test 2" },
+                  { to: "/test3", label: "Test 3" },
+                  { to: "/test4", label: "Test 4" },
+                ]}
+              />
+            </nav>
+          </div>
+          <div className="flex items-center gap-8">
+            <div className="relative flex items-center">
+              <button
+                className="mr-2 text-gray-600 transition-colors duration-200 hover:text-primary"
+                onClick={toggleSearch}
+                aria-label="Toggle search"
+              >
+                <FaSearch className="w-5 h-5" />
+              </button>
+              <div
+                className={`transition-all duration-300 ease-in-out ${
+                  isSearchOpen ? "w-64 opacity-100" : "w-0 opacity-0"
+                } overflow-hidden`}
+              >
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  aria-label="Search input"
+                />
+              </div>
+            </div>
             <NavItem
               title="Account"
               links={[
@@ -95,11 +145,8 @@ export const Navbar = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            className="block md:hidden focus:outline-none"
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            <svg className="text-white w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button className="block md:hidden focus:outline-none" onClick={() => setMenuOpen(!menuOpen)}>
+            <svg className="text-gray-700 w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -109,46 +156,38 @@ export const Navbar = () => {
             </svg>
           </button>
         </div>
-      </nav>
+      </div>
 
       {/* Mobile Dropdown Menu */}
       <div
-        className={`absolute top-16 left-0 w-full bg-gray-900 text-white px-4 py-3 transition-all duration-300 ${
+        className={`absolute left-0 w-full bg-white px-6 py-4 transition-all duration-300 ${
           menuOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
         } md:hidden shadow-md`}
       >
-        <div className="flex flex-col space-y-2">
-          <Link to="/pd" className="py-2 text-sm font-medium hover:text-gray-300">
-            View Products
+        <div className="flex flex-col space-y-4">
+          <Link to="/pd" className="text-sm font-medium text-gray-700 hover:text-primary">
+            Products
           </Link>
-          <Link to="/pd/create" className="py-2 text-sm font-medium hover:text-gray-300">
-            Create Product
+          <Link to="/customers" className="text-sm font-medium text-gray-700 hover:text-primary">
+            Customers
           </Link>
-          <Link to="/customers" className="py-2 text-sm font-medium hover:text-gray-300">
-            View Customers
+          <Link to="/masspd" className="text-sm font-medium text-gray-700 hover:text-primary">
+            Mass Production
           </Link>
-          <Link to="/customers/create" className="py-2 text-sm font-medium hover:text-gray-300">
-            Create Customer
+          <Link to="/test" className="text-sm font-medium text-gray-700 hover:text-primary">
+            Tests
           </Link>
-          <Link to="/masspd" className="py-2 text-sm font-medium hover:text-gray-300">
-            View Mass Production
-          </Link>
-          <Link to="/masspd/create" className="py-2 text-sm font-medium hover:text-gray-300">
-            Create Mass Production
-          </Link>
-          <Link to="/login" className="py-2 text-sm font-medium hover:text-gray-300">
+          <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-primary">
             Login
           </Link>
-          <Link to="/register" className="py-2 text-sm font-medium hover:text-gray-300">
+          <Link to="/register" className="text-sm font-medium text-gray-700 hover:text-primary">
             Register
           </Link>
         </div>
       </div>
+    </header>
+  )
+}
 
-      {/* Ensures Navbar doesn't overlap content */}
-      <main className="px-4 pt-16">
-        {/* Your page content goes here */}
-      </main>
-    </>
-  );
-};
+export default Navbar
+
