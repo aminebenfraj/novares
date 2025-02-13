@@ -40,10 +40,9 @@ export default function MassProductionForm() {
     pt1: "",
     pt2: "",
     sop: "",
-    days_until_ppap_submission: 0,
   })
 
-  const [customers, setCustomers] = useState([])
+  const [customers, setCustomers] = useState([]);
   const [productDesignations, setProductDesignations] = useState([])
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
@@ -62,17 +61,7 @@ export default function MassProductionForm() {
     const { name, value, type, checked } = e.target
     const newValue = type === "checkbox" ? checked : value
 
-    if (name === "ppap_submission_date") {
-      const ppapDate = new Date(value)
-      const today = new Date()
-      const timeDiff = ppapDate.getTime() - today.getTime()
-      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24))
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
-        days_until_ppap_submission: daysDiff,
-      }))
-    } else if (name === "closure") {
+    if (name === "closure") {
       const closureDate = new Date(value)
       const today = new Date()
       today.setHours(0, 0, 0, 0)
@@ -242,19 +231,19 @@ export default function MassProductionForm() {
                   Customer
                 </label>
                 <select
-                  id="customer"
-                  name="customer"
-                  value={formData.customer}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select Customer</option>
-                  {customers.map((customer) => (
-                    <option key={customer._id} value={customer._id}>
-                      {customer.name}
-                    </option>
-                  ))}
-                </select>
+      id="customer"
+      name="customer"
+      value={formData.customer}
+      onChange={handleChange}
+      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      <option value="">Select Customer</option>
+      {customers.map((customer) => (
+        <option key={customer._id} value={customer._id}>
+          {customer.username}
+        </option>
+      ))}
+    </select>
               </div>
 
               {/* Initial Request */}
@@ -376,7 +365,7 @@ export default function MassProductionForm() {
               </div>
             </div>
 
-            {/* New field for Days Until PPAP Submission */}
+            {/* PPAP Submission Date and Days Until PPAP Sub Date */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div>
                 <label htmlFor="ppap_submission_date" className="block mb-2 text-sm font-medium text-gray-700">
@@ -392,14 +381,20 @@ export default function MassProductionForm() {
                 />
               </div>
               <div>
-                <label htmlFor="days_until_ppap_submission" className="block mb-2 text-sm font-medium text-gray-700">
-                  Days Until PPAP Submission
+                <label htmlFor="days_until_ppap_sub_date" className="block mb-2 text-sm font-medium text-gray-700">
+                  Days Until PPAP Sub Date
                 </label>
                 <input
-                  type="number"
-                  id="days_until_ppap_submission"
-                  name="days_until_ppap_submission"
-                  value={formData.days_until_ppap_submission}
+                  type="text"
+                  id="days_until_ppap_sub_date"
+                  name="days_until_ppap_sub_date"
+                  value={
+                    formData.ppap_submission_date
+                      ? new Date(formData.ppap_submission_date) > new Date()
+                        ? "ok"
+                        : "no"
+                      : "no"
+                  }
                   readOnly
                   className="w-full px-3 py-2 text-gray-700 bg-gray-100 border rounded-md focus:outline-none"
                 />
