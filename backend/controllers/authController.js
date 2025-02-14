@@ -16,48 +16,27 @@ const generateToken = (user) => {
 
 exports.registerUser = async (req, res) => {
   try {
-    const { lisence, username, email, password, role, image } = req.body;
+    const { license, username, email, password, roles, image } = req.body;
 
-    // 1️⃣ Check if user exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: "User already exists" });
+    if (!password) {
+      return res.status(400).json({ error: "Password is required" });
     }
 
-    // 2️⃣ Hash the password before saving
-    console.log("🔹 Hashing password before saving...");
+    // ✅ Ensure the password is hashed before storing
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    console.log("✅ Hashed Password:", hashedPassword);
 
-    // 3️⃣ Create a new user with the hashed password
     const user = new User({
-      lisence,
+      license,
       username,
       email,
-      password: hashedPassword, // 🔹 Ensure hashed password is saved
-      role: role || "user",
-      image: image || null,
+      password: hashedPassword, // ✅ Save hashed password
+      roles: roles || ["User"],
+      image: image || null
     });
 
     await user.save();
-    console.log("✅ User Registered Successfully:", user);
-
-    // 4️⃣ Generate Token
-    const token = jwt.sign(
-      { lisence: user.lisence, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "30d" }
-    );
-
-    res.status(201).json({
-      lisence: user.lisence,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      image: user.image,
-      token,
-    });
+    res.status(201).json({ message: "User registered successfully", user });
 
   } catch (error) {
     console.error("❌ Registration error:", error);
@@ -68,50 +47,46 @@ exports.registerUser = async (req, res) => {
 
 exports.loginUser = async (req, res) => {
   try {
-    const { lisence, password } = req.body;
-    console.log("🔍 Login Request Received:");
-    console.log("📧 lisence:", lisence);
-    console.log("🔑 Entered Password:", password);
+    const { license, password } = req.body;
 
-    // 1️⃣ Find user by email
-    const user = await User.findOne({ lisence });
-    console.log("👤 User Found in Database:", user);
+    // 1️⃣ Find user by license
+    const user = await User.findOne({ license });
 
     if (!user) {
-      console.log("❌ No user found with this lisence");
-      return res.status(400).json({ error: "Invalid lisence or password" });
+      console.log("❌ No user found with this license");
+      return res.status(400).json({ error: "Invalid license or password" });
     }
 
-    // 2️⃣ Compare passwords
-    console.log("🔹 Comparing entered password with stored hashed password...");
-    console.log("🔹 Hashed Password in DB:", user.password);
-    
-    const isMatch = await bcrypt.compare(password, user.password);
+    console.log("🔍 Login Request Received:");
+    console.log("📧 License:", license);
+    console.log("🔑 Entered Password:", password);
+    console.log("👤 User Found in Database:", user);
+
+    // 2️⃣ Print stored password (plaintext)
+    console.log("🔹 Stored Password in DB:", user.password);
+
+    // 3️⃣ Compare entered password directly (without hashing)
+    const isMatch = password === user.password;  // 🔥 Temporary insecure comparison
+
     console.log("🔑 Password Match Status:", isMatch);
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    console.log(hashedPassword);
-    
+
     if (!isMatch) {
       console.log("❌ Password does not match");
-      return res.status(400).json({ error: "Invalid lisence or password" });
+      return res.status(400).json({ error: "Invalid license or password" });
     }
 
-    // 3️⃣ Generate Token
+    // 4️⃣ Generate Token
     const token = jwt.sign(
-      { lisence: user.lisence, role: user.role },
+      { license: user.license, roles: user.roles },
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
 
-    console.log("✅ Token Generated:", token);
-
-    // 4️⃣ Send response
     res.json({
-      lisence: user.lisence,
+      license: user.license,
       username: user.username,
       email: user.email,
-      role: user.role,
+      roles: user.roles,
       image: user.image,
       token,
     });
@@ -121,6 +96,8 @@ exports.loginUser = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
+
 // 🔹 Get Current Logged-in User (Protected)
 exports.currentUser = async (req, res) => {
   try {

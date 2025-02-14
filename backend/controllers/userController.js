@@ -1,24 +1,36 @@
 const bcrypt = require("bcryptjs");
-const User = require("../models/UserModel"); // Adjust the path as needed
+const User = require("../models/UserModel");
 
-// 🔹 Get current user information (Authenticated user)
+// 🎯 List of allowed roles from your schema
+const rolesEnum = [
+  "Admin", "Manager", "Project Manager", "Business Manager",
+  "Financial Leader", "Manufacturing Eng. Manager",
+  "Manufacturing Eng. Leader", "Tooling Manager",
+  "Automation Leader", "SAP Leader", "Methodes UAP1&3",
+  "Methodes UAP2", "Maintenance Manager",
+  "Maintenance Leader UAP2", "Purchasing Manager",
+  "Logistic Manager", "Logistic Leader UAP1",
+  "Logistic Leader UAP2", "Logistic Leader",
+  "POE Administrator", "Material Administrator",
+  "Warehouse Leader UAP1", "Warehouse Leader UAP2",
+  "Prod. Plant Manager UAP1", "Prod. Plant Manager UAP2",
+  "Quality Manager", "Quality Leader UAP1",
+  "Quality Leader UAP2", "Quality Leader UAP3",
+  "Laboratory Leader", "Customer", "User"
+];
+
+// 🔹 **Get Current User Information (Authenticated User)**
 exports.showUserInfo = async (req, res) => {
   try {
-    // Find user by license (assuming license is unique)
-    const user = await User.findOne({ lisence: req.user.lisence }).select("-password");
+    const user = await User.findOne({ license: req.user.license }).select("-password");
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    console.log(user);
-    
-    // Return user information
     res.json({
-      lisence: user.lisence,
+      license: user.license,
       username: user.username,
       email: user.email,
-      role: user.role,
+      roles: user.roles, // ✅ Now returns multiple roles
       image: user.image,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -29,56 +41,53 @@ exports.showUserInfo = async (req, res) => {
   }
 };
 
-// 🔹 Update a user's role (Admin Only)
-exports.updateUserRole = async (req, res) => {
-  const { role } = req.body;
+// 🔹 **Admin: Update a User's Roles**
+exports.updateUserRoles = async (req, res) => {
+  const { roles } = req.body;
 
-  // Validate role
-  if (!["admin", "user", "customer"].includes(role)) {
-    return res.status(400).json({ error: "Invalid role" });
+  // ✅ Ensure roles are valid
+  if (!Array.isArray(roles) || roles.some(role => !rolesEnum.includes(role))) {
+    return res.status(400).json({ error: "Invalid roles provided" });
   }
 
   try {
     // Find the user by license
-    const user = await User.findOne({ lisence: req.params.lisence });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    const user = await User.findOne({ license: req.params.license });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // ✅ Prevent Admin from removing their own "Admin" role
+    if (user.license === req.user.license && !roles.includes("Admin")) {
+      return res.status(400).json({ error: "You cannot remove your own Admin role" });
     }
 
-    // Update user role
-    user.role = role;
+    // ✅ Update roles
+    user.roles = roles;
     await user.save();
 
-    res.json({ message: "User role updated successfully", updatedRole: user.role });
+    res.json({ message: "User roles updated successfully", updatedRoles: user.roles });
   } catch (error) {
-    console.error("Error updating user role:", error);
-    res.status(500).json({ error: "Error updating user role" });
+    console.error("Error updating user roles:", error);
+    res.status(500).json({ error: "Error updating user roles" });
   }
 };
 
-// 🔹 Update current user information (Authenticated User)
+// 🔹 **Update Current User Information (Authenticated User)**
 exports.updateCurrentUser = async (req, res) => {
   try {
     const { username, email, password, image } = req.body;
 
-    // Find the user by license
-    const user = await User.findOne({ lisence: req.user.lisence });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    const user = await User.findOne({ license: req.user.license });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Update fields
     if (username) user.username = username;
     if (email) user.email = email;
     if (image) user.image = image;
 
-    // If a new password is provided, hash it
     if (password) {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password, salt);
     }
 
-    // Save updated user
     await user.save();
 
     res.json({
@@ -93,18 +102,32 @@ exports.updateCurrentUser = async (req, res) => {
   }
 };
 
-// 🔹 Delete current user account (Authenticated User)
-exports.deleteCurrentUser = async (req, res) => {
+// 🔹 **Delete a User (Admin Only)**
+exports.deleteUser = async (req, res) => {
   try {
-    // Validate user existence
-    const user = await User.findOne({ lisence: req.user.lisence });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    const user = await User.findOne({ license: req.params.license });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // ✅ Prevent Admin from deleting themselves
+    if (user.license === req.user.license) {
+      return res.status(400).json({ error: "You cannot delete your own account" });
     }
 
-    // Delete user
     await user.remove();
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ error: "Error deleting user" });
+  }
+};
 
+// 🔹 **Delete Current User Account (Self-Deletion)**
+exports.deleteCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findOne({ license: req.user.license });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    await user.remove();
     res.json({ message: "Account deleted successfully" });
   } catch (error) {
     console.error("Error deleting user:", error);

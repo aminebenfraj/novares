@@ -12,8 +12,8 @@ const protect = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Get user from database
-      req.user = await User.findOne({ lisence: decoded.lisence }).select("-password");
+      // Get user from database using `license` (typo fixed from `lisence`)
+      req.user = await User.findOne({ license: decoded.license }).select("-password");
 
       if (!req.user) {
         return res.status(401).json({ error: "User not found" });
@@ -31,7 +31,7 @@ const protect = async (req, res, next) => {
 
 // 🛡 Admin Middleware: Restrict Access to Admins Only
 const verifyAdmin = (req, res, next) => {
-  if (!req.user || req.user.role !== "admin") {
+  if (!req.user || !req.user.roles.includes("Admin")) {
     return res.status(403).json({ error: "Access denied - Admins only" });
   }
   next();
