@@ -15,6 +15,9 @@ import  Test2  from './pages/D01/Test2';
 import  Test3  from './pages/D01/Test3';
 import  Test4  from './pages/D01/Test4';
 import  Test5  from './pages/D01/Test5';
+import AdminDashboard from './pages/roleMangement/AdminDashboard';
+import EditUserRoles from './pages/roleMangement/EditUserRoles';
+import CreateUser from './pages/roleMangement/CreateUser';
 
 function App() {
   return (
@@ -34,6 +37,9 @@ function App() {
           <Route path="/test3" element={<Test3 />} />
           <Route path="/test4" element={<Test4 />} />
           <Route path="/test5" element={<Test5 />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/edit-user/:license" element={<EditUserRoles />} />
+        <Route path="/admin/create-user" element={<CreateUser />} />
     </Routes>
       </AuthProvider>
   );

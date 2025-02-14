@@ -2,9 +2,8 @@
 
 import { useState, useCallback, useRef, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { FaSearch } from "react-icons/fa"
+import { Search, ChevronDown, Menu, X } from "lucide-react"
 
-// Dropdown Nav Item
 const NavItem = ({ title, links }) => {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
@@ -33,17 +32,17 @@ const NavItem = ({ title, links }) => {
   return (
     <div className="relative group" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} ref={dropdownRef}>
       <button
-        className="px-4 py-2 text-sm font-medium text-gray-700 transition-all duration-300 rounded-md hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+        className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 transition-all duration-300 rounded-md hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary"
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
       >
         {title}
+        <ChevronDown className={`ml-1 w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
-      {/* Dropdown Menu */}
       <div
-        className={`absolute left-0 z-10 w-48  bg-white rounded-md shadow-lg transform transition-all duration-300 ease-in-out ${
-          isOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95  pointer-events-none"
+        className={`absolute left-0 z-10 w-48 bg-white rounded-md shadow-lg transform transition-all duration-300 ease-in-out ${
+          isOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 pointer-events-none"
         }`}
       >
         <div className="py-2">
@@ -77,7 +76,7 @@ export const Navbar = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link to="/">
-            <img src="/novares-logo.webp" alt="Novares" className="w-auto h-10" />
+              <img src="/novares-logo.webp" alt="Novares" className="w-auto h-10" />
             </Link>
             <nav className="hidden space-x-6 md:flex">
               <NavItem
@@ -92,6 +91,13 @@ export const Navbar = () => {
                 links={[
                   { to: "/masspd", label: "View Mass Production" },
                   { to: "/masspd/create", label: "Create Mass Production" },
+                ]}
+              />
+              <NavItem
+                title="Administration"
+                links={[
+                  { to: "/admin", label: "User Management" },
+                  { to: "/admin/create-user", label: "Create User" },
                 ]}
               />
               <NavItem
@@ -113,7 +119,7 @@ export const Navbar = () => {
                 onClick={toggleSearch}
                 aria-label="Toggle search"
               >
-                <FaSearch className="w-5 h-5" />
+                <Search className="w-5 h-5" />
               </button>
               <div
                 className={`transition-all duration-300 ease-in-out ${
@@ -137,21 +143,12 @@ export const Navbar = () => {
             />
           </div>
 
-          {/* Mobile Menu Button */}
           <button className="block md:hidden focus:outline-none" onClick={() => setMenuOpen(!menuOpen)}>
-            <svg className="text-gray-700 w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16m-7 6h7"}
-              />
-            </svg>
+            {menuOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Dropdown Menu */}
       <div
         className={`absolute left-0 w-full bg-white px-6 py-4 transition-all duration-300 ${
           menuOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
@@ -163,6 +160,9 @@ export const Navbar = () => {
           </Link>
           <Link to="/masspd" className="text-sm font-medium text-gray-700 hover:text-primary">
             Mass Production
+          </Link>
+          <Link to="/admin" className="text-sm font-medium text-gray-700 hover:text-primary">
+            User Management
           </Link>
           <Link to="/test" className="text-sm font-medium text-gray-700 hover:text-primary">
             Tests

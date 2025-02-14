@@ -6,6 +6,7 @@ const ProductDesignationRoutes = require('./routes/productDesignationRoutes');
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require("./routes/authRoutes"); // ✅ Add this line
 const massProductionRoutes = require("./routes/massProductionRoutes"); // ✅ Add this line
+const adminRoutes = require("./routes/adminRoutes");
 
 
 const app = express()
@@ -27,6 +28,8 @@ app.use("/api/pd", ProductDesignationRoutes);
 app.use("/api/users", userRoutes); 
 app.use("/api/auth", authRoutes); 
 app.use("/api/massproduction", massProductionRoutes);
+app.use("/api/admin", adminRoutes);
+
 
 
 app.listen(PORT, () => {
