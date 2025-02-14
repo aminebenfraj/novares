@@ -1,26 +1,13 @@
-import { apiRequest } from "./api";
+import { apiRequest } from "./api"
 
-// ✅ Create a new customer
-export const createCustomer = (data) => {
-  return apiRequest("POST", "api/customers", data);
-};
+export const getAllCustomers = async () => {
+  try {
+    const response = await apiRequest("GET", "api/users")
+    // Filter customers to include only users with the Customer role
+    return response.filter((user) => user.roles.includes("Customer"))
+  } catch (error) {
+    console.error("Error fetching customers:", error)
+    throw error
+  }
+}
 
-// ✅ Get all customers
-export const getAllCustomers = () => {
-  return apiRequest("GET", "api/customers");
-};
-
-// ✅ Get a single customer by ID
-export const getCustomerById = (id) => {
-  return apiRequest("GET", `api/customers/${id}`);
-};
-
-// ✅ Update a customer
-export const updateCustomer = (id, updatedData) => {
-  return apiRequest("PUT", `api/customers/${id}`, updatedData);
-};
-
-// ✅ Delete a customer
-export const deleteCustomer = (id) => {
-  return apiRequest("DELETE", `api/customers/${id}`);
-};

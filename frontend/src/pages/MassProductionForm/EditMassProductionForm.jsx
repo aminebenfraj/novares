@@ -75,7 +75,7 @@ export default function EditMassProductionForm() {
   const fetchCustomersAndProductDesignations = async () => {
     try {
       const [customersData, pdData] = await Promise.all([getAllCustomers(), getAllpd()])
-      setCustomers(customersData)
+      setCustomers(customersData.filter((customer) => customer.role === "Customer"))
       setProductDesignations(pdData)
     } catch (error) {
       console.error("Error fetching customers or product designations:", error)
@@ -127,6 +127,12 @@ export default function EditMassProductionForm() {
     e.preventDefault()
     setLoading(true)
     setMessage("")
+
+    if (formData.product_designation.length === 0) {
+      setMessage("Please select at least one product designation.")
+      setLoading(false)
+      return
+    }
 
     try {
       await updateMassProduction(id, formData)

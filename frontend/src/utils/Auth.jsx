@@ -1,13 +1,13 @@
 import axios from "axios";
 
-// Base API URL for scalability
-const API_URL = "http://localhost:5000/api/auth";
+// Base API URL
+const API_URL = "http://localhost:5000/api";
 
-// 🔹 Login function
-export const login = async (lisence, password) => {
+// 🔹 Login function (Now uses `license` instead of `email`)
+export const login = async (license, password) => {
   try {
-    const response = await axios.post(`${API_URL}/login`, {
-      lisence,  // Changed from email to lisence for authentication
+    const response = await axios.post(`${API_URL}/auth/login`, {
+      license, // ✅ Ensure backend expects license
       password,
     });
 
@@ -27,15 +27,15 @@ export const login = async (lisence, password) => {
   }
 };
 
-// 🔹 Register function
-export const register = async (lisence, username, email, password, role = "user") => {
+// 🔹 Register function (Ensures roles are sent as an array)
+export const register = async (license, username, email, password, roles = ["User"]) => {
   try {
-    const response = await axios.post(`${API_URL}/register`, {
-      lisence,
+    const response = await axios.post(`${API_URL}/auth/register`, {
+      license,
       username,
       email,
       password,
-      role,
+      roles, // ✅ Ensures roles are in array format
     });
 
     return response.data;
@@ -52,7 +52,7 @@ export const register = async (lisence, username, email, password, role = "user"
   }
 };
 
-// 🔹 Fetch current user details
+// 🔹 Fetch current user details (Corrected API endpoint)
 export const getCurrentUser = async () => {
   try {
     const token = localStorage.getItem("accessToken");
@@ -60,7 +60,7 @@ export const getCurrentUser = async () => {
       throw new Error("No access token found");
     }
 
-    const response = await axios.get(`${API_URL}/user`, {
+    const response = await axios.get(`${API_URL}/users/profile`, { // ✅ Correct API route
       headers: {
         Authorization: `Bearer ${token}`,
       },

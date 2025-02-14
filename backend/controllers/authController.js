@@ -48,6 +48,9 @@ exports.registerUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
   try {
     const { license, password } = req.body;
+    console.log("🔍 Login Request Received:");
+    console.log("📧 License:", license);
+    console.log("🔑 Entered Password:", password);
 
     // 1️⃣ Find user by license
     const user = await User.findOne({ license });
@@ -57,16 +60,11 @@ exports.loginUser = async (req, res) => {
       return res.status(400).json({ error: "Invalid license or password" });
     }
 
-    console.log("🔍 Login Request Received:");
-    console.log("📧 License:", license);
-    console.log("🔑 Entered Password:", password);
     console.log("👤 User Found in Database:", user);
+    console.log("🔹 Stored Hashed Password:", user.password);
 
-    // 2️⃣ Print stored password (plaintext)
-    console.log("🔹 Stored Password in DB:", user.password);
-
-    // 3️⃣ Compare entered password directly (without hashing)
-    const isMatch = password === user.password;  // 🔥 Temporary insecure comparison
+    // 2️⃣ Compare entered password with stored hashed password
+    const isMatch = await bcrypt.compare(password, user.password);
 
     console.log("🔑 Password Match Status:", isMatch);
 
@@ -75,18 +73,21 @@ exports.loginUser = async (req, res) => {
       return res.status(400).json({ error: "Invalid license or password" });
     }
 
-    // 4️⃣ Generate Token
+    // 3️⃣ Generate JWT Token
     const token = jwt.sign(
-      { license: user.license, roles: user.roles },
+      { license: user.license, roles: user.roles }, // ✅ Use correct field names
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
 
+    console.log("✅ Token Generated:", token);
+
+    // 4️⃣ Send response
     res.json({
       license: user.license,
       username: user.username,
       email: user.email,
-      roles: user.roles,
+      roles: user.roles, // ✅ Use roles as an array
       image: user.image,
       token,
     });
@@ -96,7 +97,6 @@ exports.loginUser = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-
 
 // 🔹 Get Current Logged-in User (Protected)
 exports.currentUser = async (req, res) => {

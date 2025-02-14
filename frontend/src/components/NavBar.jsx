@@ -88,13 +88,6 @@ export const Navbar = () => {
                 ]}
               />
               <NavItem
-                title="Customers"
-                links={[
-                  { to: "/customers", label: "View Customers" },
-                  { to: "/customers/create", label: "Create Customer" },
-                ]}
-              />
-              <NavItem
                 title="Mass Production"
                 links={[
                   { to: "/masspd", label: "View Mass Production" },
@@ -167,9 +160,6 @@ export const Navbar = () => {
         <div className="flex flex-col space-y-4">
           <Link to="/pd" className="text-sm font-medium text-gray-700 hover:text-primary">
             Products
-          </Link>
-          <Link to="/customers" className="text-sm font-medium text-gray-700 hover:text-primary">
-            Customers
           </Link>
           <Link to="/masspd" className="text-sm font-medium text-gray-700 hover:text-primary">
             Mass Production

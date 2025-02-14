@@ -26,13 +26,13 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const loginUser = async (email, password) => {
-    await login(email, password);
+  const loginUser = async (license, password) => {
+    await login(license, password);
     await initAuth();
   };
 
-  const registerUser = async (lisence,username, email, password) => {
-    await register(lisence ,username, email, password);
+  const registerUser = async (license,username, email, password) => {
+    await register(license ,username, email, password);
   };
 
   const logoutUser = () => {
