@@ -24,13 +24,40 @@ const rolesEnum = [
  */
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password");
-    res.json(users);
+    // ✅ Get pagination parameters from query
+    let { page = 1, size = 10 } = req.query;
+
+    // ✅ Convert page and size to numbers
+    page = parseInt(page);
+    size = parseInt(size);
+
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(size) || size < 1) size = 10;
+
+    // ✅ Calculate how many users to skip
+    const skip = (page - 1) * size;
+
+    // ✅ Fetch users with pagination
+    const users = await User.find().select("-password").limit(size).skip(skip);
+
+    // ✅ Get total user count for pagination metadata
+    const totalUsers = await User.countDocuments();
+
+    res.json({
+      users,
+      pagination: {
+        totalUsers,
+        currentPage: page,
+        totalPages: Math.ceil(totalUsers / size),
+        pageSize: size
+      }
+    });
   } catch (error) {
-    console.error("Error fetching all users:", error);
+    console.error("❌ Error fetching users:", error);
     res.status(500).json({ error: "Error fetching users" });
   }
 };
+
 
 /**
  * 🔹 Get a Single User by License (Admin Only)

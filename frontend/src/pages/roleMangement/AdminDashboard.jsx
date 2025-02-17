@@ -12,6 +12,7 @@ export default function AdminDashboard() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   const [newUserData, setNewUserData] = useState({
     license: "",
     username: "",
@@ -24,13 +25,14 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [currentPage]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const data = await getAllUsers();
-      setUsers(data);
+      const data = await getAllUsers(currentPage,ITEMS_PER_PAGE);
+      setUsers(data.users);
+      setTotalPages(data.pagination.totalPages)
     } catch (err) {
       setError("Failed to load users.");
     } finally {
@@ -45,11 +47,6 @@ export default function AdminDashboard() {
     user.roles.some(role => role.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
 
   const handleDelete = async (license) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
@@ -123,7 +120,7 @@ export default function AdminDashboard() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedUsers.map((user) => (
+            {users.map((user) => (
               <tr key={user.license} className="transition-colors duration-150 ease-in-out hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">{user.username}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>

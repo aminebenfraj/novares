@@ -3,8 +3,8 @@ import { apiRequest } from "./api";
 const BASE_URL = "api/admin"; // ✅ Matches backend admin routes
 
 // ✅ Get all users (Admin Only)
-export const getAllUsers = () => {
-  return apiRequest("GET", `${BASE_URL}/all`);
+export const getAllUsers = (page=1,pageSize=10) => {
+  return apiRequest("GET", `${BASE_URL}/all?page=${page}&size=${pageSize}`);
 };
 
 // ✅ Get a single user by license
