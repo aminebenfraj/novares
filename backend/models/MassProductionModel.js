@@ -35,6 +35,8 @@ const massProductionSchema = new Schema(
     pt2: { type: Date },
     sop: { type: Date },
     days_until_ppap_submission: { type: Number },
+    assignedRole: { type: String, required: true },
+    assignedEmail: { type: String, required: true },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

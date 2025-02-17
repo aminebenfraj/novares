@@ -49,14 +49,17 @@ export default function MassProductionForm() {
 
   useEffect(() => {
     getAllCustomers()
-      .then((data) => setCustomers(data))
-      .catch((error) => console.error("Error fetching customers:", error))
-
+      .then((data) => {
+        console.log("🔍 Customers API Response:", data); // ✅ Debugging
+        setCustomers(data);
+      })
+      .catch((error) => console.error("❌ Error fetching customers:", error));
+  
     getAllpd()
       .then((data) => setProductDesignations(data))
-      .catch((error) => console.error("Error fetching product designations:", error))
-  }, [])
-
+      .catch((error) => console.error("❌ Error fetching product designations:", error));
+  }, []);
+  
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
     const newValue = type === "checkbox" ? checked : value
@@ -89,22 +92,24 @@ export default function MassProductionForm() {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setMessage("")
-
+    e.preventDefault();
+  
+    console.log("🔍 Submitting Mass Production Data:", formData); // ✅ Debugging log
+  
     try {
-      const response = await createMassProduction(formData)
-      setMessage("Mass production created successfully!")
-      setFormData({ ...formData, id: "" }) // Reset form if needed
+      const response = await createMassProduction({
+        ...formData,
+        assignedRole: formData.assignedRole || "Manager", // ✅ Ensure a default role
+        assignedEmail: formData.assignedEmail || "mohamedamine.benfredj@polytechnicien.tn" // ✅ Ensure a default email
+      });
+  
+      console.log("✅ Mass Production Created:", response);
+      alert("Mass Production task created successfully!");
     } catch (error) {
-      console.error("Error creating mass production:", error)
-      setMessage(error.response?.data?.message || "Error creating mass production. Please try again.")
+      console.error("❌ Error creating Mass Production:", error.response?.data || error);
     }
-
-    setLoading(false)
-  }
-
+  };
+  
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar />

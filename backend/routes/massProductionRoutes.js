@@ -7,13 +7,15 @@ const {
   deleteMassProduction,
 } = require("../controllers/massProductionController");
 
+const { protect, verifyAdmin } = require("../middlewares/authMiddleware"); // ✅ Middleware for security
+
 const router = express.Router();
 
-// ✅ MassProduction Routes
-router.post("/", createMassProduction);
-router.get("/", getAllMassProductions);
-router.get("/:id", getMassProductionById);
-router.put("/:id", updateMassProduction);
-router.delete("/:id", deleteMassProduction);
+// ✅ MassProduction Routes (with Email Integration)
+router.post("/create", protect, verifyAdmin, createMassProduction); // ✅ Create & send email
+router.get("/", protect, getAllMassProductions); // ✅ Get all (only authenticated users)
+router.get("/:id", protect, getMassProductionById); // ✅ Get one by ID
+router.put("/:id", protect, verifyAdmin, updateMassProduction); // ✅ Only Admin can update
+router.delete("/:id", protect, verifyAdmin, deleteMassProduction); // ✅ Only Admin can delete
 
 module.exports = router;

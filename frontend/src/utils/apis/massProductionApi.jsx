@@ -1,6 +1,6 @@
 import { apiRequest } from "./api";
 
-const BASE_URL = "api/massproduction"; // Update to match backend route
+const BASE_URL = "api/massProduction"; // ✅ FIX: Capitalized "P" to match backend route
 
 // ✅ Get all mass productions
 export const getAllMassProductions = () => {
@@ -14,7 +14,7 @@ export const getMassProductionById = (id) => {
 
 // ✅ Create a new mass production
 export const createMassProduction = (data) => {
-  return apiRequest("POST", BASE_URL, data);
+  return apiRequest("POST", `${BASE_URL}/create`, data); // ✅ FIX: Added `/create`
 };
 
 // ✅ Update a mass production

@@ -30,7 +30,7 @@ exports.showUserInfo = async (req, res) => {
       license: user.license,
       username: user.username,
       email: user.email,
-      roles: user.roles, // ✅ Now returns multiple roles
+      roles: user.roles, // ✅ Returns multiple roles
       image: user.image,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -134,3 +134,41 @@ exports.deleteCurrentUser = async (req, res) => {
     res.status(500).json({ error: "Error deleting user" });
   }
 };
+
+exports.getCustomerById = async (req, res) => {
+  try {
+    const customer = await User.findById(req.params.id).select("-password"); // ✅ Exclude password
+
+    if (!customer) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+
+    // ✅ Ensure the user has a "Customer" role
+    if (!customer.roles.includes("Customer")) {
+      return res.status(403).json({ error: "User is not a customer" });
+    }
+
+    res.json(customer);
+  } catch (error) {
+    console.error("❌ Error fetching customer by ID:", error);
+    res.status(500).json({ error: "Server error", details: error.message });
+  }
+};
+
+// 🔹 **Get All Customers**
+exports.getAllCustomers = async (req, res) => {
+  try {
+    const customers = await User.find({ roles: "Customer" }).select("_id username email roles");
+
+    if (!customers.length) {
+      return res.status(404).json({ error: "No customers found" });
+    }
+
+    res.json(customers);
+  } catch (error) {
+    console.error("❌ Error fetching customers:", error);
+    res.status(500).json({ error: "Server error", details: error.message });
+  }
+};
+
+

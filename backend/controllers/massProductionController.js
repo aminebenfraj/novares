@@ -1,11 +1,13 @@
 const MassProduction = require("../models/MassProductionModel");
 const ProductDesignation = require("../models/ProductDesignationModel");
 const User = require("../models/UserModel");
-
-// ✅ Create a new MassProduction entry
+const sendEmail = require("../utils/emailService"); // ✅ Import Nodemailer service
+const mongoose = require("mongoose");
 exports.createMassProduction = async (req, res) => {
   try {
-    const {
+    console.log("🔍 Received Data:", req.body); // ✅ Debugging log
+
+    let {
       id,
       status,
       status_type,
@@ -37,22 +39,43 @@ exports.createMassProduction = async (req, res) => {
       pt1,
       pt2,
       sop,
+      assignedRole,
+      assignedEmail
     } = req.body;
 
-    // ✅ Ensure customer exists and is a "customer" role
+    // ✅ Ensure customer exists and has "Customer" role
     const customerExists = await User.findById(customer);
-    if (!customerExists || customerExists.role !== "customer") {
+    if (!customerExists || !customerExists.roles.includes("Customer")) {
       return res.status(400).json({ error: "Invalid customer ID or user is not a customer" });
     }
 
-    // ✅ Ensure all product designations exist
+    // ✅ Ensure assignedRole and assignedEmail are provided
+    if (!assignedRole || !assignedEmail) {
+      console.error("❌ Missing assignedRole or assignedEmail:", { assignedRole, assignedEmail });
+      return res.status(400).json({ error: "Assigned role and email are required" });
+    }
+
+    // ✅ Validate `product_designation` as MongoDB ObjectIds
     if (!Array.isArray(product_designation)) {
       return res.status(400).json({ error: "Product designation must be an array of IDs" });
     }
 
+    console.log("🔍 Raw product_designation received:", product_designation);
+
+
+    if (product_designation.length === 0) {
+      return res.status(400).json({ error: "No valid product designation IDs provided" });
+    }
+
     const validProducts = await ProductDesignation.find({ id: { $in: product_designation } });
+
     if (validProducts.length !== product_designation.length) {
-      return res.status(400).json({ error: "Some product designations are invalid" });
+      return res.status(400).json({
+        error: "Some product designations are invalid or do not exist in the database",
+        missingIds: product_designation.filter(
+          id => !validProducts.some(product => product._id.toString() === id.toString())
+        )
+      });
     }
 
     // ✅ Calculate days until PPAP submission
@@ -60,9 +83,12 @@ exports.createMassProduction = async (req, res) => {
     if (ppap_submission_date) {
       const today = new Date();
       const ppapDate = new Date(ppap_submission_date);
-      days_until_ppap_submission = Math.max(0, Math.ceil((ppapDate - today) / (1000 * 60 * 60 * 24))); // Convert to days
+      if (!isNaN(ppapDate)) {
+        days_until_ppap_submission = Math.max(0, Math.ceil((ppapDate - today) / (1000 * 60 * 60 * 24)));
+      }
     }
-console.log(validProducts);
+
+    console.log("✅ Valid Products in DB:", validProducts);
 
     // ✅ Create new MassProduction entry
     const newMassProduction = new MassProduction({
@@ -70,7 +96,7 @@ console.log(validProducts);
       status,
       status_type,
       project_n,
-      product_designation:validProducts.map(product => product._id),
+      product_designation: validProducts.map(product => product._id), // ✅ Store only valid ObjectIds
       description,
       customer,
       technical_skill,
@@ -97,11 +123,33 @@ console.log(validProducts);
       pt1,
       pt2,
       sop,
-      days_until_ppap_submission, // ✅ Include computed field
+      days_until_ppap_submission,
+      assignedRole,
+      assignedEmail
     });
 
     await newMassProduction.save();
-    res.status(201).json(newMassProduction);
+    console.log("✅ Mass Production Saved:", newMassProduction);
+
+    // ✅ Send email notification to assigned user
+    const emailSubject = `Mass Production Task Assigned to ${assignedRole}`;
+    const emailBody = `
+      <h3>Dear ${assignedRole},</h3>
+      <p>A new mass production task has been assigned to your role.</p>
+      <p><strong>Project:</strong> ${project_n}</p>
+      <p><strong>Description:</strong> ${description}</p>
+      <p>Please log in and complete the missing fields.</p>
+      <a href="http://your-frontend-url.com/mass-production/${newMassProduction._id}">View Task</a>
+    `;
+
+    try {
+      await sendEmail(assignedEmail, emailSubject, emailBody);
+      console.log(`📧 Email sent successfully to ${assignedEmail}`);
+    } catch (emailError) {
+      console.error("❌ Error sending email:", emailError.message);
+    }
+
+    res.status(201).json({ message: "Mass Production task created & email sent!", newMassProduction });
   } catch (error) {
     console.error("❌ Error creating MassProduction:", error);
     res.status(500).json({ error: "Server error", details: error.message });
