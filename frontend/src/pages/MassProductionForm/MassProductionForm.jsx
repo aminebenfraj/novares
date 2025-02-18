@@ -1,460 +1,490 @@
-"use client"
-
 import { useState, useEffect } from "react"
-import { getAllCustomers } from "../../utils/apis/customerApi"
-import { getAllpd } from "../../utils/apis/ProductDesignation-api"
-import { createMassProduction } from "../../utils/apis/massProductionApi"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { getAllCustomers } from "../../apis/customerApi"
+import { getAllpd } from "../../apis/ProductDesignation-api"
+import { createMassProduction } from "../../apis/massProductionApi"
 import { Navbar } from "../../components/Navbar"
 import ContactUs from "../../components/ContactUs"
 
-export default function MassProductionForm() {
-  const [formData, setFormData] = useState({
-    id: "",
-    status: "",
-    status_type: "",
-    project_n: "",
-    product_designation: [],
-    description: "",
-    customer: "",
-    technical_skill: "",
-    initial_request: "",
-    request_original: "",
-    frasability: "",
-    validation_for_offer: "",
-    customer_offer: "",
-    customer_order: "",
-    ok_for_lunch: "",
-    kick_off: "",
-    design: "",
-    facilities: "",
-    p_p_tuning: "",
-    process_qualif: "",
-    ppap_submission_date: "",
-    ppap_submitted: false,
-    closure: "",
-    comment: "",
-    next_review: "",
-    mlo: "",
-    tko: "",
-    cv: "",
-    pt1: "",
-    pt2: "",
-    sop: "",
-  })
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { toast } from "@/hooks/use-toast"
 
-  const [customers, setCustomers] = useState([]);
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { CalendarIcon } from "lucide-react"
+import { format } from "date-fns"
+
+const formSchema = z.object({
+  id: z.string().min(1, "ID is required"),
+  status: z.enum(["cancelled", "closed", "on-going", "stand-by"]),
+  status_type: z.enum(["ok", "no"]),
+  project_n: z.string().min(1, "Project number is required"),
+  product_designation: z.array(z.string()).min(1, "At least one product designation is required"),
+  description: z.string().optional(),
+  customer: z.string().min(1, "Customer is required"),
+  technical_skill: z.enum(["sc", "tc"]),
+  initial_request: z.string().min(1, "Initial request date is required"),
+  request_original: z.enum(["internal", "customer"]),
+  frasability: z.enum(["F", "E"]).optional(),
+  validation_for_offer: z.enum(["F", "E"]).optional(),
+  customer_offer: z.enum(["F", "E"]).optional(),
+  customer_order: z.enum(["F", "E"]).optional(),
+  ok_for_lunch: z.enum(["F", "E"]).optional(),
+  kick_off: z.enum(["F", "E"]).optional(),
+  design: z.enum(["F", "E"]).optional(),
+  facilities: z.enum(["F", "E"]).optional(),
+  p_p_tuning: z.enum(["F", "E"]).optional(),
+  process_qualif: z.enum(["F", "E"]).optional(),
+  ppap_submission_date: z.string().optional(),
+  closure: z.string().optional(),
+  comment: z.string().optional(),
+  next_review: z.string().optional(),
+  mlo: z.string().optional(),
+  tko: z.string().optional(),
+  cv: z.string().optional(),
+  pt1: z.string().optional(),
+  pt2: z.string().optional(),
+  sop: z.string().optional(),
+})
+
+export default function MassProductionForm() {
+  const [customers, setCustomers] = useState([])
   const [productDesignations, setProductDesignations] = useState([])
-  const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
+
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      id: "",
+      status: "on-going",
+      status_type: "ok",
+      project_n: "",
+      product_designation: [],
+      description: "",
+      customer: "",
+      technical_skill: "sc",
+      initial_request: "",
+      request_original: "internal",
+      frasability: "",
+      validation_for_offer: "",
+      customer_offer: "",
+      customer_order: "",
+      ok_for_lunch: "",
+      kick_off: "",
+      design: "",
+      facilities: "",
+      p_p_tuning: "",
+      process_qualif: "",
+      ppap_submission_date: "",
+      closure: "",
+      comment: "",
+      next_review: "",
+      mlo: "",
+      tko: "",
+      cv: "",
+      pt1: "",
+      pt2: "",
+      sop: "",
+    },
+  })
 
   useEffect(() => {
     getAllCustomers()
-      .then((data) => {
-        console.log("🔍 Customers API Response:", data); // ✅ Debugging
-        setCustomers(data);
-      })
-      .catch((error) => console.error("❌ Error fetching customers:", error));
-  
+      .then((data) => setCustomers(data))
+      .catch((error) => console.error("Error fetching customers:", error))
+
     getAllpd()
       .then((data) => setProductDesignations(data))
-      .catch((error) => console.error("❌ Error fetching product designations:", error));
-  }, []);
-  
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target
-    const newValue = type === "checkbox" ? checked : value
+      .catch((error) => console.error("Error fetching product designations:", error))
+  }, [])
 
-    if (name === "closure") {
-      const closureDate = new Date(value)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
-        ppap_submitted: closureDate < today,
-      }))
-    } else {
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: newValue,
-      }))
-    }
-  }
-
-  const toggleProductDesignation = (pdId) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      product_designation: prevData.product_designation.includes(pdId)
-        ? prevData.product_designation.filter((id) => id !== pdId)
-        : [...prevData.product_designation, pdId],
-    }))
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-  
-    console.log("🔍 Submitting Mass Production Data:", formData); // ✅ Debugging log
-  
+  const onSubmit = async (data) => {
+    setLoading(true)
     try {
       const response = await createMassProduction({
-        ...formData,
-        assignedRole: formData.assignedRole || "Manager", // ✅ Ensure a default role
-        assignedEmail: formData.assignedEmail || "mohamedamine.benfredj@polytechnicien.tn" // ✅ Ensure a default email
-      });
-  
-      console.log("✅ Mass Production Created:", response);
-      alert("Mass Production task created successfully!");
+        ...data,
+        assignedRole: "Manager",
+        assignedEmail: "mohamedamine.benfredj@polytechnicien.tn",
+      })
+      console.log("Mass Production Created:", response)
+      toast({
+        title: "Success",
+        description: "Mass Production task created successfully!",
+      })
     } catch (error) {
-      console.error("❌ Error creating Mass Production:", error.response?.data || error);
+      console.error("Error creating Mass Production:", error)
+      toast({
+        title: "Error",
+        description: "Failed to create Mass Production task. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
-  };
-  
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <h1 className="mb-6 text-3xl font-bold text-gray-900">Create Mass Production</h1>
-        <div className="overflow-hidden bg-white rounded-lg shadow-xl">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {message && (
-              <div className="p-4 mb-4 text-sm text-center text-green-700 bg-green-100 rounded-lg">{message}</div>
-            )}
+      <div className="container px-4 py-8 mx-auto max-w-7xl">
+        <h1 className="mb-6 text-3xl font-bold">Create Mass Production</h1>
+        <Card>
+          <CardHeader>
+            <CardTitle>Mass Production Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ID</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                            <SelectItem value="closed">Closed</SelectItem>
+                            <SelectItem value="on-going">On-Going</SelectItem>
+                            <SelectItem value="stand-by">Stand-By</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="status_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="ok">OK</SelectItem>
+                            <SelectItem value="no">NO</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="project_n"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project Number</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="customer"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Customer</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select customer" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {customers.map((customer) => (
+                              <SelectItem key={customer._id} value={customer._id}>
+                                {customer.username}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="initial_request"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Initial Request</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="technical_skill"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>Technical Skill</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex flex-row space-x-4"
+                          >
+                            <FormItem className="flex items-center space-x-2">
+                              <FormControl>
+                                <RadioGroupItem value="sc" />
+                              </FormControl>
+                              <FormLabel className="font-normal">SC</FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2">
+                              <FormControl>
+                                <RadioGroupItem value="tc" />
+                              </FormControl>
+                              <FormLabel className="font-normal">TC</FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="request_original"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>Request Original</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex flex-row space-x-4"
+                          >
+                            <FormItem className="flex items-center space-x-2">
+                              <FormControl>
+                                <RadioGroupItem value="internal" />
+                              </FormControl>
+                              <FormLabel className="font-normal">Internal</FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2">
+                              <FormControl>
+                                <RadioGroupItem value="customer" />
+                              </FormControl>
+                              <FormLabel className="font-normal">Customer</FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {/* ID */}
-              <div>
-                <label htmlFor="id" className="block mb-2 text-sm font-medium text-gray-700">
-                  ID
-                </label>
-                <input
-                  type="text"
-                  id="id"
-                  name="id"
-                  value={formData.id}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
+                <FormField
+                  control={form.control}
+                  name="product_designation"
+                  render={() => (
+                    <FormItem>
+                      <div className="mb-4">
+                        <FormLabel className="text-base">Product Designation</FormLabel>
+                        <FormDescription>Select the product designations for this mass production.</FormDescription>
+                      </div>
+                      {productDesignations.map((item) => (
+                        <FormField
+                          key={item.id}
+                          control={form.control}
+                          name="product_designation"
+                          render={({ field }) => {
+                            return (
+                              <FormItem key={item.id} className="flex flex-row items-start space-x-3 space-y-0"><>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(item.id)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...field.value, item.id])
+                                        : field.onChange(field.value?.filter((value) => value !== item.id))
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">{item.part_name}</FormLabel></>
+                              </FormItem>
+                            )
+                          }}
+                        />
+                      ))}
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
 
-              {/* Status */}
-              <div>
-                <label htmlFor="status" className="block mb-2 text-sm font-medium text-gray-700">
-                  Status
-                </label>
-                <select
-                  id="status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select Status</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="closed">Closed</option>
-                  <option value="on-going">On-Going</option>
-                  <option value="stand-by">Stand-By</option>
-                </select>
-              </div>
-
-              {/* Status Type */}
-              <div>
-                <label htmlFor="status_type" className="block mb-2 text-sm font-medium text-gray-700">
-                  Status Type
-                </label>
-                <select
-                  id="status_type"
-                  name="status_type"
-                  value={formData.status_type}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select Status Type</option>
-                  <option value="ok">OK</option>
-                  <option value="no">NO</option>
-                </select>
-              </div>
-
-              {/* Project Number */}
-              <div>
-                <label htmlFor="project_n" className="block mb-2 text-sm font-medium text-gray-700">
-                  Project Number
-                </label>
-                <input
-                  type="text"
-                  id="project_n"
-                  name="project_n"
-                  value={formData.project_n}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              {/* Product Designation */}
-              <div className="md:col-span-2">
-                <label className="block mb-2 text-sm font-medium text-gray-700">Product Designation</label>
-                <div className="flex flex-wrap gap-2 p-2 border rounded-md">
-                  {productDesignations.map((pd) => (
-                    <button
-                      key={pd.id}
-                      type="button"
-                      onClick={() => toggleProductDesignation(pd.id)}
-                      className={`px-3 py-1 text-sm font-medium rounded-full transition-colors duration-200 ${
-                        formData.product_designation.includes(pd.id)
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                      }`}
-                    >
-                      {pd.part_name}
-                    </button>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  {[
+                    "frasability",
+                    "validation_for_offer",
+                    "customer_offer",
+                    "customer_order",
+                    "ok_for_lunch",
+                    "kick_off",
+                    "design",
+                    "facilities",
+                    "p_p_tuning",
+                    "process_qualif",
+                  ].map((fieldName) => (
+                    <FormField
+                      key={fieldName}
+                      control={form.control}
+                      name={fieldName}
+                      render={({ field }) => (
+                        <FormItem><>
+                          <FormLabel>{fieldName.replace(/_/g, " ")}</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="F">F</SelectItem>
+                              <SelectItem value="E">E</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                          </>
+                        </FormItem>
+                      )}
+                    />
                   ))}
                 </div>
-              </div>
 
-              {/* Description */}
-              <div className="md:col-span-2">
-                <label htmlFor="description" className="block mb-2 text-sm font-medium text-gray-700">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                ></textarea>
-              </div>
-
-              {/* Customer */}
-              <div>
-                <label htmlFor="customer" className="block mb-2 text-sm font-medium text-gray-700">
-                  Customer
-                </label>
-                <select
-      id="customer"
-      name="customer"
-      value={formData.customer}
-      onChange={handleChange}
-      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-    >
-      <option value="">Select Customer</option>
-      {customers.map((customer) => (
-        <option key={customer._id} value={customer._id}>
-          {customer.username}
-        </option>
-      ))}
-    </select>
-              </div>
-
-              {/* Initial Request */}
-              <div>
-                <label htmlFor="initial_request" className="block mb-2 text-sm font-medium text-gray-700">
-                  Initial Request
-                </label>
-                <input
-                  type="date"
-                  id="initial_request"
-                  name="initial_request"
-                  value={formData.initial_request}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Technical Skill */}
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Technical Skill</label>
-              <div className="flex gap-4">
-                {["sc", "tc"].map((skill) => (
-                  <label key={skill} className="flex items-center">
-                    <input
-                      type="radio"
-                      name="technical_skill"
-                      value={skill}
-                      checked={formData.technical_skill === skill}
-                      onChange={handleChange}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm font-medium text-gray-700">{skill.toUpperCase()}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Request Original */}
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Request Original</label>
-              <div className="flex gap-4">
-                {["internal", "customer"].map((origin) => (
-                  <label key={origin} className="flex items-center">
-                    <input
-                      type="radio"
-                      name="request_original"
-                      value={origin}
-                      checked={formData.request_original === origin}
-                      onChange={handleChange}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm font-medium text-gray-700">
-                      {origin.charAt(0).toUpperCase() + origin.slice(1)}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Process Steps */}
-            <div className="p-4 rounded-lg bg-gray-50">
-              <h3 className="mb-4 text-lg font-semibold text-gray-700">Process Steps</h3>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                {[
-                  "frasability",
-                  "validation_for_offer",
-                  "customer_offer",
-                  "customer_order",
-                  "ok_for_lunch",
-                  "kick_off",
-                  "design",
-                  "facilities",
-                  "p_p_tuning",
-                  "process_qualif",
-                ].map((field) => (
-                  <div key={field}>
-                    <label htmlFor={field} className="block mb-2 text-sm font-medium text-gray-700">
-                      {field.replace(/_/g, " ")}
-                    </label>
-                    <select
-                      id={field}
-                      name={field}
-                      value={formData[field]}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select</option>
-                      <option value="F">F</option>
-                      <option value="E">E</option>
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Date Fields */}
-            <div className="p-4 rounded-lg bg-gray-50">
-              <h3 className="mb-4 text-lg font-semibold text-gray-700">Date Fields</h3>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                {["mlo", "tko", "cv", "pt1", "pt2", "sop", "ppap_submission_date", "closure", "next_review"].map(
-                  (field) => (
-                    <div key={field}>
-                      <label htmlFor={field} className="block mb-2 text-sm font-medium text-gray-700">
-                        {field.replace(/_/g, " ").toUpperCase()}
-                      </label>
-                      <input
-                        type="date"
-                        id={field}
-                        name={field}
-                        value={formData[field]}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {["mlo", "tko", "cv", "pt1", "pt2", "sop", "ppap_submission_date", "closure", "next_review"].map(
+          (fieldName) => (
+            <FormField
+              key={fieldName}
+              control={form.control}
+              name={fieldName}
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>{fieldName.replace(/_/g, " ").toUpperCase()}</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                        >
+                          {field.value ? format(new Date(field.value), "PPP") : <span>Pick a date</span>}
+                          <CalendarIcon className="w-4 h-4 ml-auto opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value ? new Date(field.value) : undefined}
+                        onSelect={field.onChange}
+                        disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                        initialFocus
                       />
-                    </div>
-                  ),
-                )}
-              </div>
-            </div>
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ),
+        )}
+      </div>
 
-            {/* PPAP Submission Date and Days Until PPAP Sub Date */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div>
-                <label htmlFor="ppap_submission_date" className="block mb-2 text-sm font-medium text-gray-700">
-                  PPAP Submission Date
-                </label>
-                <input
-                  type="date"
-                  id="ppap_submission_date"
-                  name="ppap_submission_date"
-                  value={formData.ppap_submission_date}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <FormField
+                  control={form.control}
+                  name="comment"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Comment</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <label htmlFor="days_until_ppap_sub_date" className="block mb-2 text-sm font-medium text-gray-700">
-                  Days Until PPAP Sub Date
-                </label>
-                <input
-                  type="text"
-                  id="days_until_ppap_sub_date"
-                  name="days_until_ppap_sub_date"
-                  value={
-                    formData.ppap_submission_date
-                      ? new Date(formData.ppap_submission_date) > new Date()
-                        ? "ok"
-                        : "no"
-                      : "no"
-                  }
-                  readOnly
-                  className="w-full px-3 py-2 text-gray-700 bg-gray-100 border rounded-md focus:outline-none"
+
+                <FormField
+                  control={form.control}
+                  name="ppap_submitted"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>PPAP Submitted</FormLabel>
+                      <FormControl>
+                        <Checkbox
+                          {...field}
+                          disabled={form.watch("closure") && new Date(form.watch("closure")) < new Date()}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-            </div>
 
-            {/* PPAP Submitted Checkbox */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="ppap_submitted"
-                name="ppap_submitted"
-                checked={formData.ppap_submitted}
-                onChange={handleChange}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                disabled={formData.closure && new Date(formData.closure) < new Date()}
-              />
-              <label htmlFor="ppap_submitted" className="ml-2 text-sm font-medium text-gray-700">
-                PPAP Submitted
-                {formData.closure && new Date(formData.closure) < new Date() && (
-                  <span className="ml-2 text-xs text-gray-500">(Auto-checked based on closure date)</span>
-                )}
-              </label>
-            </div>
-
-            {/* Comment */}
-            <div>
-              <label htmlFor="comment" className="block mb-2 text-sm font-medium text-gray-700">
-                Comment
-              </label>
-              <textarea
-                id="comment"
-                name="comment"
-                value={formData.comment}
-                onChange={handleChange}
-                className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={4}
-              ></textarea>
-            </div>
-
-            {/* Submit Button */}
-            <div>
-              <button
-                type="submit"
-                className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                disabled={loading}
-              >
-                {loading ? "Submitting..." : "Submit"}
-              </button>
-            </div>
-          </form>
-        </div>
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Submitting..." : "Submit"}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
       </div>
       <ContactUs />
     </div>
   )
 }
-

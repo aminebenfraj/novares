@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { getMassProductionById, updateMassProduction } from "../../utils/apis/massProductionApi"
-import { getAllCustomers } from "../../utils/apis/customerApi"
-import { getAllpd } from "../../utils/apis/ProductDesignation-api"
+import { getMassProductionById, updateMassProduction } from "../../apis/massProductionApi"
+import { getAllCustomers } from "../../apis/customerApi"
+import { getAllpd } from "../../apis/ProductDesignation-api"
 import { Navbar } from "../../components/Navbar"
 import ContactUs from "../../components/ContactUs"
 

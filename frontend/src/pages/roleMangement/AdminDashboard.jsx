@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { getAllUsers, deleteUser, createUser } from "../../utils/apis/admin";
+import { getAllUsers, deleteUser, createUser } from "../../apis/admin";
 import { Link } from "react-router-dom";
-import { PlusIcon, Edit2Icon, Trash2Icon, XIcon, SearchIcon, Contact } from 'lucide-react';
+import { PlusIcon, Edit2Icon, Trash2Icon, XIcon, SearchIcon } from 'lucide-react';
 import Navbar from "../../components/NavBar";
 import ContactUs from "../../components/ContactUs";
 

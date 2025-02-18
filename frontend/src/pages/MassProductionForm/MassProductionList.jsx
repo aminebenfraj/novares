@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getAllMassProductions, deleteMassProduction } from "../../utils/apis/massProductionApi"
+import { getAllMassProductions, deleteMassProduction } from "../../apis/massProductionApi"
 import { Navbar } from "../../components/Navbar"
 import ContactUs from "../../components/ContactUs";
 

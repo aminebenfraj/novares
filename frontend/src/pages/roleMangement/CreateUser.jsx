@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createUser } from "../../utils/apis/admin"
+import { createUser } from "../../apis/admin"
 import {  XIcon } from "lucide-react"
 import Navbar from "../../components/NavBar"
 import ContactUs from "../../components/ContactUs"

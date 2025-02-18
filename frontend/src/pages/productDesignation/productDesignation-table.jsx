@@ -1,13 +1,18 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { productSchema } from "../../utils/PdValidation"
-import { createPD, getAllpd, updatePD, deletePD } from "../../utils/apis/ProductDesignation-api"
-import { Loader2, Trash2, Edit } from "lucide-react"
+import { productSchema } from "../../lib/PdValidation"
+import { createPD, getAllpd, updatePD, deletePD } from "../../apis/ProductDesignation-api"
+import { Loader2, Trash2, Edit, Plus } from "lucide-react"
 import { Navbar } from "../../components/Navbar"
-import ContactUs from "../../components/ContactUs";
+import ContactUs from "../../components/ContactUs"
+
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function ProductCRUD() {
   const [products, setProducts] = useState([])
@@ -15,13 +20,13 @@ export default function ProductCRUD() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm({
+  const form = useForm({
     resolver: zodResolver(productSchema),
+    defaultValues: {
+      id: "",
+      part_name: "",
+      reference: "",
+    },
   })
 
   useEffect(() => {
@@ -48,7 +53,7 @@ export default function ProductCRUD() {
       } else {
         await createPD(data)
       }
-      reset()
+      form.reset()
       setEditingProduct(null)
       fetchProducts()
     } catch (error) {
@@ -60,7 +65,7 @@ export default function ProductCRUD() {
 
   const handleEdit = (product) => {
     setEditingProduct(product)
-    reset(product)
+    form.reset(product)
   }
 
   const handleDelete = async (id) => {
@@ -76,121 +81,128 @@ export default function ProductCRUD() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container px-4 py-8 mx-auto max-w-7xl">
-        <h2 className="mb-6 text-3xl font-bold text-gray-900">Product Designations</h2>
+        <h2 className="mb-6 text-3xl font-bold">Product Designations</h2>
 
-        <div className="mb-8 overflow-hidden bg-white rounded-lg shadow-md">
-          <div className="px-4 py-5 sm:p-6">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                {["id", "part_name", "reference"].map((field) => (
-                  <div key={field}>
-                    <label htmlFor={field} className="block mb-1 text-sm font-medium text-gray-700">
-                      {field === "id" ? "Product ID" : field === "part_name" ? "Part Name" : "Reference (Optional)"}
-                    </label>
-                    <input
-                      type="text"
-                      id={field}
-                      {...register(field)}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>{editingProduct ? "Edit Product" : "Add New Product"}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                  {["id", "part_name", "reference"].map((field) => (
+                    <FormField
+                      key={field}
+                      control={form.control}
+                      name={field}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {field === "id"
+                              ? "Product ID"
+                              : field === "part_name"
+                                ? "Part Name"
+                                : "Reference (Optional)"}
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                    {errors[field] && <p className="mt-1 text-sm text-red-600">{errors[field].message}</p>}
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-end space-x-3">
-              <button
-  type="button"
-  onClick={() => {
-    if (editingProduct) {
-      reset(editingProduct) 
-    } else {
-      reset({ id: "", part_name: "", reference: "" }) 
-    }
-  }}
-  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
->
-  Reset
-</button>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="inline w-4 h-4 mr-2 animate-spin" />
-                      {editingProduct ? "Updating" : "Submitting"}
-                    </>
-                  ) : editingProduct ? (
-                    "Update"
-                  ) : (
-                    "Submit"
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <div className="overflow-hidden bg-white rounded-lg shadow-md">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  {["ID", "Part Name", "Reference", "Actions"].map((header) => (
-                    <th
-                      key={header}
-                      scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-                    >
-                      {header}
-                    </th>
                   ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (editingProduct) {
+                        form.reset(editingProduct)
+                      } else {
+                        form.reset({ id: "", part_name: "", reference: "" })
+                      }
+                    }}
+                  >
+                    Reset
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {editingProduct ? "Updating" : "Submitting"}
+                      </>
+                    ) : editingProduct ? (
+                      "Update"
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Product
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Product List</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {["ID", "Part Name", "Reference", "Actions"].map((header) => (
+                    <TableHead key={header}>{header}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {products.length > 0 ? (
                   products.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">{product.id}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{product.part_name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{product.reference}</td>
-                      <td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
-                        <button onClick={() => handleEdit(product)} className="mr-4 text-blue-600 hover:text-blue-900">
-                          <Edit size={18} className="inline" />
-                          <span className="ml-1">Edit</span>
-                        </button>
-                        <button onClick={() => handleDelete(product.id)} className="text-red-600 hover:text-red-900">
-                          <Trash2 size={18} className="inline" />
-                          <span className="ml-1">Delete</span>
-                        </button>
-                      </td>
-                    </tr>
+                    <TableRow key={product.id}>
+                      <TableCell>{product.id}</TableCell>
+                      <TableCell>{product.part_name}</TableCell>
+                      <TableCell>{product.reference}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" onClick={() => handleEdit(product)} className="mr-2">
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
+                        </Button>
+                        <Button variant="ghost" onClick={() => handleDelete(product.id)} className="text-destructive">
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
                   ))
                 ) : (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-4 text-sm text-center text-gray-500">
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center">
                       No products available.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
         {errorMessage && (
-          <div className="p-4 mt-4 border border-red-200 rounded-md bg-red-50">
-            <p className="text-sm text-red-600">{errorMessage}</p>
-          </div>
+          <Alert variant="destructive" className="mt-4">
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
         )}
       </div>
-            <ContactUs />
-      
+      <ContactUs />
     </div>
   )
 }

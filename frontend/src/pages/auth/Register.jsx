@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { registerSchema } from "../../utils/AuthValidation"; // ✅ Import Register Schema
+import { registerSchema } from "../../lib/AuthValidation"; // ✅ Import Register Schema
 import { useState } from "react";
 
 export default function Register() {

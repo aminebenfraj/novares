@@ -3,9 +3,9 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { productSchema } from "../../utils/PdValidation"
+import { productSchema } from "../../lib/PdValidation"
 import { Loader2 } from "lucide-react"
-import { createPD } from "../../utils/apis/ProductDesignation-api"
+import { createPD } from "../../apis/ProductDesignation-api"
 import { Navbar } from "../../components/Navbar"
 import ContactUs from "../../components/ContactUs";
 

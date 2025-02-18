@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { loginSchema } from "../../utils/AuthValidation"; // ✅ Import Login Schema
+import { loginSchema } from "../../lib/AuthValidation"; // ✅ Import Login Schema
 import { useState } from "react";
 
 export default function Login() {
