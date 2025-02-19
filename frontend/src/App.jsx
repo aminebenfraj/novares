@@ -18,6 +18,9 @@ import  Test5  from './pages/D01/Test5';
 import AdminDashboard from './pages/roleMangement/AdminDashboard';
 import EditUserRoles from './pages/roleMangement/EditUserRoles';
 import CreateUser from './pages/roleMangement/CreateUser';
+import CreateFeasibility from './pages/feasability/CreateFeasibility';
+import FeasibilityDetails from './pages/feasability/FeasibilityDetails';
+import FeasibilityList from './pages/feasability/FeasibilityList';
 
 function App() {
   return (
@@ -40,6 +43,9 @@ function App() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/edit-user/:license" element={<EditUserRoles />} />
         <Route path="/admin/create-user" element={<CreateUser />} />
+        <Route path="/Feasibility" element={<FeasibilityList />} />
+        <Route path="/CreateFeasibility" element={<CreateFeasibility />} />
+        <Route path="/feasibility/:id" element={<FeasibilityDetails />} />
     </Routes>
       </AuthProvider>
   );

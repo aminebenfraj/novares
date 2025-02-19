@@ -1,79 +1,127 @@
 import { Link } from "react-router-dom"
 import { Navbar } from "../../components/Navbar"
 import ContactUs from "../../components/ContactUs"
-import { Users, Box, Factory, Settings } from "lucide-react"
+import { Box, Atom , Users, Settings, ClipboardCheck } from 'lucide-react'
+import { motion } from "framer-motion"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+
+const FeatureCard = ({ to, icon: Icon, title, description, color }) => (
+  <motion.div
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    className="flex flex-col items-center"
+  >
+    <Card className="w-full h-full">
+      <CardHeader className="items-center pb-4 space-y-6">
+        <div className={`w-16 h-16 rounded-full ${color} flex items-center justify-center`}>
+          <Icon className="w-8 h-8 text-white" />
+        </div>
+        <h2 className="text-2xl font-semibold text-gray-900">{title}</h2>
+      </CardHeader>
+      <CardContent className="text-center">
+        <p className="text-gray-600">{description}</p>
+      </CardContent>
+      <CardFooter className="flex justify-center pt-2">
+        <Button variant="ghost" asChild className="text-blue-600 hover:text-blue-800">
+          <Link to={to} className="flex items-center">
+            Learn more
+            <svg 
+              className="w-4 h-4 ml-1" 
+              viewBox="0 0 16 16" 
+              fill="none"
+            >
+              <path 
+                d="M6.5 3.5l4 4.5-4 4.5" 
+                stroke="currentColor" 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+            </svg>
+          </Link>
+        </Button>
+      </CardFooter>
+    </Card>
+  </motion.div>
+)
 
 export const Home = () => {
+  const features = [
+    {
+      icon: Box,
+      title: "Product Designation",
+      description: "View and manage your product designations.",
+      to: "/pd",
+      color: "bg-blue-500"
+    },
+    {
+      icon: Atom ,
+      title: "Mass Production",
+      description: "Handle mass production forms and data.",
+      to: "/masspd",
+      color: "bg-black-500"
+    },
+    {
+      icon: Users,
+      title: "User Management",
+      description: "Manage users and their roles.",
+      to: "/admin",
+      color: "bg-indigo-500"
+    },
+    {
+      icon: Settings,
+      title: "Tests",
+      description: "Access various test modules.",
+      to: "/test",
+      color: "bg-green-500"
+    },
+    {
+      icon: ClipboardCheck,
+      title: "Feasibility",
+      description: "Manage and view feasibility studies.",
+      to: "/Feasibility",
+      color: "bg-yellow-500"
+    }
+  ]
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-100 via-white to-gray-100">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-gray-50">
       <Navbar />
-      <div className="container px-6 py-16 mx-auto text-center">
-        <h1 className="mb-8 text-5xl font-bold text-gray-900 animate-fade-in-down">
-          Welcome to Novares Management System
-        </h1>
-        <p className="mb-12 text-xl text-gray-700 animate-fade-in-up">
-          Manage your products, production, and administrative tasks efficiently.
-        </p>
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-          <Link
-            to="/pd"
-            className="overflow-hidden transition-all duration-300 transform bg-white shadow-lg rounded-2xl hover:shadow-2xl hover:-translate-y-2 hover:ring-2 hover:ring-blue-300"
-          >
-            <div className="p-6">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-blue-100 rounded-lg">
-                <Box className="w-6 h-6 text-blue-600" />
-              </div>
-              <h2 className="mb-4 text-2xl font-semibold text-gray-900">Product Designation</h2>
-              <p className="text-gray-600">View and manage your product designations.</p>
-            </div>
-            <div className="h-2 bg-blue-500"></div>
-          </Link>
+      <div className="container px-6 py-16 mx-auto">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-16 space-y-4 text-center"
+        >
+          <h1 className="text-4xl font-bold text-gray-900 md:text-5xl">
+            Welcome to Novares Management System
+          </h1>
+          <p className="max-w-2xl mx-auto text-xl text-gray-600">
+            Manage your products, production, and administrative tasks efficiently.
+          </p>
+        </motion.div>
 
-          <Link
-            to="/admin"
-            className="overflow-hidden transition-all duration-300 transform bg-white shadow-lg rounded-2xl hover:shadow-2xl hover:-translate-y-2 hover:ring-2 hover:ring-indigo-300"
-          >
-            <div className="p-6">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-indigo-100 rounded-lg">
-                <Users className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h2 className="mb-4 text-2xl font-semibold text-gray-900">User Management</h2>
-              <p className="text-gray-600">Manage users and their roles.</p>
-            </div>
-            <div className="h-2 bg-indigo-500"></div>
-          </Link>
-
-          <Link
-            to="/masspd"
-            className="overflow-hidden transition-all duration-300 transform bg-white shadow-lg rounded-2xl hover:shadow-2xl hover:-translate-y-2 hover:ring-2 hover:ring-purple-300"
-          >
-            <div className="p-6">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-lg">
-                <Factory className="w-6 h-6 text-purple-600" />
-              </div>
-              <h2 className="mb-4 text-2xl font-semibold text-gray-900">Mass Production</h2>
-              <p className="text-gray-600">Handle mass production forms and data.</p>
-            </div>
-            <div className="h-2 bg-purple-500"></div>
-          </Link>
-
-          <Link
-            to="/test"
-            className="overflow-hidden transition-all duration-300 transform bg-white shadow-lg rounded-2xl hover:shadow-2xl hover:-translate-y-2 hover:ring-2 hover:ring-green-300"
-          >
-            <div className="p-6">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-green-100 rounded-lg">
-                <Settings className="w-6 h-6 text-green-600" />
-              </div>
-              <h2 className="mb-4 text-2xl font-semibold text-gray-900">Tests</h2>
-              <p className="text-gray-600">Access various test modules.</p>
-            </div>
-            <div className="h-2 bg-green-500"></div>
-          </Link>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+          className="grid grid-cols-1 gap-8 mx-auto md:grid-cols-2 lg:grid-cols-3 max-w-7xl"
+        >
+          {features.map((feature, index) => (
+            <motion.div
+              key={feature.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + index * 0.1, duration: 0.5 }}
+            >
+              <FeatureCard {...feature} />
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
       <ContactUs />
     </div>
   )
 }
-
