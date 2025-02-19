@@ -7,6 +7,8 @@ const userRoutes = require('./routes/userRoutes');
 const authRoutes = require("./routes/authRoutes"); // ✅ Add this line
 const massProductionRoutes = require("./routes/massProductionRoutes"); // ✅ Add this line
 const adminRoutes = require("./routes/adminRoutes");
+const feasibilityRoutes = require('./routes/feasibilityRoutes');
+const feasibilityDetailRoutes = require('./routes/feasibilityDetailRoutes');
 
 
 const app = express()
@@ -29,6 +31,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes); 
 app.use("/api/massproduction", massProductionRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/feasibility", feasibilityRoutes);
+app.use("/api/feasibility-detail", feasibilityDetailRoutes);
 
 
 
