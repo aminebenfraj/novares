@@ -9,6 +9,7 @@ const massProductionRoutes = require("./routes/massProductionRoutes"); // ✅ Ad
 const adminRoutes = require("./routes/adminRoutes");
 const feasibilityRoutes = require('./routes/feasibilityRoutes');
 const feasibilityDetailRoutes = require('./routes/feasibilityDetailRoutes');
+const checkinRoutes = require('./routes/checkinRoutes');
 
 
 const app = express()
@@ -33,6 +34,7 @@ app.use("/api/massproduction", massProductionRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/feasibility", feasibilityRoutes);
 app.use("/api/feasibility-detail", feasibilityDetailRoutes);
+app.use("/api/checkins", checkinRoutes);
 
 
 

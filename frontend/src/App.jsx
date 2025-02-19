@@ -21,6 +21,9 @@ import CreateUser from './pages/roleMangement/CreateUser';
 import CreateFeasibility from './pages/feasability/CreateFeasibility';
 import FeasibilityDetails from './pages/feasability/FeasibilityDetails';
 import FeasibilityList from './pages/feasability/FeasibilityList';
+import CheckinList from './pages/checkin/CheckinList';
+import CreateCheckin from './pages/checkin/CreateCheckin';
+import EditCheckin from './pages/checkin/EditCheckin';
 
 function App() {
   return (
@@ -46,6 +49,9 @@ function App() {
         <Route path="/Feasibility" element={<FeasibilityList />} />
         <Route path="/CreateFeasibility" element={<CreateFeasibility />} />
         <Route path="/feasibility/:id" element={<FeasibilityDetails />} />
+        <Route path="/checkins" element={<CheckinList />} />
+      <Route path="/checkins/create" element={<CreateCheckin />} />
+      <Route path="/checkins/edit/:id" element={<EditCheckin />} />
     </Routes>
       </AuthProvider>
   );
