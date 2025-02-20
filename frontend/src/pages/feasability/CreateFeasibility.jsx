@@ -8,6 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import ContactUs from "@/components/ContactUs";
+import Navbar from "@/components/NavBar";
 
 const initialFormData = {
   product: { value: false, description: "", cost: 0, sales_price: 0, comments: "" },
@@ -64,6 +66,8 @@ const CreateFeasibility = () => {
   };
 
   return (
+    <div>
+        <Navbar/>
     <div className="container p-6 mx-auto bg-gray-50">
       <Card className="max-w-4xl mx-auto bg-white shadow-lg">
         <CardHeader>
@@ -133,6 +137,8 @@ const CreateFeasibility = () => {
           </form>
         </CardContent>
       </Card>
+    </div>
+    <ContactUs/>
     </div>
   );
 };

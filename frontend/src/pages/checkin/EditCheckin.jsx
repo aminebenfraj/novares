@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { getCheckinById, updateCheckin } from "../../apis/checkIn";
 import { useNavigate, useParams } from "react-router-dom";
+import ContactUs from "@/components/ContactUs";
+import Navbar from "@/components/NavBar";
 
 const EditCheckin = () => {
   const { id } = useParams();
@@ -25,6 +27,8 @@ const EditCheckin = () => {
   if (!formData) return <p>Loading...</p>;
 
   return (
+    <div>
+        <Navbar/>
     <div className="container p-6 mx-auto">
       <h1 className="mb-4 text-2xl font-bold">Edit Checkin</h1>
       <form onSubmit={handleSubmit}>
@@ -36,6 +40,8 @@ const EditCheckin = () => {
         ))}
         <button type="submit" className="px-4 py-2 text-white bg-blue-500 rounded">Update</button>
       </form>
+    </div>
+    <ContactUs/>
     </div>
   );
 };

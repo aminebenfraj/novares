@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { getFeasibilityById } from "../../apis/feasabilityApi";
 import { useParams, Link } from "react-router-dom";
@@ -17,11 +19,11 @@ const FeasibilityDetails = () => {
 
   if (!feasibility) {
     return (
-      <div className="container p-6 mx-auto bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="container p-6 mx-auto bg-white">
         <Skeleton className="w-full h-12 mb-6" />
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {[...Array(6)].map((_, index) => (
-            <Skeleton key={index} className="w-full h-48" />
+            <Skeleton key={index} className="w-full h-48 bg-gray-200" />
           ))}
         </div>
       </div>
@@ -33,18 +35,18 @@ const FeasibilityDetails = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="container p-6 mx-auto bg-gradient-to-br from-blue-50 to-purple-50"
+      className="container p-6 mx-auto bg-white"
     >
       <div className="flex items-center justify-between mb-6">
         <motion.h1 
           initial={{ x: -20 }}
           animate={{ x: 0 }}
-          className="text-3xl font-bold text-indigo-800"
+          className="text-3xl font-bold text-gray-900"
         >
           Feasibility Details
         </motion.h1>
         <Link to="/">
-          <Button variant="outline" className="flex items-center group">
+          <Button variant="outline" className="flex items-center text-gray-700 border-gray-300 group hover:text-blue-700 hover:border-blue-500">
             <ArrowLeft className="w-4 h-4 mr-2 transition-transform transform group-hover:-translate-x-1" />
             Back to List
           </Button>
@@ -64,7 +66,7 @@ const FeasibilityDetails = () => {
         initial="hidden"
         animate="show"
       >
-        {Object.entries(feasibility).map(([key, value], index) => (
+        {Object.entries(feasibility).map(([key, value]) => (
           <motion.div
             key={key}
             variants={{
@@ -72,9 +74,9 @@ const FeasibilityDetails = () => {
               show: { opacity: 1, y: 0 }
             }}
           >
-            <Card className="transition-shadow duration-300 bg-white border-t-4 border-indigo-500 shadow-md hover:shadow-xl">
+            <Card className="transition-shadow duration-300 bg-white border border-gray-300 shadow-lg hover:shadow-xl">
               <CardHeader>
-                <CardTitle className="text-xl text-indigo-700 capitalize">
+                <CardTitle className="text-xl text-blue-600 capitalize">
                   {key.replace(/_/g, ' ')}
                 </CardTitle>
               </CardHeader>

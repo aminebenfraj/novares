@@ -1,10 +1,10 @@
-import { Link } from "react-router-dom"
-import { Navbar } from "../../components/Navbar"
-import ContactUs from "../../components/ContactUs"
-import { Box, Atom , Users, Settings, ClipboardCheck } from 'lucide-react'
-import { motion } from "framer-motion"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Link } from "react-router-dom";
+import { Navbar } from "../../components/Navbar";
+import ContactUs from "../../components/ContactUs";
+import { Box, Atom, Users, Settings, ClipboardCheck } from 'lucide-react';
+import { motion } from "framer-motion";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const FeatureCard = ({ to, icon: Icon, title, description, color }) => (
   <motion.div
@@ -26,16 +26,16 @@ const FeatureCard = ({ to, icon: Icon, title, description, color }) => (
         <Button variant="ghost" asChild className="text-blue-600 hover:text-blue-800">
           <Link to={to} className="flex items-center">
             Learn more
-            <svg 
-              className="w-4 h-4 ml-1" 
-              viewBox="0 0 16 16" 
+            <svg
+              className="w-4 h-4 ml-1"
+              viewBox="0 0 16 16"
               fill="none"
             >
-              <path 
-                d="M6.5 3.5l4 4.5-4 4.5" 
-                stroke="currentColor" 
-                strokeWidth="1.5" 
-                strokeLinecap="round" 
+              <path
+                d="M6.5 3.5l4 4.5-4 4.5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </svg>
@@ -44,7 +44,7 @@ const FeatureCard = ({ to, icon: Icon, title, description, color }) => (
       </CardFooter>
     </Card>
   </motion.div>
-)
+);
 
 export const Home = () => {
   const features = [
@@ -53,43 +53,50 @@ export const Home = () => {
       title: "Product Designation",
       description: "View and manage your product designations.",
       to: "/pd",
-      color: "bg-blue-500"
+      color: "bg-blue-500",
     },
     {
-      icon: Atom ,
+      icon: Atom,
       title: "Mass Production",
       description: "Handle mass production forms and data.",
       to: "/masspd",
-      color: "bg-black-500"
+      color: "bg-gray-500",
     },
     {
       icon: Users,
       title: "User Management",
       description: "Manage users and their roles.",
       to: "/admin",
-      color: "bg-indigo-500"
+      color: "bg-indigo-500",
     },
     {
       icon: Settings,
       title: "Tests",
       description: "Access various test modules.",
       to: "/test",
-      color: "bg-green-500"
+      color: "bg-green-500",
     },
     {
       icon: ClipboardCheck,
       title: "Feasibility",
       description: "Manage and view feasibility studies.",
-      to: "/Feasibility",
-      color: "bg-yellow-500"
-    }
-  ]
+      to: "/feasibility",
+      color: "bg-yellow-500",
+    },
+    {
+      icon: ClipboardCheck,
+      title: "Check-ins",
+      description: "Manage check-ins for projects and feasibility studies.",
+      to: "/checkins",
+      color: "bg-red-500",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-gray-50">
       <Navbar />
       <div className="container px-6 py-16 mx-auto">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -103,7 +110,7 @@ export const Home = () => {
           </p>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.6 }}
@@ -123,5 +130,5 @@ export const Home = () => {
       </div>
       <ContactUs />
     </div>
-  )
-}
+  );
+};

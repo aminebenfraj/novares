@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast"
 import { Loader2, Trash, Pencil } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import Navbar from "@/components/NavBar";
+import ContactUs from "@/components/ContactUs";
 
 const CheckinList = () => {
   const [checkins, setCheckins] = useState([]);
@@ -38,6 +40,8 @@ const CheckinList = () => {
   };
 
   return (
+    <div>
+        <Navbar/>
     <div className="container p-6 mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold tracking-tight">Check-in List</h1>
@@ -103,6 +107,8 @@ const CheckinList = () => {
           )}
         </AnimatePresence>
       )}
+    </div>
+    <ContactUs/>
     </div>
   );
 };

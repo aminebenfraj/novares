@@ -1,5 +1,5 @@
-const mongoose = require("mongoose")
-const { Schema } = mongoose
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
 
 const FeasabilitySchema = new Schema(
   {
@@ -34,10 +34,12 @@ const FeasabilitySchema = new Schema(
     is_presentation: { type: Boolean, default: false },
     documentation_update: { type: Boolean, default: false },
 
-    massProduction: { type: Schema.Types.ObjectId, ref: "MassProduction" },
+    // Associate Check-in with Feasability
+    checkin: { type: Schema.Types.ObjectId, ref: "Checkin", required: true },
+
+    massProduction: { type: Schema.Types.ObjectId, ref: "MassProduction" }
   },
-  { timestamps: true },
-)
+  { timestamps: true }
+);
 
-module.exports = mongoose.model("Feasability", FeasabilitySchema)
-
+module.exports = mongoose.model("Feasability", FeasabilitySchema);
