@@ -110,12 +110,7 @@ const EditOkForLunch = () => {
       const formData = {
         check: okForLunchData.check,
         date: okForLunchData.date ? format(okForLunchData.date, "yyyy-MM-dd") : null,
-        checkin: Object.keys(checkinData).reduce((acc, key) => {
-          if (checkinData[key] === true) {
-            acc[key] = true
-          }
-          return acc
-        }, {}),
+        checkin: { ...checkinData }
       }
 
       console.log("Sending data to server:", JSON.stringify(formData, null, 2))
