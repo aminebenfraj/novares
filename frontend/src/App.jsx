@@ -27,6 +27,7 @@ import EditCheckin from './pages/checkin/EditCheckin';
 import OkForLunchList from './pages/okForLunch/OkForLunchList';
 import CreateOkForLunch from './pages/okForLunch/CreateOkForLunch';
 import EditOkForLunch from './pages/okForLunch/EditOkForLunch';
+import EditFeasibility from './pages/feasability/EditFeasibility';
 
 function App() {
   return (
@@ -52,6 +53,7 @@ function App() {
         <Route path="/Feasibility" element={<FeasibilityList />} />
         <Route path="/CreateFeasibility" element={<CreateFeasibility />} />
         <Route path="/feasibility/:id" element={<FeasibilityDetails />} />
+        <Route path="/feasibility/edit/:id" element={<EditFeasibility />} />
         <Route path="/checkins" element={<CheckinList />} />
       <Route path="/checkins/create" element={<CreateCheckin />} />
       <Route path="/checkins/edit/:id" element={<EditCheckin />} />

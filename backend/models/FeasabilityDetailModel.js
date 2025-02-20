@@ -3,7 +3,6 @@ const { Schema } = mongoose;
 
 const FeasabilityDetailSchema = new Schema(
   {
-    feasability_id: { type: Schema.Types.ObjectId, ref: "Feasability", required: true }, // Links to Feasability
     attribute_name: { type: String, required: true }, // e.g., "product", "raw_material_type"
     description: { type: String, trim: true },
     cost: { type: Number },

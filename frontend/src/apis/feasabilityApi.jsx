@@ -13,3 +13,6 @@ export const getFeasibilityById = async (id) => {
 export const createFeasibility = async (data) => {
   return axios.post(`${API_URL}/feasibility`, data);
 };
+export const updateFeasibility = async (id, data) => {
+  return axios.put(`${API_URL}/feasibility/${id}`, data);
+};

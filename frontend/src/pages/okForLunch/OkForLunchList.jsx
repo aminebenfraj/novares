@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/hooks/use-toast"
 import { Loader2, CheckCircle, XCircle, FileText, Trash2, Plus } from "lucide-react"
 import { Link } from "react-router-dom"
+import Navbar from "@/components/NavBar";
+import ContactUs from "@/components/ContactUs";
 
 const OkForLunchList = () => {
   const [entries, setEntries] = useState([])
@@ -72,6 +74,8 @@ const OkForLunchList = () => {
   }
 
   return (
+    <div>
+        <Navbar/>
     <motion.div initial="hidden" animate="visible" variants={containerVariants} className="container p-6 mx-auto">
       <Card className="w-full max-w-4xl mx-auto overflow-hidden">
         <CardHeader className="bg-gray-50">
@@ -169,6 +173,8 @@ const OkForLunchList = () => {
         </CardContent>
       </Card>
     </motion.div>
+       <ContactUs/>
+       </div>
   )
 }
 

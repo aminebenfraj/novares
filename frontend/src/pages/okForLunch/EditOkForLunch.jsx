@@ -15,7 +15,6 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import Navbar from "@/components/NavBar"
 import ContactUs from "@/components/ContactUs"
-
 const CHECKIN_FIELDS = [
   "business_manager",
   "economic_financial_leader",

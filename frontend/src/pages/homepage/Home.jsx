@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Navbar } from "../../components/Navbar";
 import ContactUs from "../../components/ContactUs";
-import { Box, Atom, Users, Settings, ClipboardCheck } from 'lucide-react';
+import { Box, Atom, Users, Settings, ClipboardCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,7 +80,7 @@ export const Home = () => {
       icon: ClipboardCheck,
       title: "Feasibility",
       description: "Manage and view feasibility studies.",
-      to: "/feasibility",
+      to: "/Feasibility",
       color: "bg-yellow-500",
     },
     {
@@ -89,6 +89,13 @@ export const Home = () => {
       description: "Manage check-ins for projects and feasibility studies.",
       to: "/checkins",
       color: "bg-red-500",
+    },
+    {
+      icon: ClipboardCheck,
+      title: "Ok For Lunch",
+      description: "Manage OkForLunch approvals and records.",
+      to: "/okforlunch",
+      color: "bg-purple-500",
     },
   ];
 
@@ -106,7 +113,7 @@ export const Home = () => {
             Welcome to Novares Management System
           </h1>
           <p className="max-w-2xl mx-auto text-xl text-gray-600">
-            Manage your products, production, and administrative tasks efficiently.
+            Manage your products, production, feasibility, check-ins, and more efficiently.
           </p>
         </motion.div>
 

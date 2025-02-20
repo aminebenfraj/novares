@@ -14,7 +14,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 import { Loader2, CheckCircle, CalendarIcon, Upload } from "lucide-react"
-
+import Navbar from "@/components/NavBar";
+import ContactUs from "@/components/ContactUs";
 const CreateOkForLunch = () => {
   const [check, setCheck] = useState(false)
   const [date, setDate] = useState(null)
@@ -75,6 +76,8 @@ const CreateOkForLunch = () => {
   }
 
   return (
+    <div>
+        <Navbar/>
     <motion.div initial="hidden" animate="visible" variants={formVariants} className="container p-6 mx-auto">
       <Card className="max-w-lg mx-auto shadow-lg">
         <CardHeader className="bg-gray-50">
@@ -135,6 +138,8 @@ const CreateOkForLunch = () => {
         </CardContent>
       </Card>
     </motion.div>
+       <ContactUs/>
+    </div>
   )
 }
 
