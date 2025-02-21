@@ -31,6 +31,12 @@ import EditFeasibility from './pages/feasability/EditFeasibility';
 import CreateValidationForOffer from './pages/ValidationForOffer/CreateValidationForOffer';
 import EditValidationForOffer from './pages/ValidationForOffer/EditValidationForOffer';
 import ValidationForOfferList from './pages/ValidationForOffer/ValidationForOfferList';
+import TaskForm from './pages/task/TaskForm';
+import TaskList from './pages/task/TaskList';
+import EditTask from './pages/task/EditTask';
+import EditKickOff from './pages/kick_off/EditKickOff';
+import KickOffList from './pages/kick_off/KickOffList';
+import KickOffForm from './pages/kick_off/KickOffForm';
 
 function App() {
   return (
@@ -66,6 +72,13 @@ function App() {
       <Route path="/validationforoffer/create" element={<CreateValidationForOffer/>} />
       <Route path="/validationforoffer" element={<ValidationForOfferList />} />
         <Route path="/validationforoffer/edit/:id" element={<EditValidationForOffer />} />
+        <Route path="/tasklist" element={<TaskList />} />
+        <Route path="/task/create" element={<TaskForm />} />
+        <Route path="task/edit/:id" element={<EditTask />} />
+        <Route path="task/edit/:id" element={<EditTask />} />
+        <Route path="kickoff/edit/:id" element={<EditKickOff />} />
+        <Route path="kickoff" element={<KickOffList />} />
+        <Route path="kickoff/create" element={<KickOffForm />} />
     </Routes>
       </AuthProvider>
   );

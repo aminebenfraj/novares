@@ -12,6 +12,8 @@ const feasibilityDetailRoutes = require('./routes/feasibilityDetailRoutes');
 const checkinRoutes = require('./routes/checkinRoutes');
 const okForLunchRoutes = require('./routes/okForLunchRoutes');
 const validationForOfferRoutes = require('./routes/validationForOfferRoutes');
+const kickOffRoutes = require('./routes/kick_offRoutes');
+const taskRoutes = require('./routes/taskRoutes');
 
 
 const app = express()
@@ -39,6 +41,10 @@ app.use("/api/feasibility-detail", feasibilityDetailRoutes);
 app.use("/api/checkins", checkinRoutes);
 app.use("/api/okforlunch", okForLunchRoutes);
 app.use("/api/validationForOffer", validationForOfferRoutes);
+app.use("/api/kickoff", kickOffRoutes);
+app.use("/api/tasks", taskRoutes);
+
+
 
 
 

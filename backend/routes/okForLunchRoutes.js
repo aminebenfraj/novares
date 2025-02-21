@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
-const okForLunchController = require("../controllers/okForLunchController");
+const okForLunchController = require("../controllers/OkForLunchController");
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({

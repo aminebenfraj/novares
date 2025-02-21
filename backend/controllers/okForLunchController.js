@@ -1,4 +1,4 @@
-const OkForLunch = require("../models/ok_for_lunch");
+const OkForLunch = require("../models/Ok_for_lunch");
 const Checkin = require("../models/CheckInModel"); // ✅ Ensure this is correctly imported
 const path = require("path");
 const fs = require("fs");
