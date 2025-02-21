@@ -28,6 +28,9 @@ import OkForLunchList from './pages/okForLunch/OkForLunchList';
 import CreateOkForLunch from './pages/okForLunch/CreateOkForLunch';
 import EditOkForLunch from './pages/okForLunch/EditOkForLunch';
 import EditFeasibility from './pages/feasability/EditFeasibility';
+import CreateValidationForOffer from './pages/ValidationForOffer/CreateValidationForOffer';
+import EditValidationForOffer from './pages/ValidationForOffer/EditValidationForOffer';
+import ValidationForOfferList from './pages/ValidationForOffer/ValidationForOfferList';
 
 function App() {
   return (
@@ -60,6 +63,9 @@ function App() {
       <Route path="/okforlunch" element={<OkForLunchList />} />
       <Route path="/okforlunch/create" element={<CreateOkForLunch />} />
       <Route path="/okforlunch/edit/:id" element={<EditOkForLunch />} />
+      <Route path="/validationforoffer/create" element={<CreateValidationForOffer/>} />
+      <Route path="/validationforoffer" element={<ValidationForOfferList />} />
+        <Route path="/validationforoffer/edit/:id" element={<EditValidationForOffer />} />
     </Routes>
       </AuthProvider>
   );

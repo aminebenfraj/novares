@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Navbar } from "../../components/Navbar";
 import ContactUs from "../../components/ContactUs";
-import { Box, Atom, Users, Settings, ClipboardCheck } from "lucide-react";
+import { Box, Atom, Users, Settings, ClipboardCheck, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ const FeatureCard = ({ to, icon: Icon, title, description, color }) => (
     whileTap={{ scale: 0.98 }}
     className="flex flex-col items-center"
   >
-    <Card className="w-full h-full">
+    <Card className="w-full h-full transition-shadow shadow-md hover:shadow-lg">
       <CardHeader className="items-center pb-4 space-y-6">
         <div className={`w-16 h-16 rounded-full ${color} flex items-center justify-center`}>
           <Icon className="w-8 h-8 text-white" />
@@ -96,6 +96,13 @@ export const Home = () => {
       description: "Manage OkForLunch approvals and records.",
       to: "/okforlunch",
       color: "bg-purple-500",
+    },
+    {
+      icon: FileText,
+      title: "Validation For Offer",
+      description: "Manage and validate offers efficiently.",
+      to: "/validationforoffer",
+      color: "bg-teal-500",
     },
   ];
 
