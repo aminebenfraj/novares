@@ -75,7 +75,6 @@ function App() {
         <Route path="/tasklist" element={<TaskList />} />
         <Route path="/task/create" element={<TaskForm />} />
         <Route path="task/edit/:id" element={<EditTask />} />
-        <Route path="task/edit/:id" element={<EditTask />} />
         <Route path="kickoff/edit/:id" element={<EditKickOff />} />
         <Route path="kickoff" element={<KickOffList />} />
         <Route path="kickoff/create" element={<KickOffForm />} />

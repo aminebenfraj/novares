@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Navbar } from "../../components/Navbar";
 import ContactUs from "../../components/ContactUs";
-import { Box, Atom, Users, Settings, ClipboardCheck, FileText } from "lucide-react";
+import { Box, Atom, Users, Settings, ClipboardCheck, FileText, Rocket, ListChecks, Utensils, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,62 +49,77 @@ const FeatureCard = ({ to, icon: Icon, title, description, color }) => (
 export const Home = () => {
   const features = [
     {
-      icon: Box,
+      icon: Box, // Product Management Icon
       title: "Product Designation",
       description: "View and manage your product designations.",
       to: "/pd",
       color: "bg-blue-500",
     },
     {
-      icon: Atom,
+      icon: Atom, // Production Icon
       title: "Mass Production",
       description: "Handle mass production forms and data.",
       to: "/masspd",
       color: "bg-gray-500",
     },
     {
-      icon: Users,
+      icon: Users, // User Management Icon
       title: "User Management",
       description: "Manage users and their roles.",
       to: "/admin",
       color: "bg-indigo-500",
     },
     {
-      icon: Settings,
+      icon: Settings, // Settings Icon for Tests
       title: "Tests",
       description: "Access various test modules.",
       to: "/test",
       color: "bg-green-500",
     },
     {
-      icon: ClipboardCheck,
+      icon: ClipboardCheck, // Feasibility Icon
       title: "Feasibility",
       description: "Manage and view feasibility studies.",
       to: "/Feasibility",
       color: "bg-yellow-500",
     },
     {
-      icon: ClipboardCheck,
+      icon: CheckCircle, // Unique Icon for Check-ins
       title: "Check-ins",
       description: "Manage check-ins for projects and feasibility studies.",
       to: "/checkins",
       color: "bg-red-500",
     },
     {
-      icon: ClipboardCheck,
+      icon: Utensils, // Meal-related Icon for Ok For Lunch
       title: "Ok For Lunch",
       description: "Manage OkForLunch approvals and records.",
       to: "/okforlunch",
       color: "bg-purple-500",
     },
     {
-      icon: FileText,
+      icon: FileText, // Offer Validation Icon
       title: "Validation For Offer",
       description: "Manage and validate offers efficiently.",
       to: "/validationforoffer",
       color: "bg-teal-500",
     },
+    {
+      icon: ListChecks, // Tasks Management Icon
+      title: "Tasks",
+      description: "Manage and validate tasks.",
+      to: "/tasklist",
+      color: "bg-cyan-500",
+    },
+    {
+      icon: Rocket, // Kickoff Management Icon
+      title: "Kickoff",
+      description: "Manage and validate kick-offs",
+      to: "/kickoff",
+      color: "bg-orange-500",
+    },
   ];
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-gray-50">

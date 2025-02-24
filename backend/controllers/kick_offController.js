@@ -86,7 +86,7 @@ exports.getKickOffById = async (req, res) => {
       return res.status(400).json({ message: "Invalid Kick-Off ID format." });
     }
 
-    const kickOff = await ProjectMilestone.findById(id)
+    const kickOff = await KickOff.findById(id)
       .populate({
         path: kickOffFields.map((field) => `${field}.task`).join(" "),
         model: "Task",
@@ -109,7 +109,7 @@ exports.updateKickOff = async (req, res) => {
     const kickOffData = req.body;
     const kickOffId = req.params.id;
 
-    const existingKickOff = await ProjectMilestone.findById(kickOffId);
+    const existingKickOff = await KickOff.findById(kickOffId);
     if (!existingKickOff) {
       return res.status(404).json({ message: "Kick-Off not found" });
     }
@@ -147,7 +147,7 @@ exports.updateKickOff = async (req, res) => {
 // **Delete Kick-Off and Associated Tasks**
 exports.deleteKickOff = async (req, res) => {
   try {
-    const kickOff = await ProjectMilestone.findById(req.params.id);
+    const kickOff = await KickOff.findById(req.params.id);
     if (!kickOff) {
       return res.status(404).json({ message: "Kick-Off not found" });
     }
@@ -157,7 +157,7 @@ exports.deleteKickOff = async (req, res) => {
     await Task.deleteMany({ _id: { $in: taskIds } });
 
     // Step 2: Delete the Kick-Off record itself
-    await ProjectMilestone.findByIdAndDelete(req.params.id);
+    await KickOff.findByIdAndDelete(req.params.id);
 
     res.status(200).json({ message: "Kick-Off and associated tasks deleted" });
   } catch (error) {

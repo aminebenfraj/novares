@@ -1,25 +1,49 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
+import { motion } from "framer-motion"
 import { getAllKickOffs, deleteKickOff } from "../../apis/kickOffApi"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trash2, Edit, Plus } from "lucide-react"
-import Navbar from "@/components/NavBar"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Search, Plus, Edit, Trash2, ChevronRight } from "lucide-react"
+import Navbar from "@/components/NavBar"
 
 const KickOffList = () => {
   const [kickOffs, setKickOffs] = useState([])
+  const [filteredKickOffs, setFilteredKickOffs] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [activeTab, setActiveTab] = useState("all")
   const navigate = useNavigate()
 
   useEffect(() => {
     fetchKickOffs()
   }, [])
+
+  const filterKickOffs = useCallback(() => {
+    let filtered = kickOffs.filter(
+      (kickOff) =>
+        kickOff._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getStatusText(kickOff).toLowerCase().includes(searchTerm.toLowerCase()),
+    )
+
+    if (activeTab !== "all") {
+      filtered = filtered.filter((kickOff) => getStatusText(kickOff).toLowerCase() === activeTab)
+    }
+
+    setFilteredKickOffs(filtered)
+  }, [searchTerm, kickOffs, activeTab])
+
+  useEffect(() => {
+    filterKickOffs()
+  }, [filterKickOffs])
 
   const fetchKickOffs = async () => {
     try {
@@ -47,11 +71,11 @@ const KickOffList = () => {
   }
 
   const handleEdit = (id) => {
-    navigate(`/edit-kickoff/${id}`)
+    navigate(`/kickoff/edit/${id}`)
   }
 
   const handleCreate = () => {
-    navigate("/create-kickoff")
+    navigate("/kickoff/create")
   }
 
   if (isLoading) {
@@ -65,91 +89,119 @@ const KickOffList = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar />
-      <div className="container p-4 mx-auto">
-        <Card className="mt-8">
-          <CardHeader className="flex flex-row items-center justify-between bg-gray-50">
-            <CardTitle className="text-2xl font-bold text-gray-800">Kick-Offs</CardTitle>
-            <Button onClick={handleCreate} className="bg-green-600 hover:bg-green-700">
-              <Plus className="w-4 h-4 mr-2" /> Create New Kick-Off
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {kickOffs && kickOffs.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[100px]">ID</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Details</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {kickOffs.map((kickOff) => (
-                      <TableRow key={kickOff._id}>
-                        <TableCell className="font-medium">{kickOff._id.slice(0, 8)}...</TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusVariant(kickOff)}>{getStatusText(kickOff)}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Accordion type="single" collapsible className="w-full">
-                            <AccordionItem value="item-1">
-                              <AccordionTrigger>View Details</AccordionTrigger>
-                              <AccordionContent>
-                                <div className="space-y-2">
-                                  {Object.entries(kickOff).map(([key, value]) => {
-                                    if (key !== "_id" && typeof value === "object") {
-                                      return (
-                                        <div key={key} className="pb-2 border-b">
-                                          <h4 className="font-semibold capitalize">
-                                            {key.replace(/([A-Z])/g, " $1").trim()}
-                                          </h4>
-                                          <p>Value: {value.value ? "Yes" : "No"}</p>
-                                          {value.task && (
-                                            <div className="mt-1 ml-4">
-                                              <p>Responsible: {value.task.responsible}</p>
-                                              <p>Planned: {new Date(value.task.planned).toLocaleDateString()}</p>
-                                              <p>
-                                                Done:{" "}
-                                                {value.task.done
-                                                  ? new Date(value.task.done).toLocaleDateString()
-                                                  : "Not completed"}
-                                              </p>
-                                              <p>Comments: {value.task.comments || "No comments"}</p>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )
-                                    }
-                                    return null
-                                  })}
-                                </div>
-                              </AccordionContent>
-                            </AccordionItem>
-                          </Accordion>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            onClick={() => handleEdit(kickOff._id)}
-                            className="mr-2 bg-blue-500 hover:bg-blue-600"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button onClick={() => handleDelete(kickOff._id)} className="bg-red-500 hover:bg-red-600">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <p className="py-4 text-center">No kick-offs found.</p>
-            )}
-          </CardContent>
-        </Card>
+      <div className="container px-4 py-8 mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">Kick-Offs</h1>
+          <Button onClick={handleCreate} className="bg-green-600 hover:bg-green-700">
+            <Plus className="w-4 h-4 mr-2" /> Create New Kick-Off
+          </Button>
+        </div>
+
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" size={20} />
+            <Input
+              type="text"
+              placeholder="Search kick-offs..."
+              className="w-full py-2 pl-10 pr-4"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <Tabs defaultValue="all" className="mb-6" onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="not started">Not Started</TabsTrigger>
+            <TabsTrigger value="in progress">In Progress</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <ScrollArea className="h-[calc(100vh-300px)]">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredKickOffs.map((kickOff) => (
+              <motion.div
+                key={kickOff._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold">Kick-Off {kickOff._id.slice(0, 8)}...</CardTitle>
+                    <CardDescription>
+                      <Badge variant={getStatusVariant(kickOff)}>{getStatusText(kickOff)}</Badge>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="mb-2 text-sm text-gray-600">
+                      Completed Tasks: {Object.values(kickOff).filter((v) => typeof v === "object" && v.value).length} /
+                      {Object.values(kickOff).filter((v) => typeof v === "object").length}
+                    </p>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full">
+                          View Details <ChevronRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-3xl">
+                        <DialogHeader>
+                          <DialogTitle>Kick-Off Details</DialogTitle>
+                        </DialogHeader>
+                        <ScrollArea className="h-[60vh]">
+                          <div className="space-y-4">
+                            {Object.entries(kickOff).map(([key, value]) => {
+                              if (key !== "_id" && typeof value === "object") {
+                                return (
+                                  <div key={key} className="pb-4 border-b">
+                                    <h4 className="font-semibold capitalize">
+                                      {key.replace(/([A-Z])/g, " $1").trim()}
+                                    </h4>
+                                    <p>Value: {value.value ? "Yes" : "No"}</p>
+                                    {value.task && (
+                                      <div className="mt-2 ml-4 space-y-1">
+                                        <p>Responsible: {value.task.responsible}</p>
+                                        <p>Planned: {new Date(value.task.planned).toLocaleDateString()}</p>
+                                        <p>
+                                          Done:{" "}
+                                          {value.task.done
+                                            ? new Date(value.task.done).toLocaleDateString()
+                                            : "Not completed"}
+                                        </p>
+                                        <p>Comments: {value.task.comments || "No comments"}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              }
+                              return null
+                            })}
+                          </div>
+                        </ScrollArea>
+                      </DialogContent>
+                    </Dialog>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <Button onClick={() => handleEdit(kickOff._id)} variant="outline" size="sm" className="flex-1 mr-2">
+                      <Edit className="w-4 h-4 mr-2" /> Edit
+                    </Button>
+                    <Button
+                      onClick={() => handleDelete(kickOff._id)}
+                      variant="destructive"
+                      size="sm"
+                      className="flex-1 ml-2"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" /> Delete
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </ScrollArea>
+        {filteredKickOffs.length === 0 && <p className="mt-8 text-center text-gray-500">No kick-offs found.</p>}
       </div>
     </div>
   )
