@@ -37,6 +37,9 @@ import EditTask from './pages/task/EditTask';
 import EditKickOff from './pages/kick_off/EditKickOff';
 import KickOffList from './pages/kick_off/KickOffList';
 import KickOffForm from './pages/kick_off/KickOffForm';
+import DesignList from './pages/design/DesignList';
+import DesignForm from './pages/design/DesignForm';
+import EditDesign from './pages/design/EditDesign';
 
 function App() {
   return (
@@ -76,8 +79,11 @@ function App() {
         <Route path="/task/create" element={<TaskForm />} />
         <Route path="task/edit/:id" element={<EditTask />} />
         <Route path="kickoff/edit/:id" element={<EditKickOff />} />
-        <Route path="kickoff" element={<KickOffList />} />
         <Route path="kickoff/create" element={<KickOffForm />} />
+        <Route path="kickoff" element={<KickOffList />} />
+        <Route path="design" element={<DesignList />} />
+        <Route path="design/create" element={<DesignForm />} />
+        <Route path="design/edit/:id" element={<EditDesign />} />
     </Routes>
       </AuthProvider>
   );
