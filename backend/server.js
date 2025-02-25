@@ -15,6 +15,7 @@ const validationForOfferRoutes = require('./routes/validationForOfferRoutes');
 const kickOffRoutes = require('./routes/kick_offRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const designRoutes = require('./routes/designRoutes');
+const categoryRoutes = require('./routes/gestionStockRoutes/categoryRoutes');
 
 
 const app = express()
@@ -45,6 +46,8 @@ app.use("/api/validationForOffer", validationForOfferRoutes);
 app.use("/api/kickoff", kickOffRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/design", designRoutes);
+app.use('/api/categories', categoryRoutes);
+
 
 
 
