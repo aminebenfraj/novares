@@ -1,117 +1,133 @@
-import "@fortawesome/fontawesome-free/css/all.min.css";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEnvelope, faLock } from "@fortawesome/free-solid-svg-icons";
-import ContactUs from "../../components/ContactUs";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { loginSchema } from "../../lib/AuthValidation"; // ✅ Import Login Schema
-import { useState } from "react";
+"use client"
+
+import { useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { motion } from "framer-motion"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { loginSchema } from "@/lib/AuthValidation"
+import { useAuth } from "@/context/AuthContext"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox"
+import ContactUs from "@/components/ContactUs"
+import { BadgeIcon as IdCard, Lock, Loader2 } from "lucide-react"
 
 export default function Login() {
-  const navigate = useNavigate();
-  const { login } = useAuth();
-  const [serverError, setServerError] = useState(null);
+  const navigate = useNavigate()
+  const { login } = useAuth()
+  const [serverError, setServerError] = useState(null)
 
-  // ✅ Use React Hook Form with external validation schema
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
+  const form = useForm({
     resolver: zodResolver(loginSchema),
-  });
+    defaultValues: {
+      license: "",
+      password: "",
+    },
+  })
 
-  // ✅ Handle form submission
   const onSubmit = async (data) => {
-    setServerError(null);
+    setServerError(null)
     try {
-      await login(data.license, data.password);
-      navigate("/"); // Redirect after successful login
+      await login(data.license, data.password)
+      navigate("/")
     } catch (err) {
-      console.error(err);
-      setServerError(err.message || "Login failed. Please try again.");
+      console.error(err)
+      setServerError(err.message || "Login failed. Please try again.")
     }
-  };
+  }
 
   return (
-    <div className="flex flex-col justify-between min-h-screen bg-[#125671]">
-      <div className="flex justify-center items-center font-[sans-serif] h-[700px] min-h-max p-4 bg-white">
-        <div className="w-full max-w-md mx-auto">
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="bg-white rounded-2xl p-6 shadow-[0_2px_13px_-3px_rgba(0,0,0,0.2)]"
-          >
-            <div className="mb-6">
-              <h3 className="text-3xl font-extrabold text-violet-700">Sign in</h3>
-            </div>
-
-            {/* 🔴 Display Server Error */}
-            {serverError && <p className="mb-4 text-sm text-red-600">{serverError}</p>}
-
-            {/* License Input */}
-            <div className="relative flex items-center">
-              <input
-                {...register("license")}
-                type="text"
-                className="w-full px-2 py-3 text-sm text-gray-800 bg-transparent border-b border-gray-400 outline-none focus:border-gray-800 placeholder:text-gray-800"
-                placeholder="Enter license"
-              />
-              <FontAwesomeIcon icon={faEnvelope} className="absolute right-2 text-violet-700" />
-            </div>
-            {errors.license && <p className="text-xs text-red-500">{errors.license.message}</p>}
-
-            {/* Password Input */}
-            <div className="relative flex items-center mt-6">
-              <input
-                {...register("password")}
-                type="password"
-                className="w-full px-2 py-3 text-sm text-gray-800 bg-transparent border-b border-gray-400 outline-none focus:border-gray-800 placeholder:text-gray-800"
-                placeholder="Enter password"
-              />
-              <FontAwesomeIcon icon={faLock} className="absolute cursor-pointer right-2 text-violet-700" />
-            </div>
-            {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
-
-            {/* Remember Me & Forgot Password */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mt-6">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="w-4 h-4 border-gray-300 rounded shrink-0"
-                />
-                <label htmlFor="remember-me" className="block ml-3 text-sm text-gray-800">
-                  Remember me
-                </label>
-              </div>
-              <Link to="/forgot-password" className="text-sm font-semibold text-purple-500 hover:underline">
-                Forgot Password?
-              </Link>
-            </div>
-
-            {/* Submit Button */}
-            <div className="mt-6">
-              <button
-                type="submit"
-                className="w-full py-2.5 px-4 text-sm font-semibold tracking-wider rounded-full text-white bg-violet-600 hover:bg-violet-500 focus:outline-none"
+    <div className="min-h-screen bg-gray-100 dark:bg-zinc-900 flex flex-col justify-between">
+      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md bg-white dark:bg-zinc-800 shadow-xl">
+          <CardHeader>
+            <CardTitle className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">Sign in</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {serverError && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertDescription>{serverError}</AlertDescription>
+              </Alert>
+            )}
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {[
+                  { name: "license", label: "License", icon: IdCard },
+                  { name: "password", label: "Password", icon: Lock },
+                ].map((field) => (
+                  <FormField
+                    key={field.name}
+                    control={form.control}
+                    name={field.name}
+                    render={({ field: fieldProps }) => (
+                      <FormItem>
+                        <FormLabel className="text-zinc-700 dark:text-zinc-300">{field.label}</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <field.icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 dark:text-zinc-400" />
+                            <Input
+                              {...fieldProps}
+                              type={field.name === "password" ? "password" : "text"}
+                              className="pl-10 bg-gray-50 dark:bg-zinc-700 border-gray-300 dark:border-zinc-600 focus:ring-violet-500 dark:focus:ring-violet-400"
+                              placeholder={`Enter ${field.label.toLowerCase()}`}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ))}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Checkbox id="remember-me" />
+                    <label htmlFor="remember-me" className="ml-2 block text-sm text-zinc-700 dark:text-zinc-300">
+                      Remember me
+                    </label>
+                  </div>
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm font-semibold text-violet-600 hover:text-violet-500 dark:text-violet-400 dark:hover:text-violet-300"
+                  >
+                    Forgot Password?
+                  </Link>
+                </div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    type="submit"
+                    className="w-full bg-violet-600 hover:bg-violet-700 text-white"
+                    disabled={form.formState.isSubmitting}
+                  >
+                    {form.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      "Sign in"
+                    )}
+                  </Button>
+                </motion.div>
+              </form>
+            </Form>
+            <p className="mt-6 text-sm text-center text-zinc-600 dark:text-zinc-400">
+              Don't have an account?{" "}
+              <Link
+                to="/register"
+                className="font-semibold text-violet-600 hover:text-violet-500 dark:text-violet-400 dark:hover:text-violet-300"
               >
-                Sign in
-              </button>
-              <p className="mt-6 text-sm text-center text-gray-800">
-                Dont have an account?
-                <Link to="/register" className="ml-1 font-semibold text-purple-500 hover:underline">
-                  {" "}Register here
-                </Link>
-              </p>
-            </div>
-          </form>
-        </div>
+                Register here
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
       </div>
-            <ContactUs />
-      
+      <ContactUs />
     </div>
-  );
+  )
 }
+
