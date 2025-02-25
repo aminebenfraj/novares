@@ -1,5 +1,5 @@
 const express = require("express");
-const { createMaterial, getAllMaterials, getMaterialById, updateMaterial, deleteMaterial } = require("../../models/gestionStockModels/materialController");
+const { createMaterial, getAllMaterials, getMaterialById, updateMaterial, deleteMaterial } = require("../../controllers/gestionStockControllers/materialController");
 const router = express.Router();
 
 // CRUD routes
