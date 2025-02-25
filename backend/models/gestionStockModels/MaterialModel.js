@@ -1,24 +1,30 @@
-
+// models/Material.js
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const materialSchema = new Schema({
-    supplier: { type: Schema.Types.ObjectId, ref: 'Supplier', required: true },
-    manufacturer: { type: String, trim: true },
-    reference: { type: String, required: true },
-    description: { type: String, trim: true },
-    minimumStock: { type: Number, required: true },
-    currentStock: { type: Number, required: true },
-    orderLot: { type: Number, required: true },
-    location: { type: Schema.Types.ObjectId, ref: 'Location' },
-    critical: { type: Boolean, default: false },
-    consumable: { type: Boolean, default: false },
-    machines: [{ type: Schema.Types.ObjectId, ref: 'Machine' }],
-    comment: { type: String, trim: true },
-    photo: { type: String, trim: true },
-    price: { type: Number, required: true },
-    category: { type: Schema.Types.ObjectId, ref: 'Category' },
-  }, { timestamps: true });
-  
-  module.exports = mongoose.model('Material', materialSchema);
-  
+  supplier: { type: mongoose.Schema.Types.ObjectId, ref: "Supplier", required: true },
+  manufacturer: { type: String, required: true },
+  reference: { type: String, required: true, unique: true },
+  description: { type: String, default: "No description provided." },
+  minimumStock: { type: Number, required: true },
+  currentStock: { type: Number, required: true, default: 0 },
+  orderLot: { type: Number, default: 0 },
+  location: { type: mongoose.Schema.Types.ObjectId, ref: "Location", required: true },
+  critical: { type: Boolean, default: false },
+  consumable: { type: Boolean, default: false },
+  machines: [{ type: mongoose.Schema.Types.ObjectId, ref: "Machine" }],
+  comment: { type: String },
+  photo: { type: String }, 
+  price: { type: Number, required: true },
+  category: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
+  materialHistory: [
+    {
+      changeDate: { type: Date, default: Date.now },
+      changedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      description: String,
+    },
+  ],
+}, { timestamps: true });
+
+module.exports = mongoose.model("Material", materialSchema);
