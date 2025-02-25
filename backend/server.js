@@ -18,6 +18,7 @@ const designRoutes = require('./routes/designRoutes');
 const categoryRoutes = require('./routes/gestionStockRoutes/categoryRoutes');
 const locationRoutes = require('./routes/gestionStockRoutes/locationRoutes');
 const machineRoutes = require('./routes/gestionStockRoutes/machineRoutes');
+const supplierRoutes = require('./routes/gestionStockRoutes/supplierRoutes');
 
 
 const app = express()
@@ -51,6 +52,7 @@ app.use("/api/design", designRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/machines', machineRoutes);
+app.use('/api/suppliers', supplierRoutes);
 
 
 
