@@ -6,7 +6,9 @@ import { motion } from "framer-motion"
 import { Button } from "../../../components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "../../../components/ui/card"
 import { getAllCategories, deleteCategory } from "../../../apis/gestionStockApi/categoryApi"
-
+import { Plus, Edit, Trash2, Tag } from "lucide-react"
+import ContactUs from "@/components/ContactUs"
+import Navbar from "@/components/NavBar"
 const ShowCategories = () => {
   const [categories, setCategories] = useState([])
 
@@ -37,67 +39,58 @@ const ShowCategories = () => {
     }
   }
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  }
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.5 }}
-      className="container p-4 mx-auto"
-    >
-      <Card className="bg-white shadow-lg">
+    <div>
+      <Navbar />
+    <div className="container p-4 mx-auto">
+      <Card className="bg-white dark:bg-zinc-800 shadow-lg">
         <CardHeader className="flex items-center justify-between">
-          <CardTitle className="text-2xl font-bold text-blue-600">Categories</CardTitle>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Link to="/categories/create">
-              <Button className="text-white bg-blue-600 hover:bg-blue-700">Add New Category</Button>
-            </Link>
-          </motion.div>
+          <CardTitle className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Categories</CardTitle>
+          <Link to="/categories/create">
+            <Button className="bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100">
+              <Plus className="w-4 h-4 mr-2" />
+              Add New Category
+            </Button>
+          </Link>
         </CardHeader>
         <CardContent>
           <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ staggerChildren: 0.1 }}
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
           >
             {categories.map((category) => (
-              <motion.div key={category._id} variants={itemVariants}>
-                <Card className="transition-shadow bg-gray-50 hover:shadow-md">
+              <motion.div
+                key={category._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="bg-gray-50 dark:bg-zinc-700 hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
-                    <h3 className="mb-2 text-lg font-semibold text-gray-800">{category.name}</h3>
+                    <div className="flex items-center mb-4">
+                      <Tag className="w-5 h-5 mr-2 text-zinc-500 dark:text-zinc-400" />
+                      <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{category.name}</h3>
+                    </div>
                     <div className="flex justify-end space-x-2">
-                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                        <Link to={`/categories/edit/${category._id}`}>
-                          <Button variant="outline" className="text-blue-600 hover:bg-blue-50">
-                            Edit
-                          </Button>
-                        </Link>
-                      </motion.div>
-                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Link to={`/categories/edit/${category._id}`}>
                         <Button
                           variant="outline"
-                          className="text-red-600 hover:bg-red-50"
-                          onClick={() => handleDelete(category._id)}
+                          className="text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
                         >
-                          Delete
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
                         </Button>
-                      </motion.div>
+                      </Link>
+                      <Button
+                        variant="outline"
+                        className="text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                        onClick={() => handleDelete(category._id)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -106,7 +99,9 @@ const ShowCategories = () => {
           </motion.div>
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
+    <ContactUs />
+    </div>
   )
 }
 

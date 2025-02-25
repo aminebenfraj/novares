@@ -7,7 +7,9 @@ import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "../../../components/ui/card"
 import { getLocationById, updateLocation } from "../../../apis/gestionStockApi/locationApi"
-
+import { Save, ArrowLeft, MapPin } from "lucide-react"
+import ContactUs from "@/components/ContactUs"
+import Navbar from "@/components/NavBar"
 const EditLocation = () => {
   const [location, setLocation] = useState("")
   const { id } = useParams()
@@ -40,54 +42,55 @@ const EditLocation = () => {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.5 }}
-      className="container p-4 mx-auto"
-    >
-      <Card className="max-w-md mx-auto bg-white shadow-lg">
+    <div>
+      <Navbar />
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-zinc-900">
+      <Card className="w-full max-w-md bg-white dark:bg-zinc-800 shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-blue-600">Edit Location</CardTitle>
+          <CardTitle className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Edit Location</CardTitle>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              className="mb-4"
-            >
-              <label htmlFor="location" className="block mb-1 text-sm font-medium text-gray-700">
+            <div className="space-y-2">
+              <label htmlFor="location" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Location Name
               </label>
-              <Input
-                id="location"
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                required
-                className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Enter location name"
-              />
-            </motion.div>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 dark:text-zinc-400" />
+                <Input
+                  id="location"
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  required
+                  className="w-full pl-10"
+                  placeholder="Enter location name"
+                />
+              </div>
+            </div>
           </CardContent>
           <CardFooter className="flex justify-between">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button type="button" variant="outline" onClick={() => navigate("/locations")}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
                 Cancel
               </Button>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button type="submit" className="text-white bg-blue-600 hover:bg-blue-700">
+              <Button
+                type="submit"
+                className="bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+              >
+                <Save className="w-4 h-4 mr-2" />
                 Update Location
               </Button>
             </motion.div>
           </CardFooter>
         </form>
       </Card>
-    </motion.div>
+    </div>
+    <ContactUs />
+    </div>
   )
 }
 
