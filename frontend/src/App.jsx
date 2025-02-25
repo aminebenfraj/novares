@@ -40,6 +40,7 @@ import KickOffForm from './pages/kick_off/KickOffForm';
 import DesignList from './pages/design/DesignList';
 import DesignForm from './pages/design/DesignForm';
 import EditDesign from './pages/design/EditDesign';
+import EditProductDesignation from './pages/productDesignation/EditProductDesignation';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
           <Route path='/' element={<Home />} />
           <Route path="/pd/create" element={<Showpd />} />
           <Route path="/pd" element={<Createpd />} />
+          <Route path="/pd/edit/:id" element={<EditProductDesignation />} />
           <Route path="/masspd/create" element={<MassProductionForm />} />
           <Route path="/masspd/edit/:id" element={<MassProductionEdit />} />
           <Route path="/login" element={<Login />} />
