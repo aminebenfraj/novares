@@ -41,6 +41,16 @@ import DesignList from './pages/design/DesignList';
 import DesignForm from './pages/design/DesignForm';
 import EditDesign from './pages/design/EditDesign';
 import EditProductDesignation from './pages/productDesignation/EditProductDesignation';
+import CreateCategory from './pages/gestionStock/categories/CreateCategory';
+import EditCategory from './pages/gestionStock/categories/EditCategory';
+import ShowCategories from './pages/gestionStock/categories/ShowCategories';
+import CreateLocation from './pages/gestionStock/location/CreateLocation';
+import EditLocation from './pages/gestionStock/location/EditLocation';
+import ShowLocations from './pages/gestionStock/location/ShowLocations';
+import CreateMachine from './pages/gestionStock/machine/CreateMachine';
+import EditMachine from './pages/gestionStock/machine/EditMachine';
+import ShowMachines from './pages/gestionStock/machine/ShowMachines';
+
 
 function App() {
   return (
@@ -85,7 +95,16 @@ function App() {
         <Route path="kickoff" element={<KickOffList />} />
         <Route path="design" element={<DesignList />} />
         <Route path="design/create" element={<DesignForm />} />
-        <Route path="design/edit/:id" element={<EditDesign />} />
+        <Route path="design/edit/:id" element={<EditDesign />} />          
+        <Route path="categories/create" element={<CreateCategory />} />          
+        <Route path="categories/edit/:id" element={<EditCategory />} />          
+        <Route path="categories" element={<ShowCategories />} />          
+        <Route path="locations/create" element={<CreateLocation />} />          
+        <Route path="locations/edit/:id" element={<EditLocation />} />          
+        <Route path="location" element={<ShowLocations />} />          
+        <Route path="/machines/create" element={<CreateMachine />} />          
+        <Route path="machines/edit/:id" element={<EditMachine />} />          
+        <Route path="machine" element={<ShowMachines />} />          
     </Routes>
       </AuthProvider>
   );
