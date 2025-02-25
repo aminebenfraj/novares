@@ -4,7 +4,7 @@ const { createLocation,
     getLocationById,
     updateLocation,
     deleteLocation
-} = require('../../controllers/gestionStockControllers/location');
+} = require('../../controllers/gestionStockControllers/locationController');
 const router = express.Router();
 
 router.post('/', createLocation);

@@ -17,6 +17,7 @@ const taskRoutes = require('./routes/taskRoutes');
 const designRoutes = require('./routes/designRoutes');
 const categoryRoutes = require('./routes/gestionStockRoutes/categoryRoutes');
 const locationRoutes = require('./routes/gestionStockRoutes/locationRoutes');
+const machineRoutes = require('./routes/gestionStockRoutes/machineRoutes');
 
 
 const app = express()
@@ -49,6 +50,7 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/design", designRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/location', locationRoutes);
+app.use('/api/machines', machineRoutes);
 
 
 
