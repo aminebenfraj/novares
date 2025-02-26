@@ -8,7 +8,7 @@ import MassProductionForm from './pages/MassProductionForm/MassProductionForm';
 import MassProductionEdit from './pages/MassProductionForm/EditMassProductionForm';
 import MassProductionTable from './pages/MassProductionForm/MassProductionList'
 
-import { Home } from './pages/homepage/Home';
+import  Home from './pages/homepage/Home';
 import  Test  from './pages/D01/Test';
 import  Test1  from './pages/D01/Test1';
 import  Test2  from './pages/D01/Test2';
@@ -50,6 +50,9 @@ import ShowLocations from './pages/gestionStock/location/ShowLocations';
 import CreateMachine from './pages/gestionStock/machine/CreateMachine';
 import EditMachine from './pages/gestionStock/machine/EditMachine';
 import ShowMachines from './pages/gestionStock/machine/ShowMachines';
+import SupplierList from './pages/gestionStock/suppliers/SupplierList';
+import CreateSupplier from './pages/gestionStock/suppliers/CreateSupplier';
+import EditSupplier from './pages/gestionStock/suppliers/EditSupplier';
 
 
 function App() {
@@ -104,7 +107,10 @@ function App() {
         <Route path="location" element={<ShowLocations />} />          
         <Route path="/machines/create" element={<CreateMachine />} />          
         <Route path="machines/edit/:id" element={<EditMachine />} />          
-        <Route path="machine" element={<ShowMachines />} />          
+        <Route path="machine" element={<ShowMachines />} />     
+        <Route path="/suppliers" element={<SupplierList />} />
+        <Route path="/suppliers/create" element={<CreateSupplier />} />
+        <Route path="/suppliers/edit/:id" element={<EditSupplier />} />     
     </Routes>
       </AuthProvider>
   );

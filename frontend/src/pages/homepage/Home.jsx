@@ -1,17 +1,26 @@
-import { Link } from "react-router-dom";
-import { Navbar } from "../../components/Navbar";
-import ContactUs from "../../components/ContactUs";
-import { Box, Atom, Users, Settings, ClipboardCheck, FileText, Rocket, ListChecks, Utensils, CheckCircle } from "lucide-react";
-import { motion } from "framer-motion";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+"use client"
+import { Link } from "react-router-dom"
+import { Navbar } from "../../components/Navbar"
+import ContactUs from "../../components/ContactUs"
+import {
+  Box,
+  Atom,
+  Users,
+  Settings,
+  ClipboardCheck,
+  FileText,
+  Rocket,
+  ListChecks,
+  Utensils,
+  CheckCircle,
+  MapPin,
+} from "lucide-react"
+import { motion } from "framer-motion"
+import { Card, CardContent, CardFooter, CardHeader } from "../../components/ui/card"
+import { Button } from "../../components/ui/button"
 
 const FeatureCard = ({ to, icon: Icon, title, description, color }) => (
-  <motion.div
-    whileHover={{ scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
-    className="flex flex-col items-center"
-  >
+  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex flex-col items-center">
     <Card className="w-full h-full transition-shadow shadow-md hover:shadow-lg">
       <CardHeader className="items-center pb-4 space-y-6">
         <div className={`w-16 h-16 rounded-full ${color} flex items-center justify-center`}>
@@ -26,11 +35,7 @@ const FeatureCard = ({ to, icon: Icon, title, description, color }) => (
         <Button variant="ghost" asChild className="text-blue-600 hover:text-blue-800">
           <Link to={to} className="flex items-center">
             Learn more
-            <svg
-              className="w-4 h-4 ml-1"
-              viewBox="0 0 16 16"
-              fill="none"
-            >
+            <svg className="w-4 h-4 ml-1" viewBox="0 0 16 16" fill="none">
               <path
                 d="M6.5 3.5l4 4.5-4 4.5"
                 stroke="currentColor"
@@ -44,82 +49,97 @@ const FeatureCard = ({ to, icon: Icon, title, description, color }) => (
       </CardFooter>
     </Card>
   </motion.div>
-);
+)
 
-export const Home = () => {
+const Home = () => {
   const features = [
     {
-      icon: Box, // Product Management Icon
+      icon: Box,
       title: "Product Designation",
       description: "View and manage your product designations.",
       to: "/pd",
       color: "bg-blue-500",
     },
     {
-      icon: Atom, // Production Icon
+      icon: Atom,
       title: "Mass Production",
       description: "Handle mass production forms and data.",
       to: "/masspd",
       color: "bg-gray-500",
     },
     {
-      icon: Users, // User Management Icon
+      icon: Users,
       title: "User Management",
       description: "Manage users and their roles.",
       to: "/admin",
       color: "bg-indigo-500",
     },
+    { icon: Settings, title: "Tests", description: "Access various test modules.", to: "/test", color: "bg-green-500" },
     {
-      icon: Settings, // Settings Icon for Tests
-      title: "Tests",
-      description: "Access various test modules.",
-      to: "/test",
-      color: "bg-green-500",
-    },
-    {
-      icon: ClipboardCheck, // Feasibility Icon
+      icon: ClipboardCheck,
       title: "Feasibility",
       description: "Manage and view feasibility studies.",
       to: "/Feasibility",
       color: "bg-yellow-500",
     },
     {
-      icon: CheckCircle, // Unique Icon for Check-ins
+      icon: CheckCircle,
       title: "Check-ins",
       description: "Manage check-ins for projects and feasibility studies.",
       to: "/checkins",
       color: "bg-red-500",
     },
     {
-      icon: Utensils, // Meal-related Icon for Ok For Lunch
+      icon: Utensils,
       title: "Ok For Lunch",
       description: "Manage OkForLunch approvals and records.",
       to: "/okforlunch",
       color: "bg-purple-500",
     },
     {
-      icon: FileText, // Offer Validation Icon
+      icon: FileText,
       title: "Validation For Offer",
       description: "Manage and validate offers efficiently.",
       to: "/validationforoffer",
       color: "bg-teal-500",
     },
     {
-      icon: ListChecks, // Tasks Management Icon
+      icon: ListChecks,
       title: "Tasks",
       description: "Manage and validate tasks.",
       to: "/tasklist",
       color: "bg-cyan-500",
     },
     {
-      icon: Rocket, // Kickoff Management Icon
+      icon: Rocket,
       title: "Kickoff",
-      description: "Manage and validate kick-offs",
+      description: "Manage and validate kick-offs.",
       to: "/kickoff",
       color: "bg-orange-500",
     },
-  ];
-
+    { icon: FileText, title: "Design", description: "Manage and modify designs.", to: "/design", color: "bg-pink-500" },
+    {
+      icon: Box,
+      title: "Categories",
+      description: "Manage and organize product categories.",
+      to: "/categories",
+      color: "bg-lime-500",
+    },
+    {
+      icon: MapPin,
+      title: "Locations",
+      description: "Manage warehouse and material locations.",
+      to: "/location",
+      color: "bg-emerald-500",
+    },
+    {
+      icon: Settings,
+      title: "Machines",
+      description: "View and manage machines in production.",
+      to: "/machine",
+      color: "bg-sky-500",
+    },
+  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-gray-50">
@@ -131,9 +151,7 @@ export const Home = () => {
           transition={{ duration: 0.6 }}
           className="mb-16 space-y-4 text-center"
         >
-          <h1 className="text-4xl font-bold text-gray-900 md:text-5xl">
-            Welcome to Novares Management System
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-900 md:text-5xl">Welcome to Novares Management System</h1>
           <p className="max-w-2xl mx-auto text-xl text-gray-600">
             Manage your products, production, feasibility, check-ins, and more efficiently.
           </p>
@@ -159,5 +177,8 @@ export const Home = () => {
       </div>
       <ContactUs />
     </div>
-  );
-};
+  )
+}
+
+export default Home
+
