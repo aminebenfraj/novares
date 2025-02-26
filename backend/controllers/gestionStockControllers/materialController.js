@@ -84,10 +84,10 @@ exports.createMaterial = async (req, res) => {
 exports.getAllMaterials = async (req, res) => {
   try {
     const materials = await Material.find()
-      .populate("supplier", "companyName")
-      .populate("location", "location")
-      .populate("machines", "name")
-      .populate("category", "idcategory");
+      .populate("supplier")
+      .populate("location")
+      .populate("machines")
+      .populate("category");
     res.status(200).json(materials);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -98,10 +98,11 @@ exports.getAllMaterials = async (req, res) => {
 exports.getMaterialById = async (req, res) => {
   try {
     const material = await Material.findById(req.params.id)
-      .populate("supplier", "companyName")
-      .populate("location", "location")
-      .populate("machines", "name")
-      .populate("category", "idcategory");
+      .populate("supplier")
+      .populate("location")
+      .populate("machines")
+      .populate("category");
+console.log(material);
 
     if (!material) {
       return res.status(404).json({ message: "Material not found" });

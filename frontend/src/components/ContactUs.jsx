@@ -1,4 +1,3 @@
-"use client";
 
 import { FaPhoneAlt, FaEnvelope, FaLock } from "react-icons/fa";
 

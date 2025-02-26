@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
@@ -5,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { getSupplierById, updateSupplier } from "../../../apis/gestionStockApi/supplierApi"
-import { Save, ArrowLeft } from 'lucide-react'
+import { Save, ArrowLeft } from "lucide-react"
 import ContactUs from "@/components/ContactUs"
 import Navbar from "@/components/NavBar"
 
@@ -243,3 +245,4 @@ const EditSupplier = () => {
 }
 
 export default EditSupplier
+

@@ -53,6 +53,9 @@ import ShowMachines from './pages/gestionStock/machine/ShowMachines';
 import SupplierList from './pages/gestionStock/suppliers/SupplierList';
 import CreateSupplier from './pages/gestionStock/suppliers/CreateSupplier';
 import EditSupplier from './pages/gestionStock/suppliers/EditSupplier';
+import MaterialList from './pages/gestionStock/materials/MaterialList';
+import CreateMaterial from './pages/gestionStock/materials/CreateMaterial';
+import EditMaterial from './pages/gestionStock/materials/EditMaterial';
 
 
 function App() {
@@ -104,13 +107,16 @@ function App() {
         <Route path="categories" element={<ShowCategories />} />          
         <Route path="locations/create" element={<CreateLocation />} />          
         <Route path="locations/edit/:id" element={<EditLocation />} />          
-        <Route path="location" element={<ShowLocations />} />          
+        <Route path="locations" element={<ShowLocations />} />          
         <Route path="/machines/create" element={<CreateMachine />} />          
         <Route path="machines/edit/:id" element={<EditMachine />} />          
-        <Route path="machine" element={<ShowMachines />} />     
+        <Route path="machines" element={<ShowMachines />} />     
         <Route path="/suppliers" element={<SupplierList />} />
         <Route path="/suppliers/create" element={<CreateSupplier />} />
-        <Route path="/suppliers/edit/:id" element={<EditSupplier />} />     
+        <Route path="/suppliers/edit/:id" element={<EditSupplier />} />   
+        <Route path="/materials" element={<MaterialList />} />
+        <Route path="/materials/create" element={<CreateMaterial />} />
+        <Route path="/materials/edit/:id" element={<EditMaterial />} />
     </Routes>
       </AuthProvider>
   );
