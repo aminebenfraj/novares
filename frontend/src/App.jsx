@@ -59,6 +59,9 @@ import EditMaterial from './pages/gestionStock/materials/EditMaterial';
 import FacilitiesForm from './pages/facilities/facilitiesForm';
 import FacilitiesList from './pages/facilities/FacilitiesList';
 import EditFacilities from './pages/facilities/EditFacilities';
+import Pptuninglist from './pages/p-p-tuning/pptuninglist';
+import P_P_TuningForm from './pages/p-p-tuning/pptuningform';
+import Editpptuning from './pages/p-p-tuning/editpptuning';
 
 
 
@@ -124,6 +127,10 @@ function App() {
         <Route path="/facilities/create" element={<FacilitiesForm />} />
         <Route path="/facilities" element={<FacilitiesList />} />
         <Route path="/facilities/edit/:id" element={<EditFacilities />} />
+        <Route path="/pptuning" element={<Pptuninglist />} />
+        <Route path="/pptuning/create" element={<P_P_TuningForm />} />
+        <Route path="/p_p_tuning/edit/:id" element={<Editpptuning />} />
+
     </Routes>
       </AuthProvider>
   );
