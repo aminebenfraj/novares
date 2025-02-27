@@ -20,6 +20,7 @@ const locationRoutes = require('./routes/gestionStockRoutes/locationRoutes');
 const machineRoutes = require('./routes/gestionStockRoutes/machineRoutes');
 const supplierRoutes = require('./routes/gestionStockRoutes/supplierRoutes');
 const materialRoutes = require('./routes/gestionStockRoutes/materialRoutes');
+const facilitiesRoutes = require('./routes/facilitiesRoutes');
 
 
 const app = express()
@@ -55,6 +56,8 @@ app.use('/api/location', locationRoutes);
 app.use('/api/machines', machineRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use("/api/materials", materialRoutes);
+app.use("/api/facilities", facilitiesRoutes);
+
 
 
 
