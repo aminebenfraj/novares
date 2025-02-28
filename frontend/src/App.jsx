@@ -62,6 +62,10 @@ import EditFacilities from './pages/facilities/EditFacilities';
 import Pptuninglist from './pages/p-p-tuning/pptuninglist';
 import P_P_TuningForm from './pages/p-p-tuning/pptuningform';
 import Editpptuning from './pages/p-p-tuning/editpptuning';
+import Editqualificationconfirmation from './pages/qualificationconfirmationform/editqualificationconfirmation';
+import Qualificationconfirmationdetails from './pages/qualificationconfirmationform/qualificationconfirmationdetails';
+import Qualificationconfirmationform from './pages/qualificationconfirmationform/qualificationconfirmationform';
+import QualificationconfirmationList from './pages/qualificationconfirmationform/qualificationconfirmationList';
 
 
 
@@ -130,6 +134,10 @@ function App() {
         <Route path="/pptuning" element={<Pptuninglist />} />
         <Route path="/pptuning/create" element={<P_P_TuningForm />} />
         <Route path="/p_p_tuning/edit/:id" element={<Editpptuning />} />
+        <Route path="/qualificationconfirmation/create" element={<Qualificationconfirmationform />} />
+        <Route path="/qualificationconfirmation/edit/:id" element={<Editqualificationconfirmation />} />
+        <Route path="/qualificationconfirmation/:id" element={<Qualificationconfirmationdetails />} />
+        <Route path="/qualificationconfirmation" element={< QualificationconfirmationList/>} />
 
     </Routes>
       </AuthProvider>

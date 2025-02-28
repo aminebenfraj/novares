@@ -22,6 +22,7 @@ const supplierRoutes = require('./routes/gestionStockRoutes/supplierRoutes');
 const materialRoutes = require('./routes/gestionStockRoutes/materialRoutes');
 const facilitiesRoutes = require('./routes/facilitiesRoutes');
 const p_p_tuningRoutes = require("./routes/p_p_tuningRoutes");
+const qualificationConfirmationRoutes = require("./routes/qualificationConfirmationRoutes");
 
 
 const app = express()
@@ -59,6 +60,7 @@ app.use('/api/suppliers', supplierRoutes);
 app.use("/api/materials", materialRoutes);
 app.use("/api/facilities", facilitiesRoutes);
 app.use("/api/p_p_tuning", p_p_tuningRoutes);
+app.use("/api/qualification_confirmation", qualificationConfirmationRoutes);
 
 
 
