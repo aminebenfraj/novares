@@ -66,6 +66,9 @@ import Editqualificationconfirmation from './pages/qualificationconfirmationform
 import Qualificationconfirmationdetails from './pages/qualificationconfirmationform/qualificationconfirmationdetails';
 import Qualificationconfirmationform from './pages/qualificationconfirmationform/qualificationconfirmationform';
 import QualificationconfirmationList from './pages/qualificationconfirmationform/qualificationconfirmationList';
+import ProcessQualificationForm from './pages/process_qualif/processQualificationForm';
+import ProcessQualificationList from './pages/process_qualif/processqualificationlist';
+import EditProcessQualification from './pages/process_qualif/editProcessQualification';
 
 
 
@@ -138,6 +141,9 @@ function App() {
         <Route path="/qualificationconfirmation/edit/:id" element={<Editqualificationconfirmation />} />
         <Route path="/qualificationconfirmation/:id" element={<Qualificationconfirmationdetails />} />
         <Route path="/qualificationconfirmation" element={< QualificationconfirmationList/>} />
+        <Route path="/processQualification/create" element={< ProcessQualificationForm/>} />
+        <Route path="/processQualification" element={< ProcessQualificationList/>} />
+        <Route path="/processQualification/edit/:id" element={< EditProcessQualification/>} />
 
     </Routes>
       </AuthProvider>
