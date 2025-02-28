@@ -21,3 +21,7 @@ export const updateUserRoles = (license, roles) => {
 export const deleteCurrentUser = () => {
   return apiRequest("DELETE", `${BASE_URL}/delete`);
 };
+
+export const getRecentUsers = () => {
+  return apiRequest("GET", `${BASE_URL}/recent`);
+};

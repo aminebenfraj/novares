@@ -172,3 +172,17 @@ exports.getAllCustomers = async (req, res) => {
 };
 
 
+exports.getRecentUsers = async (req, res) => {
+  try {
+    const recentUsers = await User.find()
+      .sort({ createdAt: -1 }) // Sort by newest first
+      .limit(5) // Limit to the latest 5 users
+      .select("username email roles createdAt"); // Select only required fields
+
+    res.json(recentUsers);
+  } catch (error) {
+    console.error("Error fetching recent users:", error);
+    res.status(500).json({ error: "Error fetching recent users" });
+  }
+};
+

@@ -6,7 +6,8 @@ const {
   updateCurrentUser,
   deleteCurrentUser,
   getCustomerById,
-  getAllCustomers
+  getAllCustomers,
+  getRecentUsers
 } = require("../controllers/userController");
 
 const { protect, verifyAdmin } = require("../middlewares/authMiddleware");
@@ -26,6 +27,8 @@ router.put("/role/:license", protect, verifyAdmin, updateUserRoles);
 
 // 🔹 Delete Current User Account (Protected)
 router.delete("/delete", protect, deleteCurrentUser);
+router.get("/recent", getRecentUsers); // ✅ Ensure the user is authenticated
+
 
 
 

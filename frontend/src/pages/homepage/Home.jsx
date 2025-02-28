@@ -16,14 +16,15 @@ import {
   ArrowUpRight,
   Clock,
 } from "lucide-react"
-import { Card, CardContent, CardFooter, CardHeader } from "../../components/ui/card"
+import { Card, CardContent, CardFooter, CardTitle ,CardHeader } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
 import Navbar from "../../components/NavBar"
 import Sidebar from "../../components/Sidebar"
 import ContactUs from "../../components/ContactUs"
-
+import { getRecentUsers } from "@/apis/userApi"
+import { Skeleton } from "@/components/ui/skeleton";
 // Stat card component
 const StatCard = ({ icon: Icon, title, value, trend, color }) => (
   <Card className="shadow-md">
@@ -101,26 +102,31 @@ const ActivityItem = ({ user, action, target, time, status }) => (
 
 // Main dashboard component
 const Dashboard = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [screenWidth, setScreenWidth] = useState(window.innerWidth)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const [recentUsers, setRecentUsers] = useState([]);
 
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   useEffect(() => {
     const handleResize = () => {
-      setScreenWidth(window.innerWidth)
-      if (window.innerWidth >= 768) {
-        setIsSidebarOpen(true)
-      } else {
-        setIsSidebarOpen(false)
-      }
-    }
+      setScreenWidth(window.innerWidth);
+      setIsSidebarOpen(window.innerWidth >= 768); // Auto open for larger screens
+    };
 
-    window.addEventListener("resize", handleResize)
-    handleResize()
+    // ✅ Fetch recent users
+    getRecentUsers()
+      .then((data) => {
+        console.log("Fetched recent users:", data);
+        setRecentUsers(data);
+      })
+      .catch((error) => console.error("Error fetching recent users:", error));
 
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const features = [
     {
@@ -181,31 +187,6 @@ const Dashboard = () => {
     },
   ]
 
-  // Recent activity data (mock data)
-  const recentActivity = [
-    {
-      user: "John Doe",
-      action: "created a new",
-      target: "Product Designation",
-      time: "2 hours ago",
-      status: "Completed",
-    },
-    {
-      user: "Jane Smith",
-      action: "updated",
-      target: "Feasibility Study #1234",
-      time: "4 hours ago",
-      status: "Completed",
-    },
-    {
-      user: "Mike Johnson",
-      action: "started",
-      target: "Mass Production Form",
-      time: "Yesterday",
-      status: "In Progress",
-    },
-    { user: "Sarah Williams", action: "submitted", target: "Design Review", time: "2 days ago", status: "Pending" },
-  ]
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -270,23 +251,55 @@ const Dashboard = () => {
           {/* Activity and charts section */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Recent activity */}
-            <Card className="shadow-md lg:col-span-2">
-              <CardHeader>
-                <h2 className="text-lg font-semibold text-gray-800">Recent Activity</h2>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-1">
-                  {recentActivity.map((activity, index) => (
-                    <ActivityItem key={index} {...activity} />
-                  ))}
+            <Card className="border border-gray-200 shadow-lg lg:col-span-2 dark:border-gray-700">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Recent Activity
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent>
+        <div className="space-y-3">
+          {recentUsers.length > 0 ? (
+            recentUsers.map((user, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 transition rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <div className="flex items-center space-x-3">
+                  {/* Avatar */}
+                  <Avatar>
+                    <AvatarImage src={user.avatar || "/default-avatar.png"} alt={user.username} />
+                    <AvatarFallback>{user.username.charAt(0).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {user.username}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Joined {new Date(user.createdAt).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-              </CardContent>
-              <CardFooter>
-                <Button variant="ghost" className="w-full text-blue-600">
-                  View All Activity
-                </Button>
-              </CardFooter>
-            </Card>
+              </div>
+            ))
+          ) : (
+            <div className="flex flex-col items-center py-6 space-y-2">
+              <Skeleton className="w-16 h-16 rounded-full" />
+              <p className="text-gray-500 dark:text-gray-400">No recent users found.</p>
+            </div>
+          )}
+        </div>
+      </CardContent>
+
+      <CardFooter>
+        <Button variant="outline" className="w-full">
+          View All Users
+        </Button>
+      </CardFooter>
+    </Card>
+
 
             {/* Charts */}
             <div className="space-y-6">
