@@ -144,7 +144,6 @@ function App() {
         <Route path="/processQualification/create" element={< ProcessQualificationForm/>} />
         <Route path="/processQualification" element={< ProcessQualificationList/>} />
         <Route path="/processQualification/edit/:id" element={< EditProcessQualification/>} />
-
     </Routes>
       </AuthProvider>
   );
