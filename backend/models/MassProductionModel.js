@@ -13,7 +13,7 @@ const massProductionSchema = new Schema(
     technical_skill: { type: String, enum: ["sc", "tc"] },
     initial_request: { type: Date, required: true },
     request_original: { type: String, enum: ["internal", "customer"] },
-    frasability: { type: String, enum: ["F", "E"] },
+    frasability:  [{ type: Schema.Types.ObjectId, ref: "ProductDesignation" }],
     validation_for_offer: { type: String, enum: ["F", "E"] },
     customer_offer: { type: String, enum: ["F", "E"] },
     customer_order: { type: String, enum: ["F", "E"] },
