@@ -69,6 +69,7 @@ import QualificationconfirmationList from './pages/qualificationconfirmationform
 import ProcessQualificationForm from './pages/process_qualif/processQualificationForm';
 import ProcessQualificationList from './pages/process_qualif/processqualificationlist';
 import EditProcessQualification from './pages/process_qualif/editProcessQualification';
+import PedidoList from './pages/pedido/PedidoList';
 
 
 
@@ -144,6 +145,7 @@ function App() {
         <Route path="/processQualification/create" element={< ProcessQualificationForm/>} />
         <Route path="/processQualification" element={< ProcessQualificationList/>} />
         <Route path="/processQualification/edit/:id" element={< EditProcessQualification/>} />
+        <Route path="/Pedido" element={< PedidoList/>} />
     </Routes>
       </AuthProvider>
   );

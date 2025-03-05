@@ -24,6 +24,7 @@ const facilitiesRoutes = require('./routes/facilitiesRoutes');
 const p_p_tuningRoutes = require("./routes/p_p_tuningRoutes");
 const qualificationConfirmationRoutes = require("./routes/qualificationConfirmationRoutes");
 const processQualifRoutes = require("./routes/processQualifRoutes");
+const pedidoRoutes = require("./routes/pedidoRoutes");
 
 
 const app = express()
@@ -63,6 +64,7 @@ app.use("/api/facilities", facilitiesRoutes);
 app.use("/api/p_p_tuning", p_p_tuningRoutes);
 app.use("/api/qualification_confirmation", qualificationConfirmationRoutes);
 app.use("/api/process_qualif", processQualifRoutes);
+app.use("/api/pedidos", pedidoRoutes);
 
 
 
