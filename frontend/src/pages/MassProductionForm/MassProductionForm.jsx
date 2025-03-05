@@ -17,6 +17,7 @@ import { createQualificationConfirmation } from "../../apis/qualificationconfirm
 import { createValidationForOffer } from "../../apis/validationForOfferApi"
 import { Navbar } from "../../components/Navbar"
 import ContactUs from "../../components/ContactUs"
+import { updateMassProduction } from "../../apis/massProductionApi"
 
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card"
@@ -66,6 +67,16 @@ export default function MassProductionStepper() {
       technical_skill: "sc",
       initial_request: "",
       request_original: "internal",
+      // Add missing date fields
+      next_review: "",
+      mlo: "",
+      tko: "",
+      cv: "",
+      pt1: "",
+      pt2: "",
+      sop: "",
+      ppap_submission_date: "",
+      closure: "",
     },
   })
 
@@ -241,10 +252,10 @@ export default function MassProductionStepper() {
     }
 
     // Update form state with current step data
-    setFormState({
-      ...formState,
+    setFormState((prevState) => ({
+      ...prevState,
       [Object.keys(formState)[currentStep - 1]]: stepData,
-    })
+    }))
 
     // Move to next step or submit if on last step
     if (currentStep < 9) {
@@ -266,6 +277,45 @@ export default function MassProductionStepper() {
   }
 
   const prevStep = () => {
+    // Save current step data before going back
+    const stepKey = Object.keys(formState)[currentStep - 1]
+    let currentFormData = {}
+
+    switch (currentStep) {
+      case 1:
+        currentFormData = massProductionForm.getValues()
+        break
+      case 2:
+        currentFormData = feasibilityForm.getValues()
+        break
+      case 3:
+        currentFormData = validationForOfferForm.getValues()
+        break
+      case 4:
+        currentFormData = kickOffForm.getValues()
+        break
+      case 5:
+        currentFormData = facilitiesForm.getValues()
+        break
+      case 6:
+        currentFormData = ppTuningForm.getValues()
+        break
+      case 7:
+        currentFormData = processQualificationForm.getValues()
+        break
+      case 8:
+        currentFormData = qualificationConfirmationForm.getValues()
+        break
+      case 9:
+        currentFormData = okForLunchForm.getValues()
+        break
+    }
+
+    setFormState((prevState) => ({
+      ...prevState,
+      [stepKey]: currentFormData,
+    }))
+
     if (currentStep > 1) {
       setDirection(-1)
       setCurrentStep(currentStep - 1)
@@ -278,6 +328,45 @@ export default function MassProductionStepper() {
   const goToStep = (step) => {
     if (step === currentStep) return
 
+    // Save current step data before navigating
+    const stepKey = Object.keys(formState)[currentStep - 1]
+    let currentFormData = {}
+
+    switch (currentStep) {
+      case 1:
+        currentFormData = massProductionForm.getValues()
+        break
+      case 2:
+        currentFormData = feasibilityForm.getValues()
+        break
+      case 3:
+        currentFormData = validationForOfferForm.getValues()
+        break
+      case 4:
+        currentFormData = kickOffForm.getValues()
+        break
+      case 5:
+        currentFormData = facilitiesForm.getValues()
+        break
+      case 6:
+        currentFormData = ppTuningForm.getValues()
+        break
+      case 7:
+        currentFormData = processQualificationForm.getValues()
+        break
+      case 8:
+        currentFormData = qualificationConfirmationForm.getValues()
+        break
+      case 9:
+        currentFormData = okForLunchForm.getValues()
+        break
+    }
+
+    setFormState((prevState) => ({
+      ...prevState,
+      [stepKey]: currentFormData,
+    }))
+
     setDirection(step > currentStep ? 1 : -1)
     setCurrentStep(step)
 
@@ -289,131 +378,268 @@ export default function MassProductionStepper() {
   const handleSubmit = async () => {
     setLoading(true)
     try {
-      // Submit each form separately to their respective APIs
-      await createMassProduction({
+      // First, create the main mass production record
+      const massProductionData = {
         ...formState.massProduction,
         assignedRole: "Manager",
         assignedEmail: "mohamedamine.benfredj@polytechnicien.tn",
-      })
-
-      // Transform feasibility data
-      const feasibilityData = Object.keys(formState.feasibility).reduce((acc, field) => {
-        acc[field] = {
-          value: formState.feasibility[field],
-          details: {
-            description: "",
-            cost: 0,
-            sales_price: 0,
-            comments: "",
-          },
-        }
-        return acc
-      }, {})
-      await createFeasibility(feasibilityData)
-
-      // Create formData for validationForOffer
-      const validationForOfferFormData = new FormData()
-      validationForOfferFormData.append("name", formState.validationForOffer.name)
-      validationForOfferFormData.append("check", formState.validationForOffer.check)
-      validationForOfferFormData.append("date", formState.validationForOffer.date)
-      if (formState.validationForOffer.upload) {
-        validationForOfferFormData.append("upload", formState.validationForOffer.upload)
       }
-      await createValidationForOffer(validationForOfferFormData)
 
-      // Transform kickOff data to match API expectations
-      const kickOffData = Object.keys(formState.kickOff).reduce((acc, field) => {
-        acc[field] = {
-          value: formState.kickOff[field],
-          task: {
-            check: false,
-            responsible: "",
-            planned: "",
-            done: "",
-            comments: "",
-            filePath: null,
-          },
-        }
-        return acc
-      }, {})
-      await createKickOff(kickOffData)
+      const massProductionResponse = await createMassProduction(massProductionData)
+      console.log("Mass Production API response:", massProductionResponse)
 
-      // Transform facilities data
-      const facilitiesData = Object.keys(formState.facilities).reduce((acc, field) => {
-        acc[field] = {
-          value: formState.facilities[field],
-          task: {
-            check: false,
-            responsible: "",
-            planned: "",
-            done: "",
-            comments: "",
-            filePath: null,
-          },
-        }
-        return acc
-      }, {})
-      await createfacilities(facilitiesData)
-
-      // Transform ppTuning data
-      const ppTuningData = Object.keys(formState.ppTuning).reduce((acc, field) => {
-        acc[field] = {
-          value: formState.ppTuning[field],
-          task: {
-            check: false,
-            responsible: "",
-            planned: "",
-            done: "",
-            comments: "",
-            filePath: null,
-          },
-        }
-        return acc
-      }, {})
-      await createP_P_Tuning(ppTuningData)
-
-      // Transform processQualification data
-      const processQualificationData = Object.keys(formState.processQualification).reduce((acc, field) => {
-        acc[field] = {
-          value: formState.processQualification[field],
-          task: {
-            check: false,
-            responsible: "",
-            planned: "",
-            done: "",
-            comments: "",
-            filePath: null,
-          },
-        }
-        return acc
-      }, {})
-      await createQualificationProcess(processQualificationData)
-
-      // Transform qualificationConfirmation data
-      const qualificationConfirmationData = Object.keys(formState.qualificationConfirmation).reduce((acc, field) => {
-        acc[field] = {
-          value: formState.qualificationConfirmation[field],
-          task: {
-            check: false,
-            responsible: "",
-            planned: "",
-            done: "",
-            comments: "",
-            filePath: null,
-          },
-        }
-        return acc
-      }, {})
-      await createQualificationConfirmation(qualificationConfirmationData)
-
-      // Create formData for okForLunch
-      const okForLunchFormData = new FormData()
-      okForLunchFormData.append("check", formState.okForLunch.check)
-      okForLunchFormData.append("date", formState.okForLunch.date)
-      if (formState.okForLunch.upload) {
-        okForLunchFormData.append("upload", formState.okForLunch.upload)
+      // Extract the ID safely with fallbacks
+      let massProductionId
+      if (
+        massProductionResponse &&
+        massProductionResponse.massProduction &&
+        massProductionResponse.massProduction._id
+      ) {
+        massProductionId = massProductionResponse.massProduction._id
+      } else if (massProductionResponse && massProductionResponse._id) {
+        massProductionId = massProductionResponse._id
+      } else {
+        // If we can't find the ID in the expected places, log the response and throw an error
+        console.error("Unexpected API response structure:", massProductionResponse)
+        throw new Error("Could not extract mass production ID from response")
       }
-      await createOkForLunch(okForLunchFormData)
+
+      console.log("Mass Production created with ID:", massProductionId)
+
+      // Now create each step and link it to the mass production
+      try {
+        // 1. Feasibility
+        const feasibilityData = Object.keys(formState.feasibility).reduce((acc, field) => {
+          acc[field] = {
+            value: formState.feasibility[field],
+            details: {
+              description: "",
+              cost: 0,
+              sales_price: 0,
+              comments: "",
+            },
+          }
+          return acc
+        }, {})
+
+        console.log("Creating feasibility with data:", feasibilityData)
+        const feasibilityResponse = await createFeasibility(feasibilityData)
+        console.log("Feasibility created:", feasibilityResponse)
+
+        // Link feasibility to mass production
+        await updateMassProductionStep(massProductionId, {
+          step: "feasibility",
+          stepId: feasibilityResponse._id,
+        })
+        console.log("Linked feasibility to mass production")
+      } catch (error) {
+        console.error("Error creating feasibility:", error)
+      }
+
+      try {
+        // 2. Validation For Offer
+        const validationForOfferFormData = new FormData()
+        validationForOfferFormData.append("name", formState.validationForOffer.name || "Default Offer")
+        validationForOfferFormData.append("check", formState.validationForOffer.check || false)
+        validationForOfferFormData.append(
+          "date",
+          formState.validationForOffer.date || new Date().toISOString().split("T")[0],
+        )
+        if (formState.validationForOffer.upload) {
+          validationForOfferFormData.append("upload", formState.validationForOffer.upload)
+        }
+
+        console.log("Creating validation for offer")
+        const validationResponse = await createValidationForOffer(validationForOfferFormData)
+        console.log("Validation for offer created:", validationResponse)
+
+        // Link validation to mass production
+        await updateMassProductionStep(massProductionId, {
+          step: "validation_for_offer",
+          stepId: validationResponse._id,
+        })
+        console.log("Linked validation for offer to mass production")
+      } catch (error) {
+        console.error("Error creating validation for offer:", error)
+      }
+
+      try {
+        // 3. Kick Off
+        const kickOffData = Object.keys(formState.kickOff).reduce((acc, field) => {
+          acc[field] = {
+            value: formState.kickOff[field],
+            task: {
+              check: false,
+              responsible: "",
+              planned: "",
+              done: "",
+              comments: "",
+              filePath: null,
+            },
+          }
+          return acc
+        }, {})
+
+        console.log("Creating kick off with data:", kickOffData)
+        const kickOffResponse = await createKickOff(kickOffData)
+        console.log("Kick off created:", kickOffResponse)
+
+        // Link kick off to mass production
+        await updateMassProductionStep(massProductionId, {
+          step: "kick_off",
+          stepId: kickOffResponse._id,
+        })
+        console.log("Linked kick off to mass production")
+      } catch (error) {
+        console.error("Error creating kick off:", error)
+      }
+
+      try {
+        // 4. Facilities
+        const facilitiesData = Object.keys(formState.facilities).reduce((acc, field) => {
+          acc[field] = {
+            value: formState.facilities[field],
+            task: {
+              check: false,
+              responsible: "",
+              planned: "",
+              done: "",
+              comments: "",
+              filePath: null,
+            },
+          }
+          return acc
+        }, {})
+
+        console.log("Creating facilities with data:", facilitiesData)
+        const facilitiesResponse = await createfacilities(facilitiesData)
+        console.log("Facilities created:", facilitiesResponse)
+
+        // Link facilities to mass production
+        await updateMassProductionStep(massProductionId, {
+          step: "facilities",
+          stepId: facilitiesResponse._id,
+        })
+        console.log("Linked facilities to mass production")
+      } catch (error) {
+        console.error("Error creating facilities:", error)
+      }
+
+      try {
+        // 5. P-P Tuning
+        const ppTuningData = Object.keys(formState.ppTuning).reduce((acc, field) => {
+          acc[field] = {
+            value: formState.ppTuning[field],
+            task: {
+              check: false,
+              responsible: "",
+              planned: "",
+              done: "",
+              comments: "",
+              filePath: null,
+            },
+          }
+          return acc
+        }, {})
+
+        console.log("Creating P-P Tuning with data:", ppTuningData)
+        const ppTuningResponse = await createP_P_Tuning(ppTuningData)
+        console.log("P-P Tuning created:", ppTuningResponse)
+
+        // Link P-P Tuning to mass production
+        await updateMassProductionStep(massProductionId, {
+          step: "p_p_tuning",
+          stepId: ppTuningResponse._id,
+        })
+        console.log("Linked P-P Tuning to mass production")
+      } catch (error) {
+        console.error("Error creating P-P Tuning:", error)
+      }
+
+      try {
+        // 6. Process Qualification
+        const processQualificationData = Object.keys(formState.processQualification).reduce((acc, field) => {
+          acc[field] = {
+            value: formState.processQualification[field],
+            task: {
+              check: false,
+              responsible: "",
+              planned: "",
+              done: "",
+              comments: "",
+              filePath: null,
+            },
+          }
+          return acc
+        }, {})
+
+        console.log("Creating Process Qualification with data:", processQualificationData)
+        const processQualResponse = await createQualificationProcess(processQualificationData)
+        console.log("Process Qualification created:", processQualResponse)
+
+        // Link Process Qualification to mass production
+        await updateMassProductionStep(massProductionId, {
+          step: "process_qualif",
+          stepId: processQualResponse._id,
+        })
+        console.log("Linked Process Qualification to mass production")
+      } catch (error) {
+        console.error("Error creating Process Qualification:", error)
+      }
+
+      try {
+        // 7. Qualification Confirmation
+        const qualificationConfirmationData = Object.keys(formState.qualificationConfirmation).reduce((acc, field) => {
+          acc[field] = {
+            value: formState.qualificationConfirmation[field],
+            task: {
+              check: false,
+              responsible: "",
+              planned: "",
+              done: "",
+              comments: "",
+              filePath: null,
+            },
+          }
+          return acc
+        }, {})
+
+        console.log("Creating Qualification Confirmation with data:", qualificationConfirmationData)
+        const qualConfirmResponse = await createQualificationConfirmation(qualificationConfirmationData)
+        console.log("Qualification Confirmation created:", qualConfirmResponse)
+
+        // Link Qualification Confirmation to mass production
+        await updateMassProductionStep(massProductionId, {
+          step: "qualification_confirmation",
+          stepId: qualConfirmResponse._id,
+        })
+        console.log("Linked Qualification Confirmation to mass production")
+      } catch (error) {
+        console.error("Error creating Qualification Confirmation:", error)
+      }
+
+      try {
+        // 8. OK for Lunch
+        const okForLunchFormData = new FormData()
+        okForLunchFormData.append("check", formState.okForLunch.check || false)
+        okForLunchFormData.append("date", formState.okForLunch.date || new Date().toISOString().split("T")[0])
+        if (formState.okForLunch.upload) {
+          okForLunchFormData.append("upload", formState.okForLunch.upload)
+        }
+
+        console.log("Creating OK for Lunch")
+        const okForLunchResponse = await createOkForLunch(okForLunchFormData)
+        console.log("OK for Lunch created:", okForLunchResponse)
+
+        // Link OK for Lunch to mass production
+        await updateMassProductionStep(massProductionId, {
+          step: "ok_for_lunch",
+          stepId: okForLunchResponse._id,
+        })
+        console.log("Linked OK for Lunch to mass production")
+      } catch (error) {
+        console.error("Error creating OK for Lunch:", error)
+      }
 
       toast({
         title: "Success",
@@ -523,7 +749,33 @@ export default function MassProductionStepper() {
 
   // Handle checkbox change for task accordions
   const handleCheckboxChange = (form, field, value) => {
+    console.log(`Checkbox changed: ${field} = ${value}`)
     form.setValue(field, value)
+
+    // Also update the formState to ensure it's saved when moving between steps
+    const stepKey = Object.keys(formState)[currentStep - 1]
+    const currentFormValues = form.getValues()
+    setFormState((prevState) => ({
+      ...prevState,
+      [stepKey]: {
+        ...prevState[stepKey],
+        [field]: value,
+      },
+    }))
+  }
+
+  // Handle date field change
+  const handleDateChange = (field, value) => {
+    massProductionForm.setValue(field, value)
+
+    // Update form state
+    setFormState((prevState) => ({
+      ...prevState,
+      massProduction: {
+        ...prevState.massProduction,
+        [field]: value,
+      },
+    }))
   }
 
   return (
@@ -796,6 +1048,47 @@ export default function MassProductionStepper() {
                                 </FormItem>
                               )}
                             />
+                          </div>
+
+                          {/* Date Fields Section */}
+                          <div className="p-4 rounded-lg bg-gray-50">
+                            <h3 className="mb-4 text-lg font-semibold text-gray-700">Date Fields</h3>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                              {[
+                                "mlo",
+                                "tko",
+                                "cv",
+                                "pt1",
+                                "pt2",
+                                "sop",
+                                "ppap_submission_date",
+                                "closure",
+                                "next_review",
+                              ].map((field) => (
+                                <FormField
+                                  key={field}
+                                  control={massProductionForm.control}
+                                  name={field}
+                                  render={({ field: { value, onChange, ...fieldProps } }) => (
+                                    <FormItem>
+                                      <FormLabel className="capitalize">{field.replace(/_/g, " ")}</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          type="date"
+                                          value={value || ""}
+                                          onChange={(e) => {
+                                            onChange(e)
+                                            handleDateChange(field, e.target.value)
+                                          }}
+                                          {...fieldProps}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              ))}
+                            </div>
                           </div>
 
                           <Separator className="my-4" />

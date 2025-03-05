@@ -173,7 +173,7 @@ export default function MassProductionList() {
 
                 <Section title="Process Information">
                   <DetailItem label="Request Original" value={selectedItem.request_original} />
-                  <DetailItem label="Frasability" value={selectedItem.frasability} />
+                  <DetailItem label="feasability" value={selectedItem.feasability} />
                   <DetailItem label="Validation for Offer" value={selectedItem.validation_for_offer} />
                   <DetailItem label="Customer Offer" value={selectedItem.customer_offer} />
                   <DetailItem label="Customer Order" value={selectedItem.customer_order} />

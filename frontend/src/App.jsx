@@ -82,9 +82,9 @@ function App() {
           <Route path="/pd/edit/:id" element={<EditProductDesignation />} />
           <Route path="/masspd/create" element={<MassProductionForm />} />
           <Route path="/masspd/edit/:id" element={<MassProductionEdit />} />
+          <Route path="/masspd" element={<MassProductionTable />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/masspd" element={<MassProductionTable />} />
           <Route path="/test" element={<Test />} />
           <Route path="/test1" element={<Test1 />} />
           <Route path="/test2" element={<Test2 />} />

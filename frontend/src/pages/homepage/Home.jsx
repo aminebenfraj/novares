@@ -1,30 +1,14 @@
+import { Link } from "react-router-dom"
+import { Box, Atom, Users, Settings, ClipboardCheck, FileText, ListChecks, Utensils, CheckCircle, BarChart3, PieChart, ArrowUpRight } from 'lucide-react'
+import { Card, CardContent, CardFooter, CardTitle, CardHeader } from "../../components/ui/card"
+import { Button } from "../../components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
+import MainLayout from "../../components/MainLayout"
+import { getRecentUsers } from "../../apis/userApi"
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Link } from "react-router-dom"  // Replace Next.js Link with React Router Link
-import {
-  Box,
-  Atom,
-  Users,
-  Settings,
-  ClipboardCheck,
-  FileText,
-  ListChecks,
-  Utensils,
-  CheckCircle,
-  BarChart3,
-  PieChart,
-  ArrowUpRight,
-  Clock,
-} from "lucide-react"
-import { Card, CardContent, CardFooter, CardTitle ,CardHeader } from "../../components/ui/card"
-import { Button } from "../../components/ui/button"
-import { Badge } from "../../components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
-import Navbar from "../../components/NavBar"
-import Sidebar from "../../components/Sidebar"
-import ContactUs from "../../components/ContactUs"
-import { getRecentUsers } from "@/apis/userApi"
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton"
+
 // Stat card component
 const StatCard = ({ icon: Icon, title, value, trend, color }) => (
   <Card className="shadow-md">
@@ -76,57 +60,14 @@ const FeatureCard = ({ to, icon: Icon, title, description, color }) => (
   </motion.div>
 )
 
-// Activity item component
-const ActivityItem = ({ user, action, target, time, status }) => (
-  <div className="flex items-start gap-4 py-3">
-    <Avatar className="w-8 h-8">
-      <AvatarImage src={`/placeholder.svg?height=32&width=32`} />
-      <AvatarFallback>{user.substring(0, 2).toUpperCase()}</AvatarFallback>
-    </Avatar>
-    <div className="flex-1 space-y-1">
-      <div className="flex items-center gap-2">
-        <p className="text-sm font-medium">{user}</p>
-        <p className="text-sm text-gray-500">{action}</p>
-        <p className="text-sm font-medium">{target}</p>
-      </div>
-      <p className="flex items-center text-xs text-gray-500">
-        <Clock className="w-3 h-3 mr-1" />
-        {time}
-      </p>
-    </div>
-    <Badge variant={status === "Completed" ? "success" : status === "In Progress" ? "warning" : "default"}>
-      {status}
-    </Badge>
-  </div>
-)
-
-// Main dashboard component
 const Dashboard = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-  const [recentUsers, setRecentUsers] = useState([]);
-
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const [recentUsers, setRecentUsers] = useState([])
 
   useEffect(() => {
-    const handleResize = () => {
-      setScreenWidth(window.innerWidth);
-      setIsSidebarOpen(window.innerWidth >= 768); // Auto open for larger screens
-    };
-
-    // ✅ Fetch recent users
     getRecentUsers()
-      .then((data) => {
-        console.log("Fetched recent users:", data);
-        setRecentUsers(data);
-      })
-      .catch((error) => console.error("Error fetching recent users:", error));
-
-    window.addEventListener("resize", handleResize);
-    handleResize();
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+      .then(setRecentUsers)
+      .catch((error) => console.error("Error fetching recent users:", error))
+  }, [])
 
   const features = [
     {
@@ -187,29 +128,16 @@ const Dashboard = () => {
     },
   ]
 
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar toggleSidebar={toggleSidebar} />
+    <MainLayout>
+      <div>
+        {/* Welcome banner */}
+        <div className="w-full p-6 text-white bg-gradient-to-r from-blue-600 to-indigo-700">
+          <h2 className="mb-2 text-2xl font-bold">Welcome to Novares Management System</h2>
+          <p>Manage your products, production, feasibility, check-ins, and more efficiently from this dashboard.</p>
+        </div>
 
-      <div className="flex">
-        <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-
-        {/* Main content */}
-        <div className="flex-1 p-6">
-          {/* Welcome banner */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="p-6 mb-8 text-white rounded-lg shadow-lg bg-gradient-to-r from-blue-600 to-indigo-700"
-          >
-            <h2 className="mb-2 text-2xl font-bold">Welcome to Novares Management System</h2>
-            <p className="max-w-2xl opacity-90">
-              Manage your products, production, feasibility, check-ins, and more efficiently from this dashboard.
-            </p>
-          </motion.div>
-
+        <div className="p-6">
           {/* Stats section */}
           <div className="mb-8">
             <h2 className="mb-4 text-lg font-semibold text-gray-800">Overview</h2>
@@ -225,88 +153,55 @@ const Dashboard = () => {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-800">Quick Access</h2>
-              <Button variant="outline" size="sm">
-                View All
-              </Button>
+              <Button variant="outline" size="sm">View All</Button>
             </div>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-            >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {features.map((feature, index) => (
-                <motion.div
-                  key={feature.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + index * 0.05, duration: 0.5 }}
-                >
-                  <FeatureCard {...feature} />
-                </motion.div>
+                <FeatureCard key={feature.title} {...feature} />
               ))}
-            </motion.div>
+            </div>
           </div>
 
           {/* Activity and charts section */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Recent activity */}
-            <Card className="border border-gray-200 shadow-lg lg:col-span-2 dark:border-gray-700">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Recent Activity
-        </CardTitle>
-      </CardHeader>
-
-      <CardContent>
-        <div className="space-y-3">
-          {recentUsers.length > 0 ? (
-            recentUsers.map((user, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 transition rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <div className="flex items-center space-x-3">
-                  {/* Avatar */}
-                  <Avatar>
-                    <AvatarImage src={user.avatar || "/default-avatar.png"} alt={user.username} />
-                    <AvatarFallback>{user.username.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {user.username}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Joined {new Date(user.createdAt).toLocaleString()}
-                    </p>
+            <Card className="border border-gray-200 lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {recentUsers.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentUsers.map((user, index) => (
+                      <div key={index} className="flex items-center p-3 space-x-4 rounded-lg bg-gray-50">
+                        <Avatar>
+                          <AvatarImage src={user.avatar || "/default-avatar.png"} />
+                          <AvatarFallback>{user.username?.[0]?.toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{user.username}</p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="flex flex-col items-center py-6 space-y-2">
-              <Skeleton className="w-16 h-16 rounded-full" />
-              <p className="text-gray-500 dark:text-gray-400">No recent users found.</p>
-            </div>
-          )}
-        </div>
-      </CardContent>
-
-      <CardFooter>
-        <Button variant="outline" className="w-full">
-          View All Users
-        </Button>
-      </CardFooter>
-    </Card>
-
+                ) : (
+                  <div className="py-6 text-center">
+                    <Skeleton className="w-12 h-12 mx-auto mb-4 rounded-full" />
+                    <p className="text-gray-500">No recent activity</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Charts */}
             <div className="space-y-6">
-              <Card className="shadow-md">
+              <Card>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-800">Project Status</h3>
+                    <h3 className="text-lg font-semibold">Project Status</h3>
                     <PieChart className="w-4 h-4 text-gray-500" />
                   </div>
                 </CardHeader>
@@ -317,10 +212,10 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-md">
+              <Card>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-800">Monthly Progress</h3>
+                    <h3 className="text-lg font-semibold">Monthly Progress</h3>
                     <BarChart3 className="w-4 h-4 text-gray-500" />
                   </div>
                 </CardHeader>
@@ -334,9 +229,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
-      <ContactUs />
-    </div>
+    </MainLayout>
   )
 }
 

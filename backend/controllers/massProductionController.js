@@ -18,7 +18,7 @@ exports.createMassProduction = async (req, res) => {
       technical_skill,
       initial_request,
       request_original,
-      frasability,
+      feasability,
       validation_for_offer,
       customer_offer,
       customer_order,
@@ -102,7 +102,7 @@ exports.createMassProduction = async (req, res) => {
       technical_skill,
       initial_request,
       request_original,
-      frasability,
+      feasability,
       validation_for_offer,
       customer_offer,
       customer_order,
@@ -168,13 +168,21 @@ exports.getAllMassProductions = async (req, res) => {
     const massProductions = await MassProduction.find(filter)
       .populate("customer", "username email")
       .populate("product_designation", "part_name reference")
+      .populate("feasability")
+      .populate("validation_for_offer")
+      .populate("ok_for_lunch")
+      .populate("kick_off")
+      .populate("design")
+      .populate("facilities")
+      .populate("p_p_tuning")
+      .populate("process_qualif")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
     res.json(massProductions);
   } catch (error) {
-    console.error("❌ Error fetching MassProduction:", error);
+    console.error("❌ Error fetching MassProductions:", error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -183,8 +191,16 @@ exports.getAllMassProductions = async (req, res) => {
 exports.getMassProductionById = async (req, res) => {
   try {
     const massProduction = await MassProduction.findById(req.params.id)
-      .populate("customer", "username email")
-      .populate("product_designation", "part_name reference");
+    .populate("customer", "username email")
+    .populate("product_designation", "part_name reference")
+    .populate("feasability")
+    .populate("validation_for_offer")
+    .populate("ok_for_lunch")
+    .populate("kick_off")
+    .populate("design")
+    .populate("facilities")
+    .populate("p_p_tuning")
+    .populate("process_qualif")
 
     if (!massProduction) {
       return res.status(404).json({ error: "MassProduction not found" });
