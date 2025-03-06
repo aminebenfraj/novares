@@ -106,16 +106,9 @@ const MaterialMachineDetails = () => {
     >
       <Toaster />
       <div className="flex items-center justify-between mb-6">
-        <Button variant="ghost" onClick={() => navigate("/material-machine")}>
+        <Button variant="ghost" onClick={() => navigate("/machinematerial")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to List
-        </Button>
-
-        <Button asChild>
-          <Link to={`/material-machine/edit/${id}`}>
-            <Pencil className="w-4 h-4 mr-2" />
-            Edit Allocation
-          </Link>
         </Button>
       </div>
 
@@ -267,15 +260,15 @@ const MaterialMachineDetails = () => {
             <CardContent>
               <div className="space-y-2">
                 <Button asChild className="justify-start w-full">
-                  <Link to={`/material-machine/edit/${id}`}>
+                  <Link to={`/machinematerial/edit/${id}`}>
                     <Pencil className="w-4 h-4 mr-2" />
                     Edit Allocation
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="justify-start w-full">
-                  <Link to={`/materials/${allocation.material?._id}`}>
+                  <Link to={`/materials/edit/${allocation.material?._id}`}>
                     <Package className="w-4 h-4 mr-2" />
-                    View Material Details
+                    edit Material Details
                   </Link>
                 </Button>
               </div>

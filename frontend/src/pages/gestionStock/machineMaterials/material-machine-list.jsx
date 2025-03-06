@@ -101,7 +101,7 @@ const MaterialMachineList = () => {
             <CardDescription>View and manage material stock allocations to machines</CardDescription>
           </div>
           <Button asChild>
-            <Link to="/material-machine/create">
+            <Link to="/machinematerial/create">
               <Plus className="w-4 h-4 mr-2" />
               New Allocation
             </Link>
