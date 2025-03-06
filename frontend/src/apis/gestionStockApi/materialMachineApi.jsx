@@ -7,6 +7,11 @@ export const getAllAllocations = () => {
   return apiRequest("GET", `${BASE_URL}/allocates`);
 };
 
+// Update an existing allocation
+export const updateAllocation = (id, data) => {
+    return apiRequest("PUT", `${BASE_URL}/${id}`, data)
+  }
+
 // Get allocations for a specific material
 export const getMaterialAllocations = (materialId) => {
   return apiRequest("GET", `${BASE_URL}/material/${materialId}`);

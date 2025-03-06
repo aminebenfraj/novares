@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { getMaterialById } from "@/apis/gestionStockApi/materialApi"
-import { getAllAllocations , allocateStock } from "@/apis/gestionStockApi/materialMachineApi"
+import { getAllAllocations , updateAllocation } from "@/apis/gestionStockApi/materialMachineApi"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,8 @@ import { Separator } from "@/components/ui/separator"
 import { Save, ArrowLeft } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+
+
 const MaterialMachineEdit = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -29,7 +31,6 @@ const MaterialMachineEdit = () => {
     fetchAllocationDetails()
   }, [id])
 
-  // Update the fetchAllocationDetails function to ensure we get the latest history
   const fetchAllocationDetails = async () => {
     try {
       setLoading(true)
@@ -44,7 +45,7 @@ const MaterialMachineEdit = () => {
           description: "Allocation not found",
           variant: "destructive",
         })
-        navigate("/material-machine")
+        navigate("/machinematerial  ")
         return
       }
 
@@ -70,7 +71,6 @@ const MaterialMachineEdit = () => {
     }
   }
 
-  // Update the handleSubmit function to include a comment and refresh data after saving
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -98,20 +98,23 @@ const MaterialMachineEdit = () => {
 
     setSaving(true)
     try {
-      // Get current user ID from localStorage
+      // Get current user ID from localStorage - this should be an ObjectId string
       const userId = localStorage.getItem("userId")
 
-      // Use the allocate endpoint with a single allocation
-      await allocateStock({
-        materialId: material._id,
-        allocations: [
-          {
-            machineId: machine._id,
-            allocatedStock: allocatedStock,
-          },
-        ],
-        userId: userId || "unknown",
-      })
+      // Important: Don't pass userId if it's not available
+      // Let the server handle the default value
+      const updateData = {
+        allocatedStock: allocatedStock,
+        comment: `Stock updated from ${originalStock} to ${allocatedStock}`,
+      }
+
+      // Only add userId if it exists and is valid
+      if (userId) {
+        updateData.userId = userId
+      }
+
+      // Use the update endpoint with the allocation ID
+      await updateAllocation(id, updateData)
 
       toast({
         title: "Success",
@@ -124,9 +127,10 @@ const MaterialMachineEdit = () => {
       // Update the original stock value
       setOriginalStock(allocatedStock)
     } catch (error) {
+      console.error("Update error:", error)
       toast({
         title: "Error",
-        description: error.message || "Failed to update allocation",
+        description: error.response?.data?.error || error.message || "Failed to update allocation",
         variant: "destructive",
       })
     } finally {
@@ -150,7 +154,7 @@ const MaterialMachineEdit = () => {
       className="container py-8 mx-auto"
     >
       <Toaster />
-      <Button variant="ghost" className="mb-4" onClick={() => navigate("/machinematerial")}>
+      <Button variant="ghost" className="mb-4" onClick={() => navigate("/machinematerial    ")}>
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to List
       </Button>
