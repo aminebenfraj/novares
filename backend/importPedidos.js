@@ -51,7 +51,8 @@ const parseNumber = (value) => {
 // Helper function to safely parse dates (allow empty string for invalid values)
 const parseDate = (value) => {
   if (!value || value === "") return "";
-  const date = moment(value, ["DD/MM/YYYY", "YYYY-MM-DD"], true);
+  const dateFormats = ["DD/MM/YYYY", "YYYY-MM-DD", "MM/DD/YYYY", "YYYY/MM/DD", "DD-MM-YYYY", "YYYY-MM-DDTHH:mm:ss"];
+  const date = moment(value, dateFormats, true);
   return date.isValid() ? date.toISOString() : "";
 };
 
@@ -62,25 +63,25 @@ const parseBoolean = (value) => {
 
 // Transform data
 const transformedData = jsonData.map(row => ({
-  tipo: row["Unnamed: 0"] || "",
-  descripcionInterna: row["DESCRIPCION INTERNA // MOTIVO DE COMPRA"] || "",
-  fabricante: row["FABRICANTE"] || "",
-  referencia: row["REFERENCIA"] || "",
-  descripcionProveedor: row["DESCRIPCION PROVEEDOR"] || "",
-  solicitante: row["SOLICITANTE"] || "",
-  cantidad: parseNumber(row["CANTIDAD"]),
-  precioUnidad: parseNumber(row["PRECIO\nUNIDAD"]),
-  importePedido: parseNumber(row["IMPORTE PEDIDO"]),
-  fechaSolicitud: parseDate(row["FECHA SOLICITUD"]),
-  proveedor: row["PROVEEDOR"] || "",
-  comentario: row["COMENTARIO"] || "",
-  pedir: row["PEDIR"] || "",
-  introducidaSAP: parseDate(row["INTRODUCIDA SAP"]),
-  aceptado: parseDate(row["ACEPTADO"]),
-  direccion: row["DIRECCION"] || "",
-  recepcionPrevista: parseDate(row["RECEPCION PREVISTA"]),
-  recepcionado: parseBoolean(row["RECEPCIONADO"]),
-  ano: parseNumber(row["AÑO"])
+  tipo: row["tipo"] || "",
+  descripcionInterna: row["descripcionInterna"] || "",
+  fabricante: row["fabricante"] || "",
+  referencia: row["referencia"] || "",
+  descripcionProveedor: row["descripcionProveedor"] || "",
+  solicitante: row["solicitante"] || "",
+  cantidad: parseNumber(row["cantidad"]),
+  precioUnidad: parseNumber(row["precioUnidad"]),
+  importePedido: parseNumber(row["importePedido"]),
+  fechaSolicitud: parseDate(row["fechaSolicitud"]),
+  proveedor: row["proveedor"] || "",
+  comentario: row["comentario"] || "",
+  pedir: row["pedir"] || "",
+  introducidaSAP: parseDate(row["introducidaSAP"]),
+  aceptado: parseDate(row["aceptado"]), // Ensure this matches the column name
+  direccion: row["direccion"] || "",
+  recepcionPrevista: parseDate(row["recepcionPrevista"]),
+  recepcionado: parseBoolean(row["recepcionado"]),
+  ano: parseNumber(row["ano"])
 }));
 
 // Log transformed data to verify

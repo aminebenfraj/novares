@@ -17,7 +17,6 @@ const PedidoSchema = new mongoose.Schema({
   introducidaSAP: Date,
   aceptado: Date,
   direccion: String,
-  recepcionPrevista: Date,
   recepcionado: String,
   ano: Number
 });

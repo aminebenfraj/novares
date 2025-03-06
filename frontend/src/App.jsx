@@ -70,6 +70,10 @@ import ProcessQualificationForm from './pages/process_qualif/processQualificatio
 import ProcessQualificationList from './pages/process_qualif/processqualificationlist';
 import EditProcessQualification from './pages/process_qualif/editProcessQualification';
 import PedidoList from './pages/pedido/PedidoList';
+import Materialmachinecreate from '../src/pages/gestionStock/machineMaterials/material-machine-create';
+import Materialmachinelist from '../src/pages/gestionStock/machineMaterials/material-machine-list';
+import Materialmachineedit from '../src/pages/gestionStock/machineMaterials/material-machine-edit';
+import Materialmachinedetails from '../src/pages/gestionStock/machineMaterials/material-machine-details';
 
 
 
@@ -146,6 +150,10 @@ function App() {
         <Route path="/processQualification" element={< ProcessQualificationList/>} />
         <Route path="/processQualification/edit/:id" element={< EditProcessQualification/>} />
         <Route path="/Pedido" element={< PedidoList/>} />
+        <Route path="/machinematerial/create" element={< Materialmachinecreate/>} />
+        <Route path="/machinematerial" element={< Materialmachinelist/>} />
+        <Route path="/machinematerial/detail/:id" element={< Materialmachinedetails/>} />
+        <Route path="/machinematerial/edit/:id" element={< Materialmachineedit/>} />
     </Routes>
       </AuthProvider>
   );
