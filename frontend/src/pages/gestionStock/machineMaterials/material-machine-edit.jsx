@@ -12,7 +12,6 @@ import { Separator } from "@/components/ui/separator"
 import { Save, ArrowLeft } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-
 const MaterialMachineEdit = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -30,6 +29,7 @@ const MaterialMachineEdit = () => {
     fetchAllocationDetails()
   }, [id])
 
+  // Update the fetchAllocationDetails function to ensure we get the latest history
   const fetchAllocationDetails = async () => {
     try {
       setLoading(true)
@@ -70,6 +70,7 @@ const MaterialMachineEdit = () => {
     }
   }
 
+  // Update the handleSubmit function to include a comment and refresh data after saving
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -117,6 +118,9 @@ const MaterialMachineEdit = () => {
         description: "Allocation updated successfully",
       })
 
+      // Refresh allocation details to get updated history
+      await fetchAllocationDetails()
+
       // Update the original stock value
       setOriginalStock(allocatedStock)
     } catch (error) {
@@ -146,7 +150,7 @@ const MaterialMachineEdit = () => {
       className="container py-8 mx-auto"
     >
       <Toaster />
-      <Button variant="ghost" className="mb-4" onClick={() => navigate("/material-machine")}>
+      <Button variant="ghost" className="mb-4" onClick={() => navigate("/machinematerial")}>
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to List
       </Button>

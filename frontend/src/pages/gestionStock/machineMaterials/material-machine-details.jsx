@@ -5,7 +5,7 @@ import { useParams, useNavigate, Link } from "react-router-dom"
 import { motion } from "framer-motion"
 import { getMaterialById } from "@/apis/gestionStockApi/materialApi"
 
-import { getAllAllocations, getMachineStockHistory } from "../../../apis/gestionStockApi/materialMachineApi"
+import { getAllAllocations } from "../../../apis/gestionStockApi/materialMachineApi"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -26,6 +26,7 @@ const MaterialMachineDetails = () => {
     fetchAllocationDetails()
   }, [id])
 
+  // Update the fetchAllocationDetails function to ensure we get the latest history
   const fetchAllocationDetails = async () => {
     try {
       setLoading(true)
@@ -44,6 +45,11 @@ const MaterialMachineDetails = () => {
         return
       }
 
+      // Sort history by date (newest first) if it exists
+      if (currentAllocation.history && currentAllocation.history.length > 0) {
+        currentAllocation.history.sort((a, b) => new Date(b.date) - new Date(a.date))
+      }
+
       setAllocation(currentAllocation)
 
       // Fetch material details to get current stock
@@ -54,30 +60,6 @@ const MaterialMachineDetails = () => {
           material: materialDetails,
         }))
       }
-
-      // Fetch machine history if needed
-      if (currentAllocation.machine?._id) {
-        try {
-          const historyData = await getMachineStockHistory(currentAllocation.machine._id)
-          // If history is not already in the allocation, add it
-          if (!currentAllocation.history && historyData.length > 0) {
-            // Find history for this specific material
-            const relevantHistory = historyData.find(
-              (h) => h.material && h.material._id === currentAllocation.material._id,
-            )
-
-            if (relevantHistory) {
-              setAllocation((prev) => ({
-                ...prev,
-                history: relevantHistory.history || [],
-              }))
-            }
-          }
-        } catch (historyError) {
-          console.error("Failed to fetch history:", historyError)
-          // Continue without history if it fails
-        }
-      }
     } catch (error) {
       toast({
         title: "Error",
@@ -87,6 +69,18 @@ const MaterialMachineDetails = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Add a function to format the date nicely
+  const formatDate = (dateString) => {
+    const date = new Date(dateString)
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date)
   }
 
   if (loading) {
@@ -106,9 +100,16 @@ const MaterialMachineDetails = () => {
     >
       <Toaster />
       <div className="flex items-center justify-between mb-6">
-        <Button variant="ghost" onClick={() => navigate("/machinematerial")}>
+        <Button variant="ghost" onClick={() => navigate("/material-machine")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to List
+        </Button>
+
+        <Button asChild>
+          <Link to={`/material-machine/edit/${id}`}>
+            <Pencil className="w-4 h-4 mr-2" />
+            Edit Allocation
+          </Link>
         </Button>
       </div>
 
@@ -228,7 +229,7 @@ const MaterialMachineDetails = () => {
                                 transition={{ delay: index * 0.05 }}
                                 className="hover:bg-muted/50"
                               >
-                                <td className="px-4 py-2 text-sm">{new Date(entry.date).toLocaleString()}</td>
+                                <td className="px-4 py-2 text-sm">{formatDate(entry.date)}</td>
                                 <td className="px-4 py-2 text-sm">{entry.previousStock}</td>
                                 <td className="px-4 py-2 text-sm">{entry.newStock}</td>
                                 <td className="px-4 py-2 text-sm">{entry.comment}</td>
@@ -260,15 +261,15 @@ const MaterialMachineDetails = () => {
             <CardContent>
               <div className="space-y-2">
                 <Button asChild className="justify-start w-full">
-                  <Link to={`/machinematerial/edit/${id}`}>
+                  <Link to={`/material-machine/edit/${id}`}>
                     <Pencil className="w-4 h-4 mr-2" />
                     Edit Allocation
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="justify-start w-full">
-                  <Link to={`/materials/edit/${allocation.material?._id}`}>
+                  <Link to={`/materials/${allocation.material?._id}`}>
                     <Package className="w-4 h-4 mr-2" />
-                    edit Material Details
+                    View Material Details
                   </Link>
                 </Button>
               </div>
