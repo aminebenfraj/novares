@@ -3,8 +3,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { getMassProductionById, updateMassProduction } from "../../apis/massProductionApi"
 import { getAllCustomers } from "../../apis/customerApi"
 import { getAllpd } from "../../apis/ProductDesignation-api"
-import { Navbar } from "../../components/Navbar"
-import ContactUs from "../../components/ContactUs"
+import MainLayout from "../../components/MainLayout"
 
 export default function EditMassProductionForm() {
   const { id } = useParams()
@@ -154,7 +153,7 @@ export default function EditMassProductionForm() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Navbar />
+    <MainLayout>
       <div className="container px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <h1 className="mb-6 text-3xl font-bold text-gray-900">Edit Mass Production</h1>
         <div className="overflow-hidden bg-white rounded-lg shadow-xl">
@@ -490,7 +489,7 @@ export default function EditMassProductionForm() {
           </form>
         </div>
       </div>
-      <ContactUs />
+    </MainLayout>
     </div>
   )
 }

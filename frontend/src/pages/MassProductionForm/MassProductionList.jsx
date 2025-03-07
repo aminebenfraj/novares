@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { getAllMassProductions, deleteMassProduction } from "../../apis/massProductionApi"
-import { Navbar } from "../../components/Navbar"
-import ContactUs from "../../components/ContactUs";
-
+import MainLayout from "../../components/MainLayout"
 export default function MassProductionList() {
   const [massProductions, setMassProductions] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -71,7 +69,7 @@ export default function MassProductionList() {
 
   return (
   <div className="min-h-screen bg-gray-100">
-      <Navbar />
+    <MainLayout>
     <div className="min-h-screen bg-gray-100">
       <div className="container px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <h1 className="mb-6 text-3xl font-bold text-gray-900">Mass Production List</h1>
@@ -211,7 +209,7 @@ export default function MassProductionList() {
       )}
     </div>
     
-    <ContactUs />
+    </MainLayout           >
   </div>
   )
 }

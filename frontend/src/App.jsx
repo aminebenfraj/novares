@@ -151,8 +151,8 @@ function App() {
         <Route path="/processQualification/create" element={< ProcessQualificationForm/>} />
         <Route path="/processQualification" element={< ProcessQualificationList/>} />
         <Route path="/processQualification/edit/:id" element={< EditProcessQualification/>} />
-        <Route path="/Pedido" element={< PedidoList/>} />
-        <Route path="/Pedido/create" element={< Createpedido/>} />
+        <Route path="/pedido" element={< PedidoList/>} />
+        <Route path="/pedido/create" element={< Createpedido/>} />
         <Route path="/Pedido/edit/:id" element={< Editpedido/>} />
         <Route path="/machinematerial/create" element={< Materialmachinecreate/>} />
         <Route path="/machinematerial" element={< Materialmachinelist/>} />

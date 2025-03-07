@@ -15,10 +15,7 @@ import { createFeasibility } from "../../apis/feasabilityApi"
 import { createQualificationProcess } from "../../apis/process_qualifApi"
 import { createQualificationConfirmation } from "../../apis/qualificationconfirmationapi"
 import { createValidationForOffer } from "../../apis/validationForOfferApi"
-import { Navbar } from "../../components/Navbar"
-import ContactUs from "../../components/ContactUs"
-import { updateMassProduction } from "../../apis/massProductionApi"
-
+import MainLayout from "../../components/MainLayout"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card"
 import { Checkbox } from "../../components/ui/checkbox"
@@ -780,7 +777,7 @@ export default function MassProductionStepper() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+    <MainLayout>
 
       <div className="container px-4 py-8 mx-auto max-w-7xl">
         <div className="mb-8">
@@ -1647,7 +1644,7 @@ export default function MassProductionStepper() {
           </div>
         </div>
       </div>
-      <ContactUs />
+    </MainLayout>
     </div>
   )
 }

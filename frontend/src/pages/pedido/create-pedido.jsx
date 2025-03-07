@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import MainLayout from "@/components/MainLayout"
 
 function CreatePedido() {
   const navigate = useNavigate()
@@ -96,6 +97,8 @@ function CreatePedido() {
   }
 
   return (
+    <MainLayout>
+
     <div className="container py-8 mx-auto">
       <div className="flex items-center mb-6 space-x-4">
         <Button variant="outline" size="icon" onClick={() => navigate("/pedido")}>
@@ -108,7 +111,7 @@ function CreatePedido() {
       </div>
 
       <Alert className="mb-6">
-        <ClipboardList className="h-4 w-4" />
+        <ClipboardList className="w-4 h-4" />
         <AlertTitle>Complete all required information</AlertTitle>
         <AlertDescription>
           Please fill in all the necessary details to create a new order. Fields marked with * are required.
@@ -272,8 +275,8 @@ function CreatePedido() {
                     <Label htmlFor="fechaSolicitud">Request Date *</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
+                        <Button variant="outline" className="justify-start w-full font-normal text-left">
+                          <CalendarIcon className="w-4 h-4 mr-2" />
                           {pedido.fechaSolicitud ? format(pedido.fechaSolicitud, "PPP") : <span>Pick a date</span>}
                         </Button>
                       </PopoverTrigger>
@@ -314,8 +317,8 @@ function CreatePedido() {
                     <Label htmlFor="introducidaSAP">SAP Entry Date</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
+                        <Button variant="outline" className="justify-start w-full font-normal text-left">
+                          <CalendarIcon className="w-4 h-4 mr-2" />
                           {pedido.introducidaSAP ? format(pedido.introducidaSAP, "PPP") : <span>Pick a date</span>}
                         </Button>
                       </PopoverTrigger>
@@ -333,8 +336,8 @@ function CreatePedido() {
                     <Label htmlFor="aceptado">Acceptance Date</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
+                        <Button variant="outline" className="justify-start w-full font-normal text-left">
+                          <CalendarIcon className="w-4 h-4 mr-2" />
                           {pedido.aceptado ? format(pedido.aceptado, "PPP") : <span>Pick a date</span>}
                         </Button>
                       </PopoverTrigger>
@@ -382,7 +385,9 @@ function CreatePedido() {
         </div>
       </form>
     </div>
+      </MainLayout>
   )
+
 }
 
 export default CreatePedido
