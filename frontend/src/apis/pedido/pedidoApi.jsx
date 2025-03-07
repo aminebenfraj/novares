@@ -3,10 +3,16 @@ import { apiRequest } from "../api";
 
 const BASE_URL = "api/pedidos";
 
-// Get all pedidos with pagination
-export const getAllPedidos = (page = 1, limit = 10) => {
-  return apiRequest("GET", `${BASE_URL}?page=${page}&limit=${limit}`);
-};
+export const getAllPedidos = (page = 1, limit = 10, search = "") => {
+  let url = `${BASE_URL}?page=${page}&limit=${limit}`
+
+  // Add search parameter if provided
+  if (search) {
+    url += `&search=${encodeURIComponent(search)}`
+  }
+
+  return apiRequest("GET", url)
+}
 
 // Get a single pedido by ID
 export const getPedidoById = (id) => {

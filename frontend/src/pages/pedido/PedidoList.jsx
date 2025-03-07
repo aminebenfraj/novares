@@ -1,15 +1,11 @@
-import { useState, useEffect } from "react";
-import { getAllPedidos, deletePedido } from "../../apis/pedido/pedidoApi";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+"use client"
+
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import { getAllPedidos, deletePedido } from "../../apis/pedido/pedidoApi"
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
@@ -17,7 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,18 +21,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { motion, AnimatePresence } from "framer-motion";
+} from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from "@/hooks/use-toast"
 import {
   Search,
   Plus,
@@ -52,72 +42,135 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
+} from "lucide-react"
 
 function PedidoList() {
-  const [pedidos, setPedidos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentTab, setCurrentTab] = useState("all");
-  const [selectedPedido, setSelectedPedido] = useState(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  const [pedidos, setPedidos] = useState([])
+  const [filteredPedidos, setFilteredPedidos] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [currentTab, setCurrentTab] = useState("all")
+  const [selectedPedido, setSelectedPedido] = useState(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
     total: 0,
     totalPages: 0,
-  });
+  })
 
-  const fetchPedidos = async (page) => {
+  const fetchPedidos = async (page, searchQuery = "") => {
     try {
-      setIsLoading(true);
-      const response = await getAllPedidos(page, pagination.limit);
+      setIsLoading(true)
+
+      // If we're searching, fetch all data without pagination
+      const response = searchQuery
+        ? await getAllPedidos(1, 1000, searchQuery)
+        : await getAllPedidos(page, pagination.limit)
+
       if (response && response.data) {
-        setPedidos(response.data);
-        setPagination({
-          ...pagination,
-          page: response.page,
-          total: response.total,
-          totalPages: response.totalPages,
-        });
+        setPedidos(response.data)
+        setFilteredPedidos(response.data)
+
+        // Only update pagination for non-search results
+        if (!searchQuery) {
+          setPagination({
+            ...pagination,
+            page: response.page || 1,
+            total: response.total || response.data.length,
+            totalPages: response.totalPages || Math.ceil(response.data.length / pagination.limit),
+          })
+        }
       } else {
-        setError("Invalid data received from server.");
+        setError("Invalid data received from server.")
       }
     } catch (error) {
-      console.error("❌ Error fetching pedidos:", error);
-      setError("Failed to load pedidos. Please try again later.");
+      console.error("❌ Error fetching pedidos:", error)
+      setError("Failed to load pedidos. Please try again later.")
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load pedidos. Please try again later.",
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchPedidos(pagination.page);
-  }, [pagination.page]);
+    fetchPedidos(pagination.page)
+  }, [pagination.page])
+
+  useEffect(() => {
+    if (searchTerm) {
+      // When searching, fetch all data
+      fetchPedidos(1, searchTerm)
+    } else {
+      // When not searching, revert to paginated data
+      fetchPedidos(pagination.page)
+    }
+  }, [searchTerm])
+
+  useEffect(() => {
+    if (!searchTerm) {
+      fetchPedidos(pagination.page)
+    }
+  }, [pagination.page])
+
+  useEffect(() => {
+    if (pedidos.length > 0 && !searchTerm) {
+      // Only apply tab filter when not searching (search already fetches filtered data)
+      let result = [...pedidos]
+
+      // Apply tab filter
+      if (currentTab !== "all") {
+        result = result.filter((pedido) => {
+          const status = getStatusFromPedido(pedido)
+          return status === currentTab
+        })
+      }
+
+      setFilteredPedidos(result)
+    }
+  }, [currentTab, pedidos, searchTerm])
 
   const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
-  };
+    setPagination((prev) => ({ ...prev, page: newPage }))
+  }
 
   const handleDelete = async (id) => {
     try {
-      await deletePedido(id);
-      await fetchPedidos(pagination.page);
-      setIsDeleteDialogOpen(false);
+      await deletePedido(id)
+      await fetchPedidos(pagination.page)
+      setIsDeleteDialogOpen(false)
+      toast({
+        title: "Success",
+        description: "Pedido deleted successfully",
+      })
     } catch (error) {
-      console.error("❌ Error deleting pedido:", error);
-      setError("Failed to delete the pedido. Please try again.");
+      console.error("❌ Error deleting pedido:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete the pedido. Please try again.",
+      })
     }
-  };
+  }
+
+  const handleEditClick = (pedido) => {
+    navigate(`/pedido/edit/${pedido._id}`)
+  }
 
   const getStatusFromPedido = (pedido) => {
-    if (pedido.recepcionado === "Si") return "completed";
-    if (pedido.aceptado) return "in_progress";
-    if (pedido.introducidaSAP) return "pending";
-    return "cancelled";
-  };
+    if (pedido.recepcionado === "Si") return "completed"
+    if (pedido.aceptado) return "in_progress"
+    if (pedido.introducidaSAP) return "pending"
+    return "cancelled"
+  }
 
   const getStatusDetails = (status) => {
     const statusMap = {
@@ -141,34 +194,31 @@ function PedidoList() {
         icon: AlertCircle,
         className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
       },
-    };
-    return statusMap[status] || statusMap.pending;
-  };
+    }
+    return statusMap[status] || statusMap.pending
+  }
 
   const formatDate = (date) => {
-    if (!date) return "N/A";
-    return new Date(date).toLocaleDateString();
-  };
+    if (!date) return "N/A"
+    return new Date(date).toLocaleDateString()
+  }
 
   const formatCurrency = (amount) => {
-    if (!amount) return "N/A";
-    return new Intl.NumberFormat('es-ES', { 
-      style: 'currency', 
-      currency: 'EUR' 
-    }).format(amount);
-  };
+    if (!amount) return "N/A"
+    return new Intl.NumberFormat("es-ES", {
+      style: "currency",
+      currency: "EUR",
+    }).format(amount)
+  }
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        >
+        <div className="animate-spin">
           <RefreshCw className="w-8 h-8 text-primary" />
-        </motion.div>
+        </div>
       </div>
-    );
+    )
   }
 
   if (error) {
@@ -178,199 +228,186 @@ function PedidoList() {
           <CardTitle className="text-red-500">Error</CardTitle>
           <CardDescription>{error}</CardDescription>
         </CardHeader>
+        <CardContent>
+          <Button onClick={() => fetchPedidos(pagination.page)}>Try Again</Button>
+        </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container py-8 mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-4xl font-bold tracking-tight">Pedidos Management</h1>
-              <p className="mt-2 text-muted-foreground">
-                Track and manage your purchase orders efficiently
-              </p>
-            </div>
-            <Button className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Create Order
-            </Button>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">Pedidos Management</h1>
+            <p className="mt-2 text-muted-foreground">Track and manage your purchase orders efficiently</p>
           </div>
+          <Button className="flex items-center gap-2" onClick={() => navigate("/pedido/create")}>
+            <Plus className="w-4 h-4" />
+            Create Order
+          </Button>
+        </div>
 
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute w-4 h-4 transform -translate-y-1/2 text-muted-foreground left-3 top-1/2" />
-                    <Input
-                      placeholder="Search orders by any field..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Filter className="w-4 h-4" />
-                    Filters
-                  </Button>
+        <div className="grid gap-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute w-4 h-4 transform -translate-y-1/2 text-muted-foreground left-3 top-1/2" />
+                  <Input
+                    placeholder="Search orders by any field..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
                 </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-                  <TabsList className="justify-start w-full px-6 border-b rounded-none">
-                    <TabsTrigger value="all">All Orders</TabsTrigger>
-                    <TabsTrigger value="pending">Pending</TabsTrigger>
-                    <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-                    <TabsTrigger value="completed">Completed</TabsTrigger>
-                    <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value={currentTab} className="m-0">
-                    <ScrollArea className="h-[calc(100vh-20rem)]">
-                      <Table>
-                        <TableHeader>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Filter className="w-4 h-4" />
+                  Filters
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+                <TabsList className="justify-start w-full px-6 border-b rounded-none">
+                  <TabsTrigger value="all">All Orders</TabsTrigger>
+                  <TabsTrigger value="pending">Pending</TabsTrigger>
+                  <TabsTrigger value="in_progress">In Progress</TabsTrigger>
+                  <TabsTrigger value="completed">Completed</TabsTrigger>
+                  <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+                </TabsList>
+                <TabsContent value={currentTab} className="m-0">
+                  <ScrollArea className="h-[calc(100vh-20rem)]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Tipo</TableHead>
+                          <TableHead>Referencia</TableHead>
+                          <TableHead>Solicitante</TableHead>
+                          <TableHead>Fabricante</TableHead>
+                          <TableHead>Proveedor</TableHead>
+                          <TableHead>Cantidad</TableHead>
+                          <TableHead>Precio Unidad</TableHead>
+                          <TableHead>Importe</TableHead>
+                          <TableHead>Fecha Solicitud</TableHead>
+                          <TableHead>Estado</TableHead>
+                          <TableHead className="w-[100px]"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredPedidos.map((pedido) => {
+                          const status = getStatusFromPedido(pedido)
+                          const statusDetails = getStatusDetails(status)
+                          const StatusIcon = statusDetails.icon
+                          return (
+                            <TableRow key={pedido._id} className="group">
+                              <TableCell>{pedido.tipo}</TableCell>
+                              <TableCell className="font-medium">{pedido.referencia}</TableCell>
+                              <TableCell>{pedido.solicitante}</TableCell>
+                              <TableCell>{pedido.fabricante}</TableCell>
+                              <TableCell>{pedido.proveedor}</TableCell>
+                              <TableCell>{pedido.cantidad}</TableCell>
+                              <TableCell>{formatCurrency(pedido.precioUnidad)}</TableCell>
+                              <TableCell>{formatCurrency(pedido.importePedido)}</TableCell>
+                              <TableCell>{formatDate(pedido.fechaSolicitud)}</TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className={statusDetails.className}>
+                                  <StatusIcon className="w-3 h-3 mr-1" />
+                                  {statusDetails.label}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="w-8 h-8 p-0 opacity-0 group-hover:opacity-100">
+                                      <MoreVertical className="w-4 h-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setSelectedPedido(pedido)
+                                        setIsDialogOpen(true)
+                                      }}
+                                    >
+                                      <FileText className="w-4 h-4 mr-2" />
+                                      View Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleEditClick(pedido)}>
+                                      <Edit3 className="w-4 h-4 mr-2" />
+                                      Edit Order
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-red-600"
+                                      onClick={() => {
+                                        setSelectedPedido(pedido)
+                                        setIsDeleteDialogOpen(true)
+                                      }}
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete Order
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+
+                        {filteredPedidos.length === 0 && (
                           <TableRow>
-                            <TableHead>Tipo</TableHead>
-                            <TableHead>Referencia</TableHead>
-                            <TableHead>Solicitante</TableHead>
-                            <TableHead>Fabricante</TableHead>
-                            <TableHead>Proveedor</TableHead>
-                            <TableHead>Cantidad</TableHead>
-                            <TableHead>Precio Unidad</TableHead>
-                            <TableHead>Importe</TableHead>
-                            <TableHead>Fecha Solicitud</TableHead>
-                            <TableHead>Estado</TableHead>
-                            <TableHead className="w-[100px]"></TableHead>
+                            <TableCell colSpan={11} className="h-24 text-center">
+                              No results found.
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          <AnimatePresence>
-                            {pedidos.map((pedido) => {
-                              const status = getStatusFromPedido(pedido);
-                              const statusDetails = getStatusDetails(status);
-                              const StatusIcon = statusDetails.icon;
-                              return (
-                                <motion.tr
-                                  key={pedido._id}
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  exit={{ opacity: 0 }}
-                                  className="group"
-                                >
-                                  <TableCell>{pedido.tipo}</TableCell>
-                                  <TableCell className="font-medium">
-                                    {pedido.referencia}
-                                  </TableCell>
-                                  <TableCell>{pedido.solicitante}</TableCell>
-                                  <TableCell>{pedido.fabricante}</TableCell>
-                                  <TableCell>{pedido.proveedor}</TableCell>
-                                  <TableCell>{pedido.cantidad}</TableCell>
-                                  <TableCell>{formatCurrency(pedido.precioUnidad)}</TableCell>
-                                  <TableCell>{formatCurrency(pedido.importePedido)}</TableCell>
-                                  <TableCell>{formatDate(pedido.fechaSolicitud)}</TableCell>
-                                  <TableCell>
-                                    <Badge variant="secondary" className={statusDetails.className}>
-                                      <StatusIcon className="w-3 h-3 mr-1" />
-                                      {statusDetails.label}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          className="w-8 h-8 p-0 opacity-0 group-hover:opacity-100"
-                                        >
-                                          <MoreVertical className="w-4 h-4" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                        <DropdownMenuItem
-                                          onClick={() => {
-                                            setSelectedPedido(pedido);
-                                            setIsDialogOpen(true);
-                                          }}
-                                        >
-                                          <FileText className="w-4 h-4 mr-2" />
-                                          View Details
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem>
-                                          <Edit3 className="w-4 h-4 mr-2" />
-                                          Edit Order
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem
-                                          className="text-red-600"
-                                          onClick={() => {
-                                            setSelectedPedido(pedido);
-                                            setIsDeleteDialogOpen(true);
-                                          }}
-                                        >
-                                          <Trash2 className="w-4 h-4 mr-2" />
-                                          Delete Order
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </TableCell>
-                                </motion.tr>
-                              );
-                            })}
-                          </AnimatePresence>
-                        </TableBody>
-                      </Table>
-                    </ScrollArea>
-                    <div className="flex items-center justify-between px-6 py-4 border-t">
-                      <div className="text-sm text-muted-foreground">
-                        Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-                        {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
-                        {pagination.total} entries
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePageChange(pagination.page - 1)}
-                          disabled={pagination.page === 1}
-                        >
-                          <ChevronLeft className="w-4 h-4 mr-2" />
-                          Previous
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePageChange(pagination.page + 1)}
-                          disabled={pagination.page >= pagination.totalPages}
-                        >
-                          Next
-                          <ChevronRight className="w-4 h-4 ml-2" />
-                        </Button>
-                      </div>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                  <div className="flex items-center justify-between px-6 py-4 border-t">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {filteredPedidos.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0} to{" "}
+                      {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
                     </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </div>
-        </motion.div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.page - 1)}
+                        disabled={pagination.page === 1}
+                      >
+                        <ChevronLeft className="w-4 h-4 mr-2" />
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.page + 1)}
+                        disabled={pagination.page >= pagination.totalPages}
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[800px]">
           <DialogHeader>
             <DialogTitle>Order Details</DialogTitle>
-            <DialogDescription>
-              Complete information about order {selectedPedido?.referencia}
-            </DialogDescription>
+            <DialogDescription>Complete information about order {selectedPedido?.referencia}</DialogDescription>
           </DialogHeader>
           {selectedPedido && (
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <h4 className="font-medium">Basic Information</h4>
@@ -486,7 +523,10 @@ function PedidoList() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Close
             </Button>
-            <Button>Edit Order</Button>
+            <Button onClick={() => handleEditClick(selectedPedido)}>
+              <Edit3 className="w-4 h-4 mr-2" />
+              Edit Order
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -503,17 +543,15 @@ function PedidoList() {
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
-              onClick={() => selectedPedido && handleDelete(selectedPedido._id)}
-            >
+            <Button variant="destructive" onClick={() => selectedPedido && handleDelete(selectedPedido._id)}>
               Delete
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  );
+  )
 }
 
-export default PedidoList;
+export default PedidoList
+
