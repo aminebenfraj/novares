@@ -3,16 +3,17 @@ import { apiRequest } from "../api";
 
 const BASE_URL = "api/pedidos";
 
-export const getAllPedidos = (page = 1, limit = 10, search = "") => {
-  let url = `${BASE_URL}?page=${page}&limit=${limit}`
+export const getAllPedidos = async (page = 1, limit = 10) => {
+  const url = `${BASE_URL}?page=${page}&limit=${limit}`;
 
-  // Add search parameter if provided
-  if (search) {
-    url += `&search=${encodeURIComponent(search)}`
+  try {
+    return await apiRequest("GET", url);
+  } catch (error) {
+    console.error("Error fetching pedidos:", error);
+    throw error; // Rethrow the error for better error handling
   }
+};
 
-  return apiRequest("GET", url)
-}
 
 // Get a single pedido by ID
 export const getPedidoById = (id) => {

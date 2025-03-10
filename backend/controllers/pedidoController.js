@@ -3,27 +3,45 @@ const Pedido = require("../models/Pedido");
 // 📌 Get all pedidos
 // 📌 Get all pedidos with pagination
 exports.getAllPedidos = async (req, res) => {
-    try {
-      const { page = 1, limit = 10 } = req.query; // Default to page 1, limit 10
-  
-      const pedidos = await Pedido.find()
-        .skip((page - 1) * limit) // Skip previous pages
-        .limit(parseInt(limit)) // Limit the number of results
-        .sort({ createdAt: -1 }); // Sort by newest first
-  
-      const totalPedidos = await Pedido.countDocuments();
-      
-      res.json({
+  try {
+    let { page = 1, limit = 10 } = req.query;
+
+    // Ensure page & limit are valid positive integers
+    page = Math.max(parseInt(page, 10) || 1, 1);
+    limit = Math.max(parseInt(limit, 10) || 10, 1);
+
+    const totalPedidos = await Pedido.countDocuments();
+    const totalPages = Math.ceil(totalPedidos / limit);
+
+    // If the requested page is beyond available pages, return an empty array
+    if (page > totalPages) {
+      return res.json({
         total: totalPedidos,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        totalPages: Math.ceil(totalPedidos / limit),
-        data: pedidos
+        page,
+        limit,
+        totalPages,
+        data: [], // Empty array if no results
       });
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching pedidos", error });
     }
-  };
+
+    const pedidos = await Pedido.find()
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    res.json({
+      total: totalPedidos,
+      page,
+      limit,
+      totalPages,
+      data: pedidos,
+    });
+  } catch (error) {
+    console.error("Error fetching pedidos:", error);
+    res.status(500).json({ message: "Error fetching pedidos", error: error.message });
+  }
+};
+
 // 📌 Get a single pedido by ID
 exports.getPedidoById = async (req, res) => {
   try {
