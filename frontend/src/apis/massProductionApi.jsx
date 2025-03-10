@@ -26,3 +26,10 @@ export const updateMassProduction = (id, data) => {
 export const deleteMassProduction = (id) => {
   return apiRequest("DELETE", `${BASE_URL}/${id}`);
 };
+// Update mass production step
+export const updateMassProductionStep = (massProductionId, stepData) => {
+  return apiRequest("POST", `${BASE_URL}/mass-production/${massProductionId}/steps`, stepData)
+}
+
+
+

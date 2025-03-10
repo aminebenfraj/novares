@@ -277,3 +277,70 @@ exports.deleteMassProduction = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
+/**
+ * Update a mass production record to link it with a specific step
+ * @route POST /api/mass-production/:id/steps
+ * @param {string} req.params.id - Mass production ID
+ * @param {Object} req.body - Step data containing step name and step ID
+ * @param {string} req.body.step - Name of the step (e.g., 'checkin', 'feasibility', etc.)
+ * @param {string} req.body.stepId - MongoDB ID of the step record
+ * @returns {Object} Updated mass production record
+ */
+exports.updateMassProductionStep = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { step, stepId } = req.body
+
+    // Validate inputs
+    if (!step || !stepId) {
+      return res.status(400).json({
+        success: false,
+        message: "Step name and step ID are required",
+      })
+    }
+
+    // Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(stepId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ID format",
+      })
+    }
+
+    // Create update object with the step reference
+    const updateData = {
+      [`steps.${step}`]: stepId,
+    }
+
+    // Find and update the mass production record
+    const updatedMassProduction = await MassProduction.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true },
+    )
+
+    // Check if record exists
+    if (!updatedMassProduction) {
+      return res.status(404).json({
+        success: false,
+        message: "Mass production record not found",
+      })
+    }
+
+    // Return success response
+    return res.status(200).json({
+      success: true,
+      data: updatedMassProduction,
+      message: `Successfully linked ${step} to mass production`,
+    })
+  } catch (error) {
+    console.error(`Error updating mass production step:`, error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error while updating mass production step",
+      error: error.message,
+    })
+  }
+}
+
