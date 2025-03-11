@@ -1,5 +1,11 @@
 const MachineMaterial = require("../../models/gestionStockModels/MachineMaterialModel")
 const Material = require("../../models/gestionStockModels/MaterialModel")
+const mongoose = require("mongoose")
+
+// Helper function to validate ObjectId
+const isValidObjectId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id)
+}
 
 exports.allocateStock = async (req, res) => {
   try {
@@ -12,7 +18,7 @@ exports.allocateStock = async (req, res) => {
     }
 
     // Check if enough stock is available
-    const totalRequestedStock = allocations.reduce((sum, alloc) => sum + alloc.allocatedStock, 0)
+    const totalRequestedStock = allocations.reduce((sum, alloc) => sum + Number.parseInt(alloc.allocatedStock), 0)
 
     if (totalRequestedStock > material.currentStock) {
       return res.status(400).json({ error: "Total allocated stock exceeds available stock." })
@@ -20,13 +26,19 @@ exports.allocateStock = async (req, res) => {
 
     let totalUsedStock = 0 // Track how much stock has been allocated
 
+    // Validate userId if provided
+    let validUserId = null
+    if (userId && isValidObjectId(userId)) {
+      validUserId = mongoose.Types.ObjectId(userId)
+    }
+
     for (const { machineId, allocatedStock } of allocations) {
       if (allocatedStock <= 0) {
         return res.status(400).json({ error: "Allocated stock must be greater than 0." })
       }
 
       // Check if there's enough stock remaining to allocate
-      if (totalUsedStock + allocatedStock > material.currentStock) {
+      if (totalUsedStock + Number.parseInt(allocatedStock) > material.currentStock) {
         return res.status(400).json({
           error: `Not enough stock available. Only ${material.currentStock - totalUsedStock} left.`,
         })
@@ -35,41 +47,73 @@ exports.allocateStock = async (req, res) => {
       let machineMaterial = await MachineMaterial.findOne({ material: materialId, machine: machineId })
 
       if (machineMaterial) {
-        // Log previous stock before updating
-        machineMaterial.history.push({
-          changedBy: userId,
+        // Create history entry without changedBy first
+        const historyEntry = {
           previousStock: machineMaterial.allocatedStock,
-          newStock: allocatedStock,
+          newStock: Number.parseInt(allocatedStock),
           date: new Date(),
           comment: `Stock updated manually.`,
-        })
+        }
 
-        machineMaterial.allocatedStock = allocatedStock
+        // Only add changedBy if we have a valid userId
+        if (validUserId) {
+          historyEntry.changedBy = validUserId
+        }
+
+        // Add to history
+        machineMaterial.history.push(historyEntry)
+        machineMaterial.allocatedStock = Number.parseInt(allocatedStock)
         await machineMaterial.save()
       } else {
-        // Create new allocation with initial history
+        // Create history entry without changedBy first
+        const historyEntry = {
+          previousStock: 0,
+          newStock: Number.parseInt(allocatedStock),
+          date: new Date(),
+          comment: `Initial allocation.`,
+        }
+
+        // Only add changedBy if we have a valid userId
+        if (validUserId) {
+          historyEntry.changedBy = validUserId
+        }
+
+        // Create new allocation with history
         machineMaterial = new MachineMaterial({
           material: materialId,
           machine: machineId,
-          allocatedStock,
-          history: [
-            {
-              changedBy: userId,
-              previousStock: 0,
-              newStock: allocatedStock,
-              date: new Date(),
-              comment: `Initial allocation.`,
-            },
-          ],
+          allocatedStock: Number.parseInt(allocatedStock),
+          history: [historyEntry],
         })
         await machineMaterial.save()
       }
 
-      totalUsedStock += allocatedStock // Update used stock
+      totalUsedStock += Number.parseInt(allocatedStock) // Update used stock
     }
 
-    return res.status(200).json({ message: "Stock successfully allocated with validation." })
+    // Update the material's current stock by subtracting the total allocated stock
+    material.currentStock -= totalUsedStock
+
+    // Add a record to material history
+    const materialHistoryEntry = {
+      changeDate: new Date(),
+      description: `Allocated ${totalUsedStock} units to machines.`,
+    }
+
+    // Only add changedBy if we have a valid userId
+    if (validUserId) {
+      materialHistoryEntry.changedBy = validUserId
+    }
+
+    material.materialHistory.push(materialHistoryEntry)
+    await material.save()
+
+    return res.status(200).json({
+      message: "Stock successfully allocated with validation.",
+      updatedStock: material.currentStock,
+    })
   } catch (error) {
+    console.error("Allocation error:", error)
     return res.status(500).json({ error: error.message })
   }
 }
@@ -125,7 +169,7 @@ exports.updateAllocation = async (req, res) => {
     }
 
     // Calculate stock difference
-    const stockDifference = allocatedStock - allocation.allocatedStock
+    const stockDifference = Number.parseInt(allocatedStock) - allocation.allocatedStock
 
     // Check if enough stock is available if increasing allocation
     if (stockDifference > 0 && stockDifference > material.currentStock) {
@@ -134,35 +178,54 @@ exports.updateAllocation = async (req, res) => {
       })
     }
 
-    // Create history entry
+    // Create history entry without changedBy first
     const historyEntry = {
       previousStock: allocation.allocatedStock,
-      newStock: allocatedStock,
+      newStock: Number.parseInt(allocatedStock),
       date: new Date(),
       comment: comment || `Stock updated from ${allocation.allocatedStock} to ${allocatedStock}.`,
     }
 
-    // Only add changedBy if userId is provided
-    if (userId) {
-      // If your schema expects an ObjectId, you might need to convert the string
-      // Uncomment this if needed:
-      // const mongoose = require('mongoose');
-      // historyEntry.changedBy = mongoose.Types.ObjectId(userId);
-
-      // Or if your schema accepts string IDs:
-      historyEntry.changedBy = userId
+    // Validate userId if provided
+    if (userId && isValidObjectId(userId)) {
+      historyEntry.changedBy = mongoose.Types.ObjectId(userId)
     }
 
     // Add to history
     allocation.history.push(historyEntry)
 
     // Update allocation
-    allocation.allocatedStock = allocatedStock
+    allocation.allocatedStock = Number.parseInt(allocatedStock)
     await allocation.save()
+
+    // Update material stock based on the difference
+    if (stockDifference !== 0) {
+      // If stockDifference is positive, we're adding more to the machine, so subtract from material stock
+      // If stockDifference is negative, we're removing from the machine, so add back to material stock
+      material.currentStock -= stockDifference
+
+      // Add a record to material history
+      const materialHistoryEntry = {
+        changeDate: new Date(),
+        description:
+          stockDifference > 0
+            ? `Allocated ${stockDifference} additional units to machine ${allocation.machine}.`
+            : `Returned ${Math.abs(stockDifference)} units from machine ${allocation.machine}.`,
+      }
+
+      // Only add changedBy if we have a valid userId
+      if (userId && isValidObjectId(userId)) {
+        materialHistoryEntry.changedBy = mongoose.Types.ObjectId(userId)
+      }
+
+      material.materialHistory.push(materialHistoryEntry)
+      await material.save()
+    }
 
     return res.status(200).json({
       message: "Allocation updated successfully",
       allocation,
+      updatedMaterialStock: material.currentStock,
     })
   } catch (error) {
     console.error("Update allocation error:", error)

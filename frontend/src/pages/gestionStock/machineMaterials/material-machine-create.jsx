@@ -1,8 +1,7 @@
-"use client"
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { getAllMaterials,getMaterialById} from "@/apis/gestionStockApi/materialApi"
+import { getAllMaterials, getMaterialById } from "@/apis/gestionStockApi/materialApi"
 import { getAllMachines } from "@/apis/gestionStockApi/machineApi"
 
 import { allocateStock } from "@/apis/gestionStockApi/materialMachineApi"
@@ -12,9 +11,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { Trash2, Plus, Save } from "lucide-react"
+import { Trash2, Plus, Save, AlertCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const MaterialMachineCreate = () => {
   const { toast } = useToast()
@@ -157,7 +157,7 @@ const MaterialMachineCreate = () => {
       // Get current user ID from localStorage
       const userId = localStorage.getItem("userId")
 
-      await allocateStock({
+      const response = await allocateStock({
         materialId: selectedMaterial,
         allocations: allocations,
         userId: userId || "unknown", // Fallback if userId is not available
@@ -168,9 +168,18 @@ const MaterialMachineCreate = () => {
         description: "Stock allocated successfully",
       })
 
+      // Update material details with new stock
+      if (response.updatedStock !== undefined) {
+        setMaterialDetails({
+          ...materialDetails,
+          currentStock: response.updatedStock,
+        })
+      } else {
+        // If the response doesn't include updated stock, fetch the material details again
+        fetchMaterialDetails(selectedMaterial)
+      }
+
       // Reset form
-      setSelectedMaterial("")
-      setMaterialDetails(null)
       setAllocations([{ machineId: "", allocatedStock: 0 }])
     } catch (error) {
       toast({
@@ -242,6 +251,15 @@ const MaterialMachineCreate = () => {
                   </div>
                 </motion.div>
               )}
+
+              <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                <AlertCircle className="w-4 h-4 text-amber-600" />
+                <AlertTitle className="text-amber-800">Important</AlertTitle>
+                <AlertDescription className="text-amber-700">
+                  Allocating stock to machines will reduce the material's current stock. The allocated stock will be
+                  subtracted from the material's available inventory.
+                </AlertDescription>
+              </Alert>
 
               <Separator />
 

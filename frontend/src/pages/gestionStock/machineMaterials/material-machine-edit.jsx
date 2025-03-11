@@ -3,16 +3,16 @@ import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { getMaterialById } from "@/apis/gestionStockApi/materialApi"
-import { getAllAllocations , updateAllocation } from "@/apis/gestionStockApi/materialMachineApi"
+import { getAllAllocations, updateAllocation } from "@/apis/gestionStockApi/materialMachineApi"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Save, ArrowLeft } from "lucide-react"
+import { Save, ArrowLeft, AlertCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const MaterialMachineEdit = () => {
   const { id } = useParams()
@@ -45,7 +45,7 @@ const MaterialMachineEdit = () => {
           description: "Allocation not found",
           variant: "destructive",
         })
-        navigate("/machinematerial  ")
+        navigate("/machinematerial")
         return
       }
 
@@ -114,12 +114,20 @@ const MaterialMachineEdit = () => {
       }
 
       // Use the update endpoint with the allocation ID
-      await updateAllocation(id, updateData)
+      const response = await updateAllocation(id, updateData)
 
       toast({
         title: "Success",
         description: "Allocation updated successfully",
       })
+
+      // Update material with new stock if provided in response
+      if (response.updatedMaterialStock !== undefined) {
+        setMaterial({
+          ...material,
+          currentStock: response.updatedMaterialStock,
+        })
+      }
 
       // Refresh allocation details to get updated history
       await fetchAllocationDetails()
@@ -154,7 +162,7 @@ const MaterialMachineEdit = () => {
       className="container py-8 mx-auto"
     >
       <Toaster />
-      <Button variant="ghost" className="mb-4" onClick={() => navigate("/machinematerial    ")}>
+      <Button variant="ghost" className="mb-4" onClick={() => navigate("/machinematerial")}>
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to List
       </Button>
@@ -212,6 +220,16 @@ const MaterialMachineEdit = () => {
                   </div>
                 </div>
               </div>
+
+              <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                <AlertCircle className="w-4 h-4 text-amber-600" />
+                <AlertTitle className="text-amber-800">Important</AlertTitle>
+                <AlertDescription className="text-amber-700">
+                  {allocatedStock > originalStock
+                    ? "Increasing allocation will reduce the material's current stock by the difference."
+                    : "Decreasing allocation will return stock to the material's inventory."}
+                </AlertDescription>
+              </Alert>
 
               <Separator />
 
