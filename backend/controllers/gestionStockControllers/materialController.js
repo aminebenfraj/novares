@@ -1,9 +1,8 @@
-
-const Material = require("../../models/gestionStockModels/MaterialModel");
-const Supplier = require("../../models/gestionStockModels/SupplierModel");
-const Machine = require("../../models/gestionStockModels/MachineModel");
-const Location = require("../../models/gestionStockModels/LocationModel");
-const Category = require("../../models/gestionStockModels/CategoryModel");
+const Material = require("../../models/gestionStockModels/MaterialModel")
+const Supplier = require("../../models/gestionStockModels/SupplierModel")
+const Machine = require("../../models/gestionStockModels/MachineModel")
+const Location = require("../../models/gestionStockModels/LocationModel")
+const Category = require("../../models/gestionStockModels/CategoryModel")
 
 // Create Material with existence checks
 exports.createMaterial = async (req, res) => {
@@ -23,32 +22,32 @@ exports.createMaterial = async (req, res) => {
       comment,
       photo,
       price,
-      category
-    } = req.body;
+      category,
+    } = req.body
 
     // Check if Supplier exists
-    const existingSupplier = await Supplier.findById(supplier);
+    const existingSupplier = await Supplier.findById(supplier)
     if (!existingSupplier) {
-      return res.status(400).json({ error: "Supplier not found" });
+      return res.status(400).json({ error: "Supplier not found" })
     }
 
     // Check if Location exists
-    const existingLocation = await Location.findById(location);
+    const existingLocation = await Location.findById(location)
     if (!existingLocation) {
-      return res.status(400).json({ error: "Location not found" });
+      return res.status(400).json({ error: "Location not found" })
     }
 
     // Check if Category exists
-    const existingCategory = await Category.findById(category);
+    const existingCategory = await Category.findById(category)
     if (!existingCategory) {
-      return res.status(400).json({ error: "Category not found" });
+      return res.status(400).json({ error: "Category not found" })
     }
 
     // Check if Machines exist
     if (machines && machines.length > 0) {
-      const foundMachines = await Machine.find({ _id: { $in: machines } });
+      const foundMachines = await Machine.find({ _id: { $in: machines } })
       if (foundMachines.length !== machines.length) {
-        return res.status(400).json({ error: "One or more machines not found" });
+        return res.status(400).json({ error: "One or more machines not found" })
       }
     }
 
@@ -68,17 +67,16 @@ exports.createMaterial = async (req, res) => {
       comment,
       photo,
       price,
-      category
-    });
+      category,
+    })
 
-    await newMaterial.save();
-    res.status(201).json(newMaterial);
+    await newMaterial.save()
+    res.status(201).json(newMaterial)
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to create material" });
+    console.error(error)
+    res.status(500).json({ error: "Failed to create material" })
   }
-};
-
+}
 
 // Get all materials with populated references
 exports.getAllMaterials = async (req, res) => {
@@ -87,12 +85,12 @@ exports.getAllMaterials = async (req, res) => {
       .populate("supplier")
       .populate("location")
       .populate("machines")
-      .populate("category");
-    res.status(200).json(materials);
+      .populate("category")
+    res.status(200).json(materials)
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message })
   }
-};
+}
 
 // Get a single material by ID
 exports.getMaterialById = async (req, res) => {
@@ -101,45 +99,64 @@ exports.getMaterialById = async (req, res) => {
       .populate("supplier")
       .populate("location")
       .populate("machines")
-      .populate("category");
-console.log(material);
+      .populate("category")
+    console.log(material)
 
     if (!material) {
-      return res.status(404).json({ message: "Material not found" });
+      return res.status(404).json({ message: "Material not found" })
     }
 
-    res.status(200).json(material);
+    res.status(200).json(material)
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message })
   }
-};
+}
 
 // Update a material
 exports.updateMaterial = async (req, res) => {
   try {
-    const material = await Material.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
+    // Find the material first to check if reference has changed
+    const existingMaterial = await Material.findById(req.params.id)
 
-    if (!material) {
-      return res.status(404).json({ message: "Material not found" });
+    if (!existingMaterial) {
+      return res.status(404).json({ message: "Material not found" })
     }
 
-    res.status(200).json(material);
+    // Check if the reference is being updated and handle reference history
+    if (req.body.reference && req.body.reference !== existingMaterial.reference) {
+      // If referenceHistory is not provided in the request but reference is changing,
+      // we need to add it automatically
+      if (!req.body.referenceHistory) {
+        req.body.referenceHistory = existingMaterial.referenceHistory || []
+        req.body.referenceHistory.push({
+          oldReference: existingMaterial.reference,
+          changedDate: new Date(),
+          changedBy: req.user ? req.user._id : null,
+          comment: `Reference changed from ${existingMaterial.reference} to ${req.body.reference}`,
+        })
+      }
+    }
+
+    const material = await Material.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    })
+
+    res.status(200).json(material)
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ message: error.message })
   }
-};
+}
 
 // Delete a material
 exports.deleteMaterial = async (req, res) => {
   try {
-    const material = await Material.findByIdAndDelete(req.params.id);
+    const material = await Material.findByIdAndDelete(req.params.id)
     if (!material) {
-      return res.status(404).json({ message: "Material not found" });
+      return res.status(404).json({ message: "Material not found" })
     }
-    res.status(200).json({ message: "Material deleted successfully" });
+    res.status(200).json({ message: "Material deleted successfully" })
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message })
   }
-};
+}
+

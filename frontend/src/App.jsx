@@ -55,6 +55,7 @@ import CreateSupplier from './pages/gestionStock/suppliers/CreateSupplier';
 import EditSupplier from './pages/gestionStock/suppliers/EditSupplier';
 import MaterialList from './pages/gestionStock/materials/MaterialList';
 import CreateMaterial from './pages/gestionStock/materials/CreateMaterial';
+import MaterialDetails from './pages/gestionStock/materials/material-details';
 import EditMaterial from './pages/gestionStock/materials/EditMaterial';
 import FacilitiesForm from './pages/facilities/facilitiesForm';
 import FacilitiesList from './pages/facilities/FacilitiesList';
@@ -138,6 +139,7 @@ function App() {
         <Route path="/materials" element={<MaterialList />} />
         <Route path="/materials/create" element={<CreateMaterial />} />
         <Route path="/materials/edit/:id" element={<EditMaterial />} />
+        <Route path="/materials/details/:id" element={<MaterialDetails />} />
         <Route path="/facilities/create" element={<FacilitiesForm />} />
         <Route path="/facilities" element={<FacilitiesList />} />
         <Route path="/facilities/edit/:id" element={<EditFacilities />} />
