@@ -12,9 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Search, Plus, Edit, Trash2, Eye, Download, Filter, ArrowUpDown } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import Navbar from "@/components/NavBar"
-import ContactUs from "@/components/ContactUs"
+
 import { getAllMaterials, deleteMaterial } from "../../../apis/gestionStockApi/materialApi"
+import MainLayout from "@/components/MainLayout"
 
 const MaterialList = () => {
   const [materials, setMaterials] = useState([])
@@ -148,8 +148,9 @@ const MaterialList = () => {
   }
 
   return (
+        <MainLayout>
+    
     <div className="min-h-screen bg-gray-100 dark:bg-zinc-900">
-      <Navbar />
       <div className="container px-4 py-8 mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -349,8 +350,9 @@ const MaterialList = () => {
           </Card>
         </motion.div>
       </div>
-      <ContactUs />
     </div>
+        </MainLayout>
+    
   )
 }
 

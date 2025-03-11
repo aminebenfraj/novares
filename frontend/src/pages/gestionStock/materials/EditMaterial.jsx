@@ -17,8 +17,7 @@ import { getAllCategories } from "../../../apis/gestionStockApi/categoryApi"
 import { getAllLocations } from "../../../apis/gestionStockApi/locationApi"
 import { getAllMachines } from "../../../apis/gestionStockApi/machineApi"
 import { Save, ArrowLeft, Package, Tag, MapPin, Truck } from "lucide-react"
-import ContactUs from "@/components/ContactUs"
-import Navbar from "@/components/NavBar"
+import MainLayout from "@/components/MainLayout"
 
 const EditMaterial = () => {
   const { id } = useParams()
@@ -174,8 +173,9 @@ const EditMaterial = () => {
   }
 
   return (
+        <MainLayout>
+    
     <div className="min-h-screen bg-gray-100 dark:bg-zinc-900">
-      <Navbar />
       <div className="container px-4 py-8 mx-auto">
         <div className="flex items-center gap-2 mb-6">
           <Button variant="outline" size="icon" onClick={() => navigate("/materials")}>
@@ -514,8 +514,8 @@ const EditMaterial = () => {
           </div>
         </form>
       </div>
-      <ContactUs />
     </div>
+    </MainLayout>
   )
 }
 

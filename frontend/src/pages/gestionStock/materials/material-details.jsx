@@ -25,8 +25,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { getMaterialById } from "../../../apis/gestionStockApi/materialApi"
-import Navbar from "@/components/NavBar"
-import ContactUs from "@/components/ContactUs"
+import PedidLayout from "@/components/PedidLayout"
+
 
 const MaterialDetails = () => {
   const { id } = useParams()
@@ -96,8 +96,9 @@ const MaterialDetails = () => {
   }
 
   return (
+        <PedidLayout>
+    
     <div className="min-h-screen bg-gray-100 dark:bg-zinc-900">
-      <Navbar />
       <div className="container px-4 py-8 mx-auto">
         <div className="flex flex-col gap-2 mb-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2">
@@ -335,8 +336,8 @@ const MaterialDetails = () => {
           </Card>
         </div>
       </div>
-      <ContactUs />
     </div>
+    </PedidLayout>
   )
 }
 

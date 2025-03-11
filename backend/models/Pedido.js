@@ -2,10 +2,10 @@ const mongoose = require("mongoose")
 
 const PedidoSchema = new mongoose.Schema({
   tipo: { type: String, index: true },
-  descripcionInterna: { type: String },
+  descripcionInterna: String,
   fabricante: { type: String, index: true },
   referencia: { type: String, index: true },
-  descripcionProveedor: { type: String },
+  descripcionProveedor: String,
   solicitante: { type: String, index: true },
   cantidad: Number,
   precioUnidad: Number,
@@ -29,15 +29,13 @@ PedidoSchema.index({
   ano: 1,
 })
 
-// Create a text index for full-text search capabilities
+// Create a text index specifically for the requested search fields
 PedidoSchema.index({
+  tipo: "text",
   referencia: "text",
-  descripcionInterna: "text",
-  descripcionProveedor: "text",
+  solicitante: "text",
   fabricante: "text",
   proveedor: "text",
-  solicitante: "text",
-  comentario: "text",
 })
 
 module.exports = mongoose.model("Pedido", PedidoSchema)

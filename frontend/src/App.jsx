@@ -73,6 +73,7 @@ import EditProcessQualification from './pages/process_qualif/editProcessQualific
 import PedidoList from './pages/pedido/PedidoList';
 import Createpedido from './pages/pedido/create-pedido';
 import Editpedido from './pages/pedido/edit-pedido';
+import PedidoDetails from './pages/pedido/PedidoDetails';
 import Materialmachinecreate from '../src/pages/gestionStock/machineMaterials/material-machine-create';
 import Materialmachinelist from '../src/pages/gestionStock/machineMaterials/material-machine-list';
 import Materialmachineedit from '../src/pages/gestionStock/machineMaterials/material-machine-edit';
@@ -156,6 +157,7 @@ function App() {
         <Route path="/pedido" element={< PedidoList/>} />
         <Route path="/pedido/create" element={< Createpedido/>} />
         <Route path="/Pedido/edit/:id" element={< Editpedido/>} />
+        <Route path="/pedido/:id" element={<PedidoDetails />} />
         <Route path="/machinematerial/create" element={< Materialmachinecreate/>} />
         <Route path="/machinematerial" element={< Materialmachinelist/>} />
         <Route path="/machinematerial/detail/:id" element={< Materialmachinedetails/>} />

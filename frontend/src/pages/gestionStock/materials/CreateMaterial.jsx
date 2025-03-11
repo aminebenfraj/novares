@@ -15,8 +15,7 @@ import { getAllCategories } from "../../../apis/gestionStockApi/categoryApi"
 import { getAllLocations } from "../../../apis/gestionStockApi/locationApi"
 import { getAllMachines } from "../../../apis/gestionStockApi/machineApi"
 import { Sparkles } from "lucide-react"
-import ContactUs from "@/components/ContactUs"
-import Navbar from "@/components/NavBar"
+import MainLayout from "@/components/MainLayout"
 
 const CreateMaterial = () => {
   const navigate = useNavigate()
@@ -119,8 +118,9 @@ const CreateMaterial = () => {
   }
 
   return (
+        <MainLayout>
+    
     <div>
-      <Navbar />
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-zinc-900">
         <Card className="w-full max-w-4xl bg-white shadow-lg dark:bg-zinc-800">
           <CardHeader>
@@ -385,8 +385,8 @@ const CreateMaterial = () => {
           </form>
         </Card>
       </div>
-      <ContactUs />
     </div>
+    </MainLayout>
   )
 }
 
