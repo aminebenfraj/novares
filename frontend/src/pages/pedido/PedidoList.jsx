@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { getAllPedidos, deletePedido } from "../../apis/pedido/pedidoApi"
+import { getAllPedidos, deletePedido, getFilterOptions } from "../../apis/pedido/pedidoApi"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,6 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -42,13 +43,18 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  X,
+  SlidersHorizontal,
 } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Separator } from "@/components/ui/separator"
+import { Calendar } from "@/components/ui/calendar"
+import { format } from "date-fns"
 
 function PedidoList() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const [pedidos, setPedidos] = useState([])
-  const [filteredPedidos, setFilteredPedidos] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -56,6 +62,35 @@ function PedidoList() {
   const [selectedPedido, setSelectedPedido] = useState(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [filterOptions, setFilterOptions] = useState({
+    tipo: [],
+    fabricante: [],
+    proveedor: [],
+    solicitante: [],
+    recepcionado: [],
+    pedir: [],
+    ano: [],
+  })
+
+  const [filters, setFilters] = useState({
+    tipo: "",
+    fabricante: "",
+    proveedor: "",
+    solicitante: "",
+    recepcionado: "",
+    pedir: "",
+    anoDesde: "",
+    anoHasta: "",
+    fechaDesde: null,
+    fechaHasta: null,
+  })
+
+  const [sort, setSort] = useState({
+    field: "fechaSolicitud",
+    order: -1,
+  })
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -63,28 +98,57 @@ function PedidoList() {
     totalPages: 0,
   })
 
-  const fetchPedidos = async (page, searchQuery = "") => {
+  // Debounce search to avoid too many requests
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  // Load filter options on component mount
+  useEffect(() => {
+    const loadFilterOptions = async () => {
+      try {
+        const options = {}
+
+        for (const field of ["tipo", "fabricante", "proveedor", "solicitante", "recepcionado", "pedir", "ano"]) {
+          const data = await getFilterOptions(field)
+          options[field] = data
+        }
+
+        setFilterOptions(options)
+      } catch (error) {
+        console.error("Error loading filter options:", error)
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load filter options",
+        })
+      }
+    }
+
+    loadFilterOptions()
+  }, [])
+
+  const fetchPedidos = async () => {
     try {
       setIsLoading(true)
 
-      // If we're searching, fetch all data without pagination
-      const response = searchQuery
-        ? await getAllPedidos(1, 1000, searchQuery)
-        : await getAllPedidos(page, pagination.limit)
+      const response = await getAllPedidos(pagination.page, pagination.limit, debouncedSearch, filters, sort)
 
       if (response && response.data) {
         setPedidos(response.data)
-        setFilteredPedidos(response.data)
 
-        // Only update pagination for non-search results
-        if (!searchQuery) {
-          setPagination({
-            ...pagination,
-            page: response.page || 1,
-            total: response.total || response.data.length,
-            totalPages: response.totalPages || Math.ceil(response.data.length / pagination.limit),
-          })
-        }
+        setPagination({
+          ...pagination,
+          page: response.page || 1,
+          total: response.total || 0,
+          totalPages: response.totalPages || 0,
+        })
       } else {
         setError("Invalid data received from server.")
       }
@@ -101,42 +165,16 @@ function PedidoList() {
     }
   }
 
+  // Fetch pedidos when pagination, search, filters or sort changes
   useEffect(() => {
-    fetchPedidos(pagination.page)
-  }, [pagination.page])
+    fetchPedidos()
+  }, [pagination.page, pagination.limit, debouncedSearch, currentTab, sort])
 
+  // Reset to page 1 when filters change
   useEffect(() => {
-    if (searchTerm) {
-      // When searching, fetch all data
-      fetchPedidos(1, searchTerm)
-    } else {
-      // When not searching, revert to paginated data
-      fetchPedidos(pagination.page)
-    }
-  }, [searchTerm])
-
-  useEffect(() => {
-    if (!searchTerm) {
-      fetchPedidos(pagination.page)
-    }
-  }, [pagination.page])
-
-  useEffect(() => {
-    if (pedidos.length > 0 && !searchTerm) {
-      // Only apply tab filter when not searching (search already fetches filtered data)
-      let result = [...pedidos]
-
-      // Apply tab filter
-      if (currentTab !== "all") {
-        result = result.filter((pedido) => {
-          const status = getStatusFromPedido(pedido)
-          return status === currentTab
-        })
-      }
-
-      setFilteredPedidos(result)
-    }
-  }, [currentTab, pedidos, searchTerm])
+    setPagination((prev) => ({ ...prev, page: 1 }))
+    fetchPedidos()
+  }, [filters])
 
   const handlePageChange = (newPage) => {
     setPagination((prev) => ({ ...prev, page: newPage }))
@@ -145,7 +183,7 @@ function PedidoList() {
   const handleDelete = async (id) => {
     try {
       await deletePedido(id)
-      await fetchPedidos(pagination.page)
+      await fetchPedidos()
       setIsDeleteDialogOpen(false)
       toast({
         title: "Success",
@@ -163,6 +201,46 @@ function PedidoList() {
 
   const handleEditClick = (pedido) => {
     navigate(`/pedido/edit/${pedido._id}`)
+  }
+
+  const handleFilterChange = (field, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const handleDateFilterChange = (field, date) => {
+    setFilters((prev) => ({
+      ...prev,
+      [field]: date,
+    }))
+  }
+
+  const clearFilters = () => {
+    setFilters({
+      tipo: "",
+      fabricante: "",
+      proveedor: "",
+      solicitante: "",
+      recepcionado: "",
+      pedir: "",
+      anoDesde: "",
+      anoHasta: "",
+      fechaDesde: null,
+      fechaHasta: null,
+    })
+  }
+
+  const handleSortChange = (field) => {
+    setSort((prev) => {
+      if (prev.field === field) {
+        // Toggle order if same field
+        return { field, order: prev.order === 1 ? -1 : 1 }
+      }
+      // Default to descending for new field
+      return { field, order: -1 }
+    })
   }
 
   const getStatusFromPedido = (pedido) => {
@@ -211,7 +289,7 @@ function PedidoList() {
     }).format(amount)
   }
 
-  if (isLoading) {
+  if (isLoading && pedidos.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin">
@@ -221,7 +299,7 @@ function PedidoList() {
     )
   }
 
-  if (error) {
+  if (error && pedidos.length === 0) {
     return (
       <Card className="max-w-lg mx-auto mt-8">
         <CardHeader>
@@ -229,7 +307,7 @@ function PedidoList() {
           <CardDescription>{error}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={() => fetchPedidos(pagination.page)}>Try Again</Button>
+          <Button onClick={() => fetchPedidos()}>Try Again</Button>
         </CardContent>
       </Card>
     )
@@ -262,10 +340,256 @@ function PedidoList() {
                     className="pl-9"
                   />
                 </div>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Filter className="w-4 h-4" />
-                  Filters
-                </Button>
+                <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <Filter className="w-4 h-4" />
+                      Filters
+                      {Object.values(filters).some((v) => v !== "" && v !== null) && (
+                        <Badge variant="secondary" className="ml-1">
+                          {Object.values(filters).filter((v) => v !== "" && v !== null).length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 w-80" align="end">
+                    <div className="p-4 border-b">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">Filters</h4>
+                        <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 px-2">
+                          <X className="w-4 h-4 mr-2" />
+                          Clear all
+                        </Button>
+                      </div>
+                    </div>
+                    <ScrollArea className="h-[400px]">
+                      <div className="p-4 space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Type</label>
+                          <Select value={filters.tipo} onValueChange={(value) => handleFilterChange("tipo", value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">All Types</SelectItem>
+                              {filterOptions.tipo.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Manufacturer</label>
+                          <Select
+                            value={filters.fabricante}
+                            onValueChange={(value) => handleFilterChange("fabricante", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select manufacturer" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">All Manufacturers</SelectItem>
+                              {filterOptions.fabricante.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Provider</label>
+                          <Select
+                            value={filters.proveedor}
+                            onValueChange={(value) => handleFilterChange("proveedor", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select provider" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">All Providers</SelectItem>
+                              {filterOptions.proveedor.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Requester</label>
+                          <Select
+                            value={filters.solicitante}
+                            onValueChange={(value) => handleFilterChange("solicitante", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select requester" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">All Requesters</SelectItem>
+                              {filterOptions.solicitante.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Year Range</label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              placeholder="From"
+                              value={filters.anoDesde}
+                              onChange={(e) => handleFilterChange("anoDesde", e.target.value)}
+                            />
+                            <span>-</span>
+                            <Input
+                              type="number"
+                              placeholder="To"
+                              value={filters.anoHasta}
+                              onChange={(e) => handleFilterChange("anoHasta", e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Request Date Range</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-xs text-muted-foreground">From</label>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" className="justify-start w-full font-normal text-left">
+                                    {filters.fechaDesde ? format(filters.fechaDesde, "PP") : <span>Pick a date</span>}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                  <Calendar
+                                    mode="single"
+                                    selected={filters.fechaDesde}
+                                    onSelect={(date) => handleDateFilterChange("fechaDesde", date)}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground">To</label>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" className="justify-start w-full font-normal text-left">
+                                    {filters.fechaHasta ? format(filters.fechaHasta, "PP") : <span>Pick a date</span>}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                  <Calendar
+                                    mode="single"
+                                    selected={filters.fechaHasta}
+                                    onSelect={(date) => handleDateFilterChange("fechaHasta", date)}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Order Status</label>
+                          <Select value={filters.pedir} onValueChange={(value) => handleFilterChange("pedir", value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">All Statuses</SelectItem>
+                              {filterOptions.pedir.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Received Status</label>
+                          <Select
+                            value={filters.recepcionado}
+                            onValueChange={(value) => handleFilterChange("recepcionado", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select received status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">All</SelectItem>
+                              {filterOptions.recepcionado.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </ScrollArea>
+                    <div className="flex items-center justify-between p-4 border-t">
+                      <Button variant="ghost" onClick={() => setIsFilterOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          fetchPedidos()
+                          setIsFilterOpen(false)
+                        }}
+                      >
+                        Apply Filters
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <SlidersHorizontal className="w-4 h-4" />
+                      Sort
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56" align="end">
+                    <div className="space-y-2">
+                      <h4 className="font-medium">Sort by</h4>
+                      <div className="space-y-1">
+                        {[
+                          { id: "fechaSolicitud", label: "Request Date" },
+                          { id: "referencia", label: "Reference" },
+                          { id: "solicitante", label: "Requester" },
+                          { id: "importePedido", label: "Amount" },
+                          { id: "proveedor", label: "Provider" },
+                        ].map((option) => (
+                          <Button
+                            key={option.id}
+                            variant="ghost"
+                            className="flex items-center justify-between w-full"
+                            onClick={() => handleSortChange(option.id)}
+                          >
+                            {option.label}
+                            {sort.field === option.id && <span>{sort.order === 1 ? "↑" : "↓"}</span>}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -278,98 +602,104 @@ function PedidoList() {
                   <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
                 </TabsList>
                 <TabsContent value={currentTab} className="m-0">
-                  <ScrollArea className="h-[calc(100vh-20rem)]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tipo</TableHead>
-                          <TableHead>Referencia</TableHead>
-                          <TableHead>Solicitante</TableHead>
-                          <TableHead>Fabricante</TableHead>
-                          <TableHead>Proveedor</TableHead>
-                          <TableHead>Cantidad</TableHead>
-                          <TableHead>Precio Unidad</TableHead>
-                          <TableHead>Importe</TableHead>
-                          <TableHead>Fecha Solicitud</TableHead>
-                          <TableHead>Estado</TableHead>
-                          <TableHead className="w-[100px]"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredPedidos.map((pedido) => {
-                          const status = getStatusFromPedido(pedido)
-                          const statusDetails = getStatusDetails(status)
-                          const StatusIcon = statusDetails.icon
-                          return (
-                            <TableRow key={pedido._id} className="group">
-                              <TableCell>{pedido.tipo}</TableCell>
-                              <TableCell className="font-medium">{pedido.referencia}</TableCell>
-                              <TableCell>{pedido.solicitante}</TableCell>
-                              <TableCell>{pedido.fabricante}</TableCell>
-                              <TableCell>{pedido.proveedor}</TableCell>
-                              <TableCell>{pedido.cantidad}</TableCell>
-                              <TableCell>{formatCurrency(pedido.precioUnidad)}</TableCell>
-                              <TableCell>{formatCurrency(pedido.importePedido)}</TableCell>
-                              <TableCell>{formatDate(pedido.fechaSolicitud)}</TableCell>
-                              <TableCell>
-                                <Badge variant="secondary" className={statusDetails.className}>
-                                  <StatusIcon className="w-3 h-3 mr-1" />
-                                  {statusDetails.label}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="w-8 h-8 p-0 opacity-0 group-hover:opacity-100">
-                                      <MoreVertical className="w-4 h-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedPedido(pedido)
-                                        setIsDialogOpen(true)
-                                      }}
-                                    >
-                                      <FileText className="w-4 h-4 mr-2" />
-                                      View Details
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleEditClick(pedido)}>
-                                      <Edit3 className="w-4 h-4 mr-2" />
-                                      Edit Order
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      className="text-red-600"
-                                      onClick={() => {
-                                        setSelectedPedido(pedido)
-                                        setIsDeleteDialogOpen(true)
-                                      }}
-                                    >
-                                      <Trash2 className="w-4 h-4 mr-2" />
-                                      Delete Order
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center h-32">
+                      <RefreshCw className="w-6 h-6 text-primary animate-spin" />
+                    </div>
+                  ) : (
+                    <ScrollArea className="h-[calc(100vh-20rem)]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Tipo</TableHead>
+                            <TableHead>Referencia</TableHead>
+                            <TableHead>Solicitante</TableHead>
+                            <TableHead>Fabricante</TableHead>
+                            <TableHead>Proveedor</TableHead>
+                            <TableHead>Cantidad</TableHead>
+                            <TableHead>Precio Unidad</TableHead>
+                            <TableHead>Importe</TableHead>
+                            <TableHead>Fecha Solicitud</TableHead>
+                            <TableHead>Estado</TableHead>
+                            <TableHead className="w-[100px]"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {pedidos.map((pedido) => {
+                            const status = getStatusFromPedido(pedido)
+                            const statusDetails = getStatusDetails(status)
+                            const StatusIcon = statusDetails.icon
+                            return (
+                              <TableRow key={pedido._id} className="group">
+                                <TableCell>{pedido.tipo}</TableCell>
+                                <TableCell className="font-medium">{pedido.referencia}</TableCell>
+                                <TableCell>{pedido.solicitante}</TableCell>
+                                <TableCell>{pedido.fabricante}</TableCell>
+                                <TableCell>{pedido.proveedor}</TableCell>
+                                <TableCell>{pedido.cantidad}</TableCell>
+                                <TableCell>{formatCurrency(pedido.precioUnidad)}</TableCell>
+                                <TableCell>{formatCurrency(pedido.importePedido)}</TableCell>
+                                <TableCell>{formatDate(pedido.fechaSolicitud)}</TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary" className={statusDetails.className}>
+                                    <StatusIcon className="w-3 h-3 mr-1" />
+                                    {statusDetails.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" className="w-8 h-8 p-0 opacity-0 group-hover:opacity-100">
+                                        <MoreVertical className="w-4 h-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setSelectedPedido(pedido)
+                                          setIsDialogOpen(true)
+                                        }}
+                                      >
+                                        <FileText className="w-4 h-4 mr-2" />
+                                        View Details
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleEditClick(pedido)}>
+                                        <Edit3 className="w-4 h-4 mr-2" />
+                                        Edit Order
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        className="text-red-600"
+                                        onClick={() => {
+                                          setSelectedPedido(pedido)
+                                          setIsDeleteDialogOpen(true)
+                                        }}
+                                      >
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Delete Order
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
+
+                          {pedidos.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={11} className="h-24 text-center">
+                                No results found.
                               </TableCell>
                             </TableRow>
-                          )
-                        })}
-
-                        {filteredPedidos.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={11} className="h-24 text-center">
-                              No results found.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  )}
                   <div className="flex items-center justify-between px-6 py-4 border-t">
                     <div className="text-sm text-muted-foreground">
-                      Showing {filteredPedidos.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0} to{" "}
+                      Showing {pedidos.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0} to{" "}
                       {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
                     </div>
                     <div className="flex items-center space-x-2">
@@ -400,6 +730,7 @@ function PedidoList() {
         </div>
       </div>
 
+      {/* Detail Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[800px]">
           <DialogHeader>
@@ -493,10 +824,6 @@ function PedidoList() {
                       <p>{formatDate(selectedPedido.aceptado)}</p>
                     </div>
                     <div>
-                      <label className="text-sm text-muted-foreground">Expected Reception</label>
-                      <p>{formatDate(selectedPedido.recepcionPrevista)}</p>
-                    </div>
-                    <div>
                       <label className="text-sm text-muted-foreground">Received</label>
                       <p>{selectedPedido.recepcionado}</p>
                     </div>
@@ -531,6 +858,7 @@ function PedidoList() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
