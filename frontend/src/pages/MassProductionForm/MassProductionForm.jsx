@@ -1,325 +1,181 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { useForm } from "react-hook-form"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, ArrowRight, Save, RotateCcw, Loader2, Check, Info } from "lucide-react"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-
-// API Imports
-import { getAllCustomers } from "../../apis/customerApi"
-import { getAllpd } from "../../apis/ProductDesignation-api"
-import { createMassProduction } from "../../apis/massProductionApi"
+import { createCheckin } from "../../apis/checkIn"
 import { createKickOff } from "../../apis/kickOffApi"
+import { createDesign } from "../../apis/designApi"
 import { createfacilities } from "../../apis/facilitiesApi"
-import { createP_P_Tuning } from "../../apis/p-p-tuning-api"
-import { createOkForLunch } from "../../apis/okForLunch"
 import { createFeasibility } from "../../apis/feasabilityApi"
 import { createQualificationProcess } from "../../apis/process_qualifApi"
 import { createQualificationConfirmation } from "../../apis/qualificationconfirmationapi"
-import { createValidationForOffer } from "../../apis/validationForOfferApi"
-import { createDesign } from "../../apis/designApi"
-import { createCheckin } from "../../apis/checkIn"
-
-// UI Components
-import { Button } from "@/components/ui/button"
+import { getAllCustomers } from "../../apis/customerApi"
+import { getAllpd } from "../../apis/ProductDesignation-api"
+import { createMassProduction } from "../../apis/massProductionApi"
+import { createP_P_Tuning } from "../../apis/p-p-tuning-api"
+import { createOkForLunch } from "../../apis/okForLunch"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
-import { Separator } from "@/components/ui/separator"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { useToast } from "@/hooks/use-toast"
+import { Loader2, ArrowLeft } from "lucide-react"
+import Navbar from "@/components/NavBar"
+import ContactUs from "@/components/ContactUs"
 
-// Step titles for the stepper
-const STEP_TITLES = [
-  "Mass Production",
-  "Checkin",
-  "Feasibility",
-  "Validation For Offer",
-  "Kick Off",
-  "Design",
-  "Facilities",
-  "P-P Tuning",
-  "Process Qualification",
-  "Qualification Confirmation",
-  "OK for Launch",
-]
-
-// Task fields for forms with nested task structure
-const TASK_FIELDS = {
-  check: false,
-  responsible: "",
-  planned: "",
-  done: "",
-  comments: "",
-  filePath: null,
-}
-
-// Create a task object with default values
-const createTaskObject = (value = false) => ({
-  value,
-  task: { ...TASK_FIELDS },
-})
-
-// Create a form state object with task fields
-const createFormWithTasks = (fields) => {
-  return Object.fromEntries(fields.map((field) => [field, createTaskObject()]))
-}
-
-export default function MassProductionStepper() {
-  const [currentStep, setCurrentStep] = useState(1)
+const MassPdCreate = () => {
+  const navigate = useNavigate()
+  const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [customers, setCustomers] = useState([])
   const [productDesignations, setProductDesignations] = useState([])
-  const { toast } = useToast()
-  const navigate = useNavigate()
+  const [selectedProductDesignations, setSelectedProductDesignations] = useState([])
 
-  // Initialize form state
-  const [formState, setFormState] = useState({
-    massProduction: {},
-    checkin: {},
-    feasibility: {},
-    validationForOffer: {},
-    kickOff: {},
-    design: {},
-    facilities: {},
-    ppTuning: {},
-    processQualification: {},
-    qualificationConfirmation: {},
-    okForLunch: {},
+  // Initial form state with all required fields
+  const [formData, setFormData] = useState({
+    id: "",
+    status: "on-going",
+    status_type: "ok",
+    project_n: "",
+    product_designation: [],
+    description: "",
+    customer: "",
+    technical_skill: "sc",
+    initial_request: new Date().toISOString().split("T")[0],
+    request_original: "customer",
+    customer_offer: "F",
+    customer_order: "F",
+    ppap_submission_date: "",
+    ppap_submitted: false,
+    closure: "",
+    comment: "",
+    next_review: "",
+    mlo: "",
+    tko: "",
+    cv: "",
+    pt1: "",
+    pt2: "",
+    sop: "",
+    assignedRole: "",
+    assignedEmail: "",
   })
 
-  // Initialize forms for each step
-  const massProductionForm = useForm({
-    defaultValues: {
-      id: "",
-      status: "on-going",
-      status_type: "ok",
-      project_n: "",
-      product_designation: [],
-      description: "",
-      customer: "",
-      technical_skill: "sc",
-      initial_request: "",
-      request_original: "internal",
-      next_review: "",
-      mlo: "",
-      tko: "",
-      cv: "",
-      pt1: "",
-      pt2: "",
-      sop: "",
-      ppap_submission_date: "",
-      closure: "",
-    },
-  })
-
-  const checkinForm = useForm({
-    defaultValues: {
-      project_manager: false,
-      business_manager: false,
-      engineering_leader_manager: false,
-      quality_leader: false,
-      plant_quality_leader: false,
-      industrial_engineering: false,
-      launch_manager_method: false,
-      maintenance: false,
-      purchasing: false,
-      logistics: false,
-      sales: false,
-      economic_financial_leader: false,
-    },
-  })
-
-  // List of feasibility fields
-  const feasibilityFields = [
-    "product",
-    "raw_material_type",
-    "raw_material_qty",
-    "packaging",
-    "purchased_part",
-    "injection_cycle_time",
-    "moulding_labor",
-    "press_size",
-    "assembly_finishing_paint_cycle_time",
-    "assembly_finishing_paint_labor",
-    "ppm_level",
-    "pre_study",
-    "project_management",
-    "study_design",
-    "cae_design",
-    "monitoring",
-    "measurement_metrology",
-    "validation",
-    "molds",
-    "special_machines",
-    "checking_fixture",
-    "equipment_painting_prehension",
-    "run_validation",
-    "stock_production_coverage",
-    "is_presentation",
-    "documentation_update",
-  ]
-
-  // Create feasibility form with detailed structure based on the FeasabilityDetail model
-  const feasibilityForm = useForm({
-    defaultValues: feasibilityFields.reduce((acc, field) => {
-      acc[field] = {
-        value: false,
-        details: {
-          description: "",
-          cost: 0,
-          sales_price: 0,
-          comments: "",
-        },
-      }
+  // Feasibility form state
+  const [feasibilityData, setFeasibilityData] = useState(
+    feasibilityFields.reduce((acc, field) => {
+      acc[field] = { value: false, details: { description: "", cost: 0, sales_price: 0, comments: "" } }
       return acc
     }, {}),
+  )
+
+  // Kick-off form state
+  const [kickOffData, setKickOffData] = useState(
+    kickOffFields.reduce((acc, field) => {
+      acc[field] = { value: false, task: { check: false, responsible: "", planned: "", comments: "" } }
+      return acc
+    }, {}),
+  )
+
+  // Design form state
+  const [designData, setDesignData] = useState(
+    designFields.reduce((acc, field) => {
+      acc[field] = { value: false, task: { check: false, responsible: "", planned: "", comments: "" } }
+      return acc
+    }, {}),
+  )
+
+  // Facilities form state
+  const [facilitiesData, setFacilitiesData] = useState(
+    facilitiesFields.reduce((acc, field) => {
+      acc[field] = { value: false, task: { check: false, responsible: "", planned: "", comments: "" } }
+      return acc
+    }, {}),
+  )
+
+  // P_P_Tuning form state
+  const [ppTuningData, setPPTuningData] = useState(
+    ppTuningFields.reduce((acc, field) => {
+      acc[field] = { value: false, task: { check: false, responsible: "", planned: "", comments: "" } }
+      return acc
+    }, {}),
+  )
+
+  // Process Qualification form state
+  const [processQualifData, setProcessQualifData] = useState(
+    processQualifFields.reduce((acc, field) => {
+      acc[field] = { value: false, task: { check: false, responsible: "", planned: "", comments: "" } }
+      return acc
+    }, {}),
+  )
+
+  // Qualification Confirmation form state
+  const [qualificationConfirmationData, setQualificationConfirmationData] = useState(
+    qualificationConfirmationFields.reduce((acc, field) => {
+      acc[field] = { value: false, task: { check: false, responsible: "", planned: "", comments: "" } }
+      return acc
+    }, {}),
+  )
+
+  // Checkin form state
+  const [checkinData, setCheckinData] = useState({
+    project_manager: false,
+    business_manager: false,
+    engineering_leader_manager: false,
+    quality_leader: false,
+    plant_quality_leader: false,
+    industrial_engineering: false,
+    launch_manager_method: false,
+    maintenance: false,
+    purchasing: false,
+    logistics: false,
+    sales: false,
+    economic_financial_leader: false,
   })
 
-  const validationForOfferForm = useForm({
-    defaultValues: {
-      name: "",
-      check: false,
-      date: "",
-      upload: null,
-    },
+  // Ok For Lunch form state
+  const [okForLunchData, setOkForLunchData] = useState({
+    check: false,
+    upload: null,
+    date: new Date().toISOString().split("T")[0],
   })
-
-  // Create forms with task structure using the Task model
-  const kickOffForm = useForm({
-    defaultValues: createFormWithTasks([
-      "timeScheduleApproved",
-      "modificationLaunchOrder",
-      "projectRiskAssessment",
-      "standardsImpact",
-      "validationOfCosts",
-    ]),
-  })
-
-  const designForm = useForm({
-    defaultValues: createFormWithTasks([
-      "Validation_of_the_validation",
-      "Modification_of_bought_product",
-      "Modification_of_tolerance",
-      "Modification_of_checking_fixtures",
-      "Modification_of_Product_FMEA",
-      "Modification_of_part_list_form",
-      "Modification_of_control_plan",
-      "Modification_of_Process_FMEA",
-      "Modification_of_production_facilities",
-      "Modification_of_tools",
-      "Modification_of_packaging",
-      "Modification_of_information_system",
-      "Updating_of_drawings",
-    ]),
-  })
-
-  const facilitiesForm = useForm({
-    defaultValues: createFormWithTasks([
-      "reception_of_modified_means",
-      "reception_of_modified_tools",
-      "reception_of_modified_fixtures",
-      "reception_of_modified_parts",
-      "control_plan",
-    ]),
-  })
-
-  const ppTuningForm = useForm({
-    defaultValues: createFormWithTasks([
-      "product_process_tuning",
-      "functional_validation_test",
-      "dimensional_validation_test",
-      "aspect_validation_test",
-      "supplier_order_modification",
-      "acceptation_of_supplier",
-      "capability",
-      "manufacturing_of_control_parts",
-      "product_training",
-      "process_training",
-      "purchase_file",
-      "means_technical_file_data",
-      "means_technical_file_manufacturing",
-      "means_technical_file_maintenance",
-      "tooling_file",
-      "product_file",
-      "internal_process",
-    ]),
-  })
-
-  const processQualificationForm = useForm({
-    defaultValues: createFormWithTasks([
-      "updating_of_capms",
-      "modification_of_customer_logistics",
-      "qualification_of_supplier",
-      "presentation_of_initial_samples",
-      "filing_of_initial_samples",
-      "information_on_modification_implementation",
-      "full_production_run",
-      "request_for_dispensation",
-      "process_qualification",
-      "initial_sample_acceptance",
-    ]),
-  })
-
-  const qualificationConfirmationForm = useForm({
-    defaultValues: createFormWithTasks([
-      "using_up_old_stock",
-      "using_up_safety_stocks",
-      "updating_version_number_mould",
-      "updating_version_number_product_label",
-      "management_of_manufacturing_programmes",
-      "specific_spotting_of_packaging_with_label",
-      "management_of_galia_identification_labels",
-      "preservation_measure",
-      "product_traceability_label_modification",
-      "information_to_production",
-      "information_to_customer_logistics",
-      "information_to_customer_quality",
-      "updating_customer_programme_data_sheet",
-    ]),
-  })
-
-  const okForLunchForm = useForm({
-    defaultValues: {
-      check: false,
-      date: "",
-      upload: null,
-    },
-  })
-
-  // Array of forms for easier access
-  const forms = [
-    massProductionForm,
-    checkinForm,
-    feasibilityForm,
-    validationForOfferForm,
-    kickOffForm,
-    designForm,
-    facilitiesForm,
-    ppTuningForm,
-    processQualificationForm,
-    qualificationConfirmationForm,
-    okForLunchForm,
-  ]
 
   // Fetch customers and product designations on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [customersData, productDesignationsData] = await Promise.all([getAllCustomers(), getAllpd()])
-        setCustomers(customersData)
-        setProductDesignations(productDesignationsData)
+
+        // Validate customers data
+        if (Array.isArray(customersData)) {
+          setCustomers(customersData)
+        } else {
+          console.error("Invalid customers data format:", customersData)
+          setCustomers([])
+        }
+
+        // Validate product designations data
+        if (Array.isArray(productDesignationsData)) {
+          // Filter out any invalid product designations
+          const validProductDesignations = productDesignationsData.filter(
+            (pd) => pd && pd._id && typeof pd._id === "string" && pd.part_name,
+          )
+
+          if (validProductDesignations.length !== productDesignationsData.length) {
+            console.warn(
+              `Filtered out ${productDesignationsData.length - validProductDesignations.length} invalid product designations`,
+            )
+          }
+
+          setProductDesignations(validProductDesignations)
+        } else {
+          console.error("Invalid product designations data format:", productDesignationsData)
+          setProductDesignations([])
+        }
       } catch (error) {
         console.error("Error fetching data:", error)
         toast({
@@ -327,134 +183,183 @@ export default function MassProductionStepper() {
           description: "Failed to load initial data. Please refresh the page.",
           variant: "destructive",
         })
+        setCustomers([])
+        setProductDesignations([])
       }
     }
 
     fetchData()
   }, [toast])
 
-  // Get current form data
-  const getCurrentFormData = useCallback(() => {
-    return forms[currentStep - 1].getValues()
-  }, [currentStep])
+  // Handle input changes for main form
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
-  // Save current form data to state
-  const saveCurrentFormData = useCallback(() => {
-    const stepKey = Object.keys(formState)[currentStep - 1]
-    const currentFormData = getCurrentFormData()
+  // Handle checkbox changes for main form
+  const handleCheckboxChange = (name, checked) => {
+    setFormData((prev) => ({ ...prev, [name]: checked }))
+  }
 
-    setFormState((prevState) => ({
-      ...prevState,
-      [stepKey]: currentFormData,
+  // Handle select changes for main form
+  const handleSelectChange = (name, value) => {
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  // Handle product designation selection
+  const handleProductDesignationChange = (id) => {
+    setSelectedProductDesignations((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((item) => item !== id)
+      } else {
+        return [...prev, id]
+      }
+    })
+  }
+
+  // Handle checkin checkbox changes
+  const handleCheckinChange = (field, checked) => {
+    setCheckinData((prev) => ({ ...prev, [field]: checked }))
+  }
+
+  // Handle ok for lunch changes
+  const handleOkForLunchChange = (field, value) => {
+    setOkForLunchData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // Handle file upload for ok for lunch
+  const handleFileChange = (e) => {
+    setOkForLunchData((prev) => ({ ...prev, upload: e.target.files[0] }))
+  }
+
+  // Generic handler for accordion form data changes
+  const handleAccordionCheckboxChange = (setter, field, checked) => {
+    setter((prev) => ({
+      ...prev,
+      [field]: { ...prev[field], value: checked },
     }))
-  }, [currentStep, formState, getCurrentFormData])
-
-  // Handle step navigation
-  const nextStep = async () => {
-    saveCurrentFormData()
-
-    if (currentStep < STEP_TITLES.length) {
-      setCurrentStep(currentStep + 1)
-
-      toast({
-        title: `Step ${currentStep + 1}: ${STEP_TITLES[currentStep]}`,
-        description: "Your progress has been saved",
-      })
-
-      window.scrollTo({ top: 0, behavior: "smooth" })
-    } else {
-      handleSubmit()
-    }
   }
 
-  const prevStep = () => {
-    saveCurrentFormData()
-
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
-      window.scrollTo({ top: 0, behavior: "smooth" })
-    }
+  // Generic handler for task changes in accordion forms
+  const handleTaskChange = (setter, field, taskField, value) => {
+    setter((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [taskField]: value },
+      },
+    }))
   }
 
-  const goToStep = (step) => {
-    if (step === currentStep) return
-
-    saveCurrentFormData()
-    setCurrentStep(step)
-    window.scrollTo({ top: 0, behavior: "smooth" })
+  // Generic handler for details changes in feasibility form
+  const handleDetailsChange = (field, detailField, value) => {
+    setFeasibilityData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        details: { ...prev[field].details, [detailField]: value },
+      },
+    }))
   }
 
   // Handle form submission
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault()
     setLoading(true)
+
     try {
-      // Save all form data before submission
-      saveCurrentFormData()
+      // Validate product designations before submission
+      if (selectedProductDesignations.length === 0) {
+        toast({
+          title: "Warning",
+          description: "Please select at least one product designation.",
+          variant: "destructive",
+        })
+        setLoading(false)
+        return
+      }
+
+      // Verify that all selected product designations exist in the productDesignations array
+      const validProductDesignationIds = productDesignations.map((pd) => pd._id)
+      const invalidSelections = selectedProductDesignations.filter((id) => !validProductDesignationIds.includes(id))
+
+      if (invalidSelections.length > 0) {
+        console.error("Invalid product designations detected:", invalidSelections)
+        toast({
+          title: "Error",
+          description: `${invalidSelections.length} invalid product designation(s) detected. Please refresh and try again.`,
+          variant: "destructive",
+        })
+        setLoading(false)
+        return
+      }
+
+      // Update product designations in form data
+      const updatedFormData = {
+        ...formData,
+        product_designation: selectedProductDesignations,
+      }
 
       // Create checkin record
-      const checkinResponse = await createCheckin(formState.checkin)
-      const checkinId = checkinResponse._id
+      const checkinResponse = await createCheckin(checkinData)
 
-      // Create mass production record
-      const massProductionData = {
-        ...formState.massProduction,
-        assignedRole: "Manager",
-        assignedEmail: "manager@example.com",
-      }
-      const massProductionResponse = await createMassProduction(massProductionData)
-      const massProductionId = massProductionResponse._id
+      // Create feasibility record
+      const feasibilityResponse = await createFeasibility(feasibilityData)
 
-      // Create all related records with proper references
-      const feasibilityResponse = await createFeasibility({
-        ...formState.feasibility,
-        checkin: checkinId,
-      })
+      // Create kick-off record
+      const kickOffResponse = await createKickOff(kickOffData)
 
-      const validationResponse = await createValidationForOffer({
-        ...formState.validationForOffer,
-        checkin: checkinId,
-      })
+      // Create design record
+      const designResponse = await createDesign(designData)
 
-      const kickOffResponse = await createKickOff(formState.kickOff)
-      const designResponse = await createDesign(formState.design)
-      const facilitiesResponse = await createfacilities(formState.facilities)
-      const ppTuningResponse = await createP_P_Tuning(formState.ppTuning)
-      const processQualResponse = await createQualificationProcess(formState.processQualification)
-      const qualConfirmResponse = await createQualificationConfirmation(formState.qualificationConfirmation)
+      // Create facilities record
+      const facilitiesResponse = await createfacilities(facilitiesData)
 
+      // Create P_P_Tuning record
+      const ppTuningResponse = await createP_P_Tuning(ppTuningData)
+
+      // Create process qualification record
+      const processQualifResponse = await createQualificationProcess(processQualifData)
+
+      // Create qualification confirmation record
+      const qualificationConfirmationResponse = await createQualificationConfirmation(qualificationConfirmationData)
+
+      // Create ok for lunch record
       const okForLunchResponse = await createOkForLunch({
-        ...formState.okForLunch,
-        checkin: checkinId,
+        ...okForLunchData,
+        checkin: checkinResponse.data._id,
       })
 
-      // Update mass production with references to all created records
-      const updateData = {
-        feasability: feasibilityResponse._id,
-        validation_for_offer: [validationResponse._id],
-        kick_off: kickOffResponse._id,
-        design: designResponse._id,
-        facilities: facilitiesResponse._id,
-        p_p_tuning: ppTuningResponse._id,
-        process_qualif: processQualResponse._id,
-        qualification_confirmation: qualConfirmResponse._id,
-        ok_for_lunch: okForLunchResponse._id,
+      // Create the mass production record with references to created records
+      const massProductionData = {
+        ...updatedFormData,
+        feasability: feasibilityResponse.data._id,
+        kick_off: kickOffResponse.data._id,
+        design: designResponse.data._id,
+        facilities: facilitiesResponse.data._id,
+        p_p_tuning: ppTuningResponse.data._id,
+        process_qualif: processQualifResponse.data._id,
+        qualification_confirmation: qualificationConfirmationResponse.data._id,
+        ok_for_lunch: okForLunchResponse.data._id,
+        checkin: checkinResponse.data._id,
       }
 
-      // In a real application, you would update the mass production record here
-      // await updateMassProduction(massProductionId, updateData)
+      // Create the mass production record
+      await createMassProduction(massProductionData)
 
       toast({
         title: "Success",
-        description: "Mass Production process created successfully!",
+        description: "Mass production record created successfully!",
       })
 
-      // Navigate to the mass production list or detail page
-      navigate("/mass-productions")
+      // Redirect to the mass production list page
+      navigate("/masspd/create")
     } catch (error) {
-      console.error("Error creating Mass Production process:", error)
+      console.error("Failed to create mass production record:", error)
       toast({
         title: "Error",
-        description: "Failed to create Mass Production process. Please try again.",
+        description: "Failed to create mass production record. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -462,324 +367,115 @@ export default function MassProductionStepper() {
     }
   }
 
-  // Reset the entire form
-  const resetForm = () => {
-    forms.forEach((form) => form.reset())
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="container py-8 mx-auto">
+        <div className="flex items-center mb-6">
+          <Button variant="outline" onClick={() => navigate("/mass-production")} className="mr-4">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
+          </Button>
+          <h1 className="text-3xl font-bold">Create Mass Production</h1>
+        </div>
 
-    setFormState({
-      massProduction: {},
-      checkin: {},
-      feasibility: {},
-      validationForOffer: {},
-      kickOff: {},
-      design: {},
-      facilities: {},
-      ppTuning: {},
-      processQualification: {},
-      qualificationConfirmation: {},
-      okForLunch: {},
-    })
+        <form onSubmit={handleSubmit}>
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="details">Project Details</TabsTrigger>
+              <TabsTrigger value="dates">Key Dates</TabsTrigger>
+              <TabsTrigger value="checkin">Check-in</TabsTrigger>
+              <TabsTrigger value="stages">Process Stages</TabsTrigger>
+            </TabsList>
 
-    setCurrentStep(1)
+            {/* Basic Information Tab */}
+            <TabsContent value="basic">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Basic Information</CardTitle>
+                  <CardDescription>Enter the basic information for the mass production record.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="id">
+                        ID <span className="text-red-500">*</span>
+                      </Label>
+                      <Input id="id" name="id" value={formData.id} onChange={handleInputChange} required />
+                    </div>
 
-    toast({
-      title: "Form Reset",
-      description: "All form data has been cleared",
-    })
-  }
+                    <div className="space-y-2">
+                      <Label htmlFor="project_n">
+                        Project Number <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="project_n"
+                        name="project_n"
+                        value={formData.project_n}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
 
-  // Handle checkbox change for task accordions
-  const handleCheckboxChange = (form, field, value) => {
-    // For forms with nested value structure
-    if (typeof form.getValues()[field] === "object" && form.getValues()[field] !== null) {
-      form.setValue(`${field}.value`, value)
-
-      // Also update the formState to ensure it's saved when moving between steps
-      const stepKey = Object.keys(formState)[currentStep - 1]
-      setFormState((prevState) => ({
-        ...prevState,
-        [stepKey]: {
-          ...prevState[stepKey],
-          [field]: {
-            ...prevState[stepKey][field],
-            value: value,
-          },
-        },
-      }))
-    } else {
-      // For simple boolean fields (like in checkinForm)
-      form.setValue(field, value)
-
-      // Also update the formState
-      const stepKey = Object.keys(formState)[currentStep - 1]
-      setFormState((prevState) => ({
-        ...prevState,
-        [stepKey]: {
-          ...prevState[stepKey],
-          [field]: value,
-        },
-      }))
-    }
-  }
-
-  // Handle task field changes
-  const handleTaskChange = (e, form, field, taskField) => {
-    const value = taskField === "check" ? e.target.checked : e.target.value
-
-    form.setValue(`${field}.task.${taskField}`, value)
-
-    // Update formState
-    const stepKey = Object.keys(formState)[currentStep - 1]
-    setFormState((prevState) => ({
-      ...prevState,
-      [stepKey]: {
-        ...prevState[stepKey],
-        [field]: {
-          ...prevState[stepKey][field],
-          task: {
-            ...prevState[stepKey][field]?.task,
-            [taskField]: value,
-          },
-        },
-      },
-    }))
-  }
-
-  // Handle file upload for tasks
-  const handleFileChange = (e, form, field) => {
-    const file = e.target.files?.[0] || null
-
-    form.setValue(`${field}.task.filePath`, file)
-
-    // Update formState
-    const stepKey = Object.keys(formState)[currentStep - 1]
-    setFormState((prevState) => ({
-      ...prevState,
-      [stepKey]: {
-        ...prevState[stepKey],
-        [field]: {
-          ...prevState[stepKey][field],
-          task: {
-            ...prevState[stepKey][field]?.task,
-            filePath: file,
-          },
-        },
-      },
-    }))
-  }
-
-  // Handle feasibility detail changes
-  const handleFeasibilityDetailChange = (e, field, type) => {
-    const value = type === "cost" || type === "sales_price" ? Number.parseFloat(e.target.value) : e.target.value
-
-    feasibilityForm.setValue(`${field}.details.${type}`, value)
-
-    // Update formState
-    const stepKey = Object.keys(formState)[currentStep - 1]
-    setFormState((prevState) => ({
-      ...prevState,
-      [stepKey]: {
-        ...prevState[stepKey],
-        [field]: {
-          ...prevState[stepKey][field],
-          details: {
-            ...prevState[stepKey][field]?.details,
-            [type]: value,
-          },
-        },
-      },
-    }))
-  }
-
-  // Reusable component for task lists
-  const TaskList = ({ items, form, nestedValue = true }) => {
-    return (
-      <div className="space-y-4">
-        {items.map((item) => {
-          const checked = nestedValue ? form.getValues()[item.id]?.value : form.getValues()[item.id]
-
-          return (
-            <div key={item.id} className="flex items-start p-3 space-x-3 border rounded-md bg-card">
-              <Checkbox
-                id={item.id}
-                checked={checked}
-                onCheckedChange={(checked) => handleCheckboxChange(form, item.id, checked)}
-              />
-              <div className="grid gap-1.5 leading-none">
-                <label
-                  htmlFor={item.id}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {item.label.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                </label>
-                {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
-              </div>
-              {item.tooltip && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="w-6 h-6 p-0 ml-auto rounded-full">
-                        <Info className="w-4 h-4" />
-                        <span className="sr-only">Info</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs">{item.tooltip}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
-  // Reusable component for task accordions
-  const TaskAccordion = ({ items, form }) => {
-    return (
-      <Accordion type="single" collapsible className="w-full">
-        {items.map((item, index) => (
-          <AccordionItem key={item.id} value={`item-${index}`}>
-            <AccordionTrigger className="text-lg font-semibold">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id={item.id}
-                  checked={form.getValues()[item.id]?.value}
-                  onCheckedChange={(checked) => handleCheckboxChange(form, item.id, checked)}
-                />
-                <Label htmlFor={item.id} className="text-left">
-                  {item.label.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                </Label>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor={`${item.id}-responsible`}>Responsible</Label>
-                  <Input
-                    id={`${item.id}-responsible`}
-                    type="text"
-                    value={form.getValues()[item.id]?.task?.responsible || ""}
-                    onChange={(e) => handleTaskChange(e, form, item.id, "responsible")}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`${item.id}-planned`}>Planned Date</Label>
-                  <Input
-                    id={`${item.id}-planned`}
-                    type="date"
-                    value={form.getValues()[item.id]?.task?.planned || ""}
-                    onChange={(e) => handleTaskChange(e, form, item.id, "planned")}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`${item.id}-done`}>Completion Date</Label>
-                  <Input
-                    id={`${item.id}-done`}
-                    type="date"
-                    value={form.getValues()[item.id]?.task?.done || ""}
-                    onChange={(e) => handleTaskChange(e, form, item.id, "done")}
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor={`${item.id}-comments`}>Comments</Label>
-                  <Textarea
-                    id={`${item.id}-comments`}
-                    value={form.getValues()[item.id]?.task?.comments || ""}
-                    onChange={(e) => handleTaskChange(e, form, item.id, "comments")}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`${item.id}-file`}>Upload File</Label>
-                  <Input id={`${item.id}-file`} type="file" onChange={(e) => handleFileChange(e, form, item.id)} />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`${item.id}-check`}
-                    checked={form.getValues()[item.id]?.task?.check || false}
-                    onCheckedChange={(checked) => handleTaskChange({ target: { checked } }, form, item.id, "check")}
-                  />
-                  <Label htmlFor={`${item.id}-check`}>Mark as Completed</Label>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
-    )
-  }
-
-  // Render step content based on current step
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <Form {...massProductionForm}>
-            <form className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <FormField
-                  control={massProductionForm.control}
-                  name="id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ID</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter ID" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={massProductionForm.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="status">
+                        Status <span className="text-red-500">*</span>
+                      </Label>
+                      <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="on-going">On-going</SelectItem>
+                          <SelectItem value="stand-by">Stand-by</SelectItem>
                           <SelectItem value="closed">Closed</SelectItem>
-                          <SelectItem value="on-going">On-Going</SelectItem>
-                          <SelectItem value="stand-by">Stand-By</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={massProductionForm.control}
-                  name="project_n"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter project number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={massProductionForm.control}
-                  name="customer"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Customer</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select customer" />
-                          </SelectTrigger>
-                        </FormControl>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="status_type">
+                        Status Type <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        value={formData.status_type}
+                        onValueChange={(value) => handleSelectChange("status_type", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ok">OK</SelectItem>
+                          <SelectItem value="no">NO</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="customer">Customer</Label>
+                      <Select
+                        value={formData.customer}
+                        onValueChange={(value) => handleSelectChange("customer", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select customer" />
+                        </SelectTrigger>
                         <SelectContent>
                           {customers.map((customer) => (
                             <SelectItem key={customer._id} value={customer._id}>
@@ -788,868 +484,1045 @@ export default function MassProductionStepper() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={massProductionForm.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Enter description" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={massProductionForm.control}
-                  name="technical_skill"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>Technical Skill</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex flex-row space-x-4"
-                        >
-                          <FormItem className="flex items-center space-x-2">
-                            <FormControl>
-                              <RadioGroupItem value="sc" />
-                            </FormControl>
-                            <FormLabel className="font-normal">SC</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-2">
-                            <FormControl>
-                              <RadioGroupItem value="tc" />
-                            </FormControl>
-                            <FormLabel className="font-normal">TC</FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={massProductionForm.control}
-                  name="request_original"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>Request Original</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex flex-row space-x-4"
-                        >
-                          <FormItem className="flex items-center space-x-2">
-                            <FormControl>
-                              <RadioGroupItem value="internal" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Internal</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-2">
-                            <FormControl>
-                              <RadioGroupItem value="customer" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Customer</FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="mb-4 text-lg font-medium">Key Dates</h3>
-                <Tabs defaultValue="dates" className="w-full">
-                  <TabsList className="grid grid-cols-2 mb-4">
-                    <TabsTrigger value="dates">Dates</TabsTrigger>
-                    <TabsTrigger value="products">Products</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="dates" className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                      {[
-                        { id: "initial_request", label: "Initial Request" },
-                        { id: "mlo", label: "MLO" },
-                        { id: "tko", label: "TKO" },
-                        { id: "cv", label: "CV" },
-                        { id: "pt1", label: "PT1" },
-                        { id: "pt2", label: "PT2" },
-                        { id: "sop", label: "SOP" },
-                        { id: "ppap_submission_date", label: "PPAP Submission" },
-                        { id: "closure", label: "Closure" },
-                        { id: "next_review", label: "Next Review" },
-                      ].map((date) => (
-                        <FormField
-                          key={date.id}
-                          control={massProductionForm.control}
-                          name={date.id}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{date.label}</FormLabel>
-                              <FormControl>
-                                <Input type="date" {...field} value={field.value || ""} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ))}
                     </div>
-                  </TabsContent>
-                  <TabsContent value="products">
-                    <FormField
-                      control={massProductionForm.control}
-                      name="product_designation"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="mb-4">
-                            <FormLabel className="text-base">Product Designation</FormLabel>
-                            <FormDescription>Select the product designations for this mass production.</FormDescription>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="technical_skill">Technical Skill</Label>
+                      <Select
+                        value={formData.technical_skill}
+                        onValueChange={(value) => handleSelectChange("technical_skill", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select technical skill" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sc">SC</SelectItem>
+                          <SelectItem value="tc">TC</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-base">Product Designation</Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Select the product designations for this mass production.
+                    </p>
+                    {productDesignations.length === 0 ? (
+                      <div className="p-4 border rounded-md bg-muted/20">
+                        <p className="text-sm text-muted-foreground">
+                          No product designations available. Please check the database.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        {productDesignations.map((item) => (
+                          <div key={item._id} className="flex flex-row items-start p-3 space-x-3 border rounded-md">
+                            <Checkbox
+                              id={`pd-${item._id}`}
+                              checked={selectedProductDesignations.includes(item._id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedProductDesignations((prev) => [...prev, item._id])
+                                  // Also update the formData to keep it in sync
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    product_designation: [...prev.product_designation, item._id],
+                                  }))
+                                } else {
+                                  setSelectedProductDesignations((prev) => prev.filter((id) => id !== item._id))
+                                  // Also update the formData to keep it in sync
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    product_designation: prev.product_designation.filter((id) => id !== item._id),
+                                  }))
+                                }
+                              }}
+                            />
+                            <Label htmlFor={`pd-${item._id}`} className="font-normal">
+                              {item.part_name}
+                            </Label>
                           </div>
-                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                            {productDesignations.map((item) => (
-                              <FormItem
-                                key={item._id}
-                                className="flex flex-row items-start p-3 space-x-3 space-y-0 border rounded-md"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(item._id)}
-                                    onCheckedChange={(checked) => {
-                                      return checked
-                                        ? field.onChange([...(field.value || []), item._id])
-                                        : field.onChange(field.value?.filter((value) => value !== item._id) || [])
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal">{item.part_name}</FormLabel>
-                              </FormItem>
-                            ))}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </TabsContent>
-                </Tabs>
-              </div>
-            </form>
-          </Form>
-        )
-      case 2:
-        return (
-          <Form {...checkinForm}>
-            <form className="space-y-6">
+                        ))}
+                      </div>
+                    )}
+                    {selectedProductDesignations.length > 0 && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {selectedProductDesignations.length} product designation(s) selected
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Project Details Tab */}
+            <TabsContent value="details">
               <Card>
                 <CardHeader>
-                  <CardTitle>Stakeholder Check-in</CardTitle>
-                  <CardDescription>Select the stakeholders involved in this mass production process.</CardDescription>
+                  <CardTitle>Project Details</CardTitle>
+                  <CardDescription>Enter the project details for the mass production record.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="initial_request">
+                        Initial Request Date <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="initial_request"
+                        name="initial_request"
+                        type="date"
+                        value={formData.initial_request}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="request_original">Request Origin</Label>
+                      <Select
+                        value={formData.request_original}
+                        onValueChange={(value) => handleSelectChange("request_original", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select request origin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="internal">Internal</SelectItem>
+                          <SelectItem value="customer">Customer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="customer_offer">Customer Offer</Label>
+                      <Select
+                        value={formData.customer_offer}
+                        onValueChange={(value) => handleSelectChange("customer_offer", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select customer offer" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="F">F</SelectItem>
+                          <SelectItem value="E">E</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="customer_order">Customer Order</Label>
+                      <Select
+                        value={formData.customer_order}
+                        onValueChange={(value) => handleSelectChange("customer_order", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select customer order" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="F">F</SelectItem>
+                          <SelectItem value="E">E</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="ppap_submitted"
+                        checked={formData.ppap_submitted}
+                        onCheckedChange={(checked) => handleCheckboxChange("ppap_submitted", checked)}
+                      />
+                      <Label htmlFor="ppap_submitted">PPAP Submitted</Label>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="ppap_submission_date">PPAP Submission Date</Label>
+                    <Input
+                      id="ppap_submission_date"
+                      name="ppap_submission_date"
+                      type="date"
+                      value={formData.ppap_submission_date}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="comment">Comments</Label>
+                    <Textarea
+                      id="comment"
+                      name="comment"
+                      value={formData.comment}
+                      onChange={handleInputChange}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>OK for Launch</Label>
+                    <Card className="p-4">
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="ok-for-lunch-check"
+                            checked={okForLunchData.check}
+                            onCheckedChange={(checked) => handleOkForLunchChange("check", checked)}
+                          />
+                          <Label htmlFor="ok-for-lunch-check">Approved</Label>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="ok-for-lunch-date">Date</Label>
+                          <Input
+                            id="ok-for-lunch-date"
+                            type="date"
+                            value={okForLunchData.date}
+                            onChange={(e) => handleOkForLunchChange("date", e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="ok-for-lunch-upload">Upload Document</Label>
+                          <Input id="ok-for-lunch-upload" type="file" onChange={handleFileChange} />
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Key Dates Tab */}
+            <TabsContent value="dates">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Key Dates</CardTitle>
+                  <CardDescription>Enter the key dates for the mass production record.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="next_review">Next Review Date</Label>
+                      <Input
+                        id="next_review"
+                        name="next_review"
+                        type="date"
+                        value={formData.next_review}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="closure">Closure Date</Label>
+                      <Input
+                        id="closure"
+                        name="closure"
+                        type="date"
+                        value={formData.closure}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+
+                  <h3 className="text-lg font-medium">Milestone Dates</h3>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="mlo">MLO</Label>
+                      <Input id="mlo" name="mlo" type="date" value={formData.mlo} onChange={handleInputChange} />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="tko">TKO</Label>
+                      <Input id="tko" name="tko" type="date" value={formData.tko} onChange={handleInputChange} />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="cv">CV</Label>
+                      <Input id="cv" name="cv" type="date" value={formData.cv} onChange={handleInputChange} />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="pt1">PT1</Label>
+                      <Input id="pt1" name="pt1" type="date" value={formData.pt1} onChange={handleInputChange} />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="pt2">PT2</Label>
+                      <Input id="pt2" name="pt2" type="date" value={formData.pt2} onChange={handleInputChange} />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="sop">SOP</Label>
+                      <Input id="sop" name="sop" type="date" value={formData.sop} onChange={handleInputChange} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="assignedRole">
+                      Assigned Role <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="assignedRole"
+                      name="assignedRole"
+                      value={formData.assignedRole}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="assignedEmail">
+                      Assigned Email <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="assignedEmail"
+                      name="assignedEmail"
+                      type="email"
+                      value={formData.assignedEmail}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Check-in Tab */}
+            <TabsContent value="checkin">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Check-in</CardTitle>
+                  <CardDescription>Select all the roles that have been checked in for this project.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {[
-                      { id: "project_manager", label: "Project Manager" },
-                      { id: "business_manager", label: "Business Manager" },
-                      { id: "engineering_leader_manager", label: "Engineering Leader/Manager" },
-                      { id: "quality_leader", label: "Quality Leader" },
-                      { id: "plant_quality_leader", label: "Plant Quality Leader" },
-                      { id: "industrial_engineering", label: "Industrial Engineering" },
-                      { id: "launch_manager_method", label: "Launch Manager/Method" },
-                      { id: "maintenance", label: "Maintenance" },
-                      { id: "purchasing", label: "Purchasing" },
-                      { id: "logistics", label: "Logistics" },
-                      { id: "sales", label: "Sales" },
-                      { id: "economic_financial_leader", label: "Economic/Financial Leader" },
-                    ].map((item) => (
-                      <FormField
-                        key={item.id}
-                        control={checkinForm.control}
-                        name={item.id}
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start p-3 space-x-3 space-y-0 border rounded-md">
-                            <FormControl>
-                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                            </FormControl>
-                            <FormLabel className="font-normal">{item.label}</FormLabel>
-                          </FormItem>
-                        )}
-                      />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </form>
-          </Form>
-        )
-      case 3:
-        return (
-          <Form {...feasibilityForm}>
-            <form className="space-y-6">
-              <Accordion type="single" collapsible className="w-full">
-                {feasibilityFields.map((field, index) => (
-                  <AccordionItem key={field} value={`item-${index}`}>
-                    <AccordionTrigger className="text-lg font-semibold">
-                      <div className="flex items-center space-x-2">
+                    {Object.keys(checkinData).map((field) => (
+                      <div key={field} className="flex items-center space-x-2">
                         <Checkbox
                           id={field}
-                          checked={feasibilityForm.getValues()[field]?.value}
-                          onCheckedChange={(checked) => handleCheckboxChange(feasibilityForm, field, checked)}
+                          checked={checkinData[field]}
+                          onCheckedChange={(checked) => handleCheckinChange(field, checked)}
                         />
-                        <Label htmlFor={field} className="text-left">
-                          {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                        <Label
+                          htmlFor={field}
+                          className="text-sm font-medium leading-none capitalize peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {field.replace(/_/g, " ")}
                         </Label>
                       </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label htmlFor={`${field}-description`}>Description</Label>
-                          <Textarea
-                            id={`${field}-description`}
-                            value={feasibilityForm.getValues()[field]?.details?.description || ""}
-                            onChange={(e) => handleFeasibilityDetailChange(e, field, "description")}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${field}-cost`}>Cost</Label>
-                          <Input
-                            id={`${field}-cost`}
-                            type="number"
-                            value={feasibilityForm.getValues()[field]?.details?.cost || 0}
-                            onChange={(e) => handleFeasibilityDetailChange(e, field, "cost")}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${field}-sales-price`}>Sales Price</Label>
-                          <Input
-                            id={`${field}-sales-price`}
-                            type="number"
-                            value={feasibilityForm.getValues()[field]?.details?.sales_price || 0}
-                            onChange={(e) => handleFeasibilityDetailChange(e, field, "sales_price")}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${field}-comments`}>Comments</Label>
-                          <Textarea
-                            id={`${field}-comments`}
-                            value={feasibilityForm.getValues()[field]?.details?.comments || ""}
-                            onChange={(e) => handleFeasibilityDetailChange(e, field, "comments")}
-                          />
-                        </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </form>
-          </Form>
-        )
-      case 4:
-        return (
-          <Form {...validationForOfferForm}>
-            <form className="space-y-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <FormField
-                      control={validationForOfferForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Offer Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter offer name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={validationForOfferForm.control}
-                      name="date"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={validationForOfferForm.control}
-                      name="upload"
-                      render={({ field: { value, onChange, ...field } }) => (
-                        <FormItem className="col-span-full">
-                          <FormLabel>Upload File (optional)</FormLabel>
-                          <FormControl>
-                            <Input type="file" onChange={(e) => onChange(e.target.files?.[0] || null)} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={validationForOfferForm.control}
-                      name="check"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 col-span-full">
-                          <FormControl>
-                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Approve Offer</FormLabel>
-                            <FormDescription>Check this box to approve the offer</FormDescription>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </form>
-          </Form>
-        )
-      case 5:
-        return (
-          <Form {...kickOffForm}>
-            <form className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Kick Off Checklist</CardTitle>
-                  <CardDescription>Define the kick-off parameters for the mass production process.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TaskAccordion
-                    items={[
-                      { id: "timeScheduleApproved", label: "Time Schedule Approved" },
-                      { id: "modificationLaunchOrder", label: "Modification Launch Order" },
-                      { id: "projectRiskAssessment", label: "Project Risk Assessment" },
-                      { id: "standardsImpact", label: "Standards Impact" },
-                      { id: "validationOfCosts", label: "Validation Of Costs" },
-                    ]}
-                    form={kickOffForm}
-                  />
-                </CardContent>
-              </Card>
-            </form>
-          </Form>
-        )
-      case 6:
-        return (
-          <Form {...designForm}>
-            <form className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Design Checklist</CardTitle>
-                  <CardDescription>Configure the design parameters for mass production.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Validation & Modification</h3>
-                      <TaskAccordion
-                        items={[
-                          { id: "Validation_of_the_validation", label: "Validation Of The Validation" },
-                          { id: "Modification_of_bought_product", label: "Modification Of Bought Product" },
-                          { id: "Modification_of_tolerance", label: "Modification Of Tolerance" },
-                          { id: "Modification_of_checking_fixtures", label: "Modification Of Checking Fixtures" },
-                        ]}
-                        form={designForm}
-                      />
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-4">
-                      <h3 className="font-medium">FMEA & Documentation</h3>
-                      <TaskAccordion
-                        items={[
-                          { id: "Modification_of_Product_FMEA", label: "Modification Of Product FMEA" },
-                          { id: "Modification_of_part_list_form", label: "Modification Of Part List Form" },
-                          { id: "Modification_of_control_plan", label: "Modification Of Control Plan" },
-                          { id: "Modification_of_Process_FMEA", label: "Modification Of Process FMEA" },
-                        ]}
-                        form={designForm}
-                      />
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Production & Tools</h3>
-                      <TaskAccordion
-                        items={[
-                          {
-                            id: "Modification_of_production_facilities",
-                            label: "Modification Of Production Facilities",
-                          },
-                          { id: "Modification_of_tools", label: "Modification Of Tools" },
-                          { id: "Modification_of_packaging", label: "Modification Of Packaging" },
-                          { id: "Modification_of_information_system", label: "Modification Of Information System" },
-                          { id: "Updating_of_drawings", label: "Updating Of Drawings" },
-                        ]}
-                        form={designForm}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </form>
-          </Form>
-        )
-      case 7:
-        return (
-          <Form {...facilitiesForm}>
-            <form className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Facilities Checklist</CardTitle>
-                  <CardDescription>Configure the facilities required for mass production.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TaskAccordion
-                    items={[
-                      { id: "reception_of_modified_means", label: "Reception Of Modified Means" },
-                      { id: "reception_of_modified_tools", label: "Reception Of Modified Tools" },
-                      { id: "reception_of_modified_fixtures", label: "Reception Of Modified Fixtures" },
-                      { id: "reception_of_modified_parts", label: "Reception Of Modified Parts" },
-                      { id: "control_plan", label: "Control Plan" },
-                    ]}
-                    form={facilitiesForm}
-                  />
-                </CardContent>
-              </Card>
-            </form>
-          </Form>
-        )
-      case 8:
-        return (
-          <Form {...ppTuningForm}>
-            <form className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>P-P Tuning Checklist</CardTitle>
-                  <CardDescription>Configure the product-process tuning parameters.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Validation Tests</h3>
-                      <TaskAccordion
-                        items={[
-                          { id: "product_process_tuning", label: "Product Process Tuning" },
-                          { id: "functional_validation_test", label: "Functional Validation Test" },
-                          { id: "dimensional_validation_test", label: "Dimensional Validation Test" },
-                          { id: "aspect_validation_test", label: "Aspect Validation Test" },
-                        ]}
-                        form={ppTuningForm}
-                      />
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Supplier & Manufacturing</h3>
-                      <TaskAccordion
-                        items={[
-                          { id: "supplier_order_modification", label: "Supplier Order Modification" },
-                          { id: "acceptation_of_supplier", label: "Acceptation Of Supplier" },
-                          { id: "capability", label: "Capability" },
-                          { id: "manufacturing_of_control_parts", label: "Manufacturing Of Control Parts" },
-                        ]}
-                        form={ppTuningForm}
-                      />
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Training & Documentation</h3>
-                      <TaskAccordion
-                        items={[
-                          { id: "product_training", label: "Product Training" },
-                          { id: "process_training", label: "Process Training" },
-                          { id: "purchase_file", label: "Purchase File" },
-                          { id: "means_technical_file_data", label: "Means Technical File Data" },
-                          { id: "means_technical_file_manufacturing", label: "Means Technical File Manufacturing" },
-                          { id: "means_technical_file_maintenance", label: "Means Technical File Maintenance" },
-                          { id: "tooling_file", label: "Tooling File" },
-                          { id: "product_file", label: "Product File" },
-                          { id: "internal_process", label: "Internal Process" },
-                        ]}
-                        form={ppTuningForm}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </form>
-          </Form>
-        )
-      case 9:
-        return (
-          <Form {...processQualificationForm}>
-            <form className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Process Qualification Checklist</CardTitle>
-                  <CardDescription>Define the process qualification parameters.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TaskAccordion
-                    items={[
-                      { id: "updating_of_capms", label: "Updating Of CAPMS" },
-                      { id: "modification_of_customer_logistics", label: "Modification Of Customer Logistics" },
-                      { id: "qualification_of_supplier", label: "Qualification Of Supplier" },
-                      { id: "presentation_of_initial_samples", label: "Presentation Of Initial Samples" },
-                      { id: "filing_of_initial_samples", label: "Filing Of Initial Samples" },
-                      {
-                        id: "information_on_modification_implementation",
-                        label: "Information On Modification Implementation",
-                      },
-                      { id: "full_production_run", label: "Full Production Run" },
-                      { id: "request_for_dispensation", label: "Request For Dispensation" },
-                      { id: "process_qualification", label: "Process Qualification" },
-                      { id: "initial_sample_acceptance", label: "Initial Sample Acceptance" },
-                    ]}
-                    form={processQualificationForm}
-                  />
-                </CardContent>
-              </Card>
-            </form>
-          </Form>
-        )
-      case 10:
-        return (
-          <Form {...qualificationConfirmationForm}>
-            <form className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Qualification Confirmation Checklist</CardTitle>
-                  <CardDescription>Confirm the qualification parameters for mass production.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Stock & Version Management</h3>
-                      <TaskAccordion
-                        items={[
-                          { id: "using_up_old_stock", label: "Using Up Old Stock" },
-                          { id: "using_up_safety_stocks", label: "Using Up Safety Stocks" },
-                          { id: "updating_version_number_mould", label: "Updating Version Number Mould" },
-                          {
-                            id: "updating_version_number_product_label",
-                            label: "Updating Version Number Product Label",
-                          },
-                        ]}
-                        form={qualificationConfirmationForm}
-                      />
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Packaging & Labeling</h3>
-                      <TaskAccordion
-                        items={[
-                          {
-                            id: "management_of_manufacturing_programmes",
-                            label: "Management Of Manufacturing Programmes",
-                          },
-                          {
-                            id: "specific_spotting_of_packaging_with_label",
-                            label: "Specific Spotting Of Packaging With Label",
-                          },
-                          {
-                            id: "management_of_galia_identification_labels",
-                            label: "Management Of Galia Identification Labels",
-                          },
-                          { id: "preservation_measure", label: "Preservation Measure" },
-                          {
-                            id: "product_traceability_label_modification",
-                            label: "Product Traceability Label Modification",
-                          },
-                        ]}
-                        form={qualificationConfirmationForm}
-                      />
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Information & Updates</h3>
-                      <TaskAccordion
-                        items={[
-                          { id: "information_to_production", label: "Information To Production" },
-                          { id: "information_to_customer_logistics", label: "Information To Customer Logistics" },
-                          { id: "information_to_customer_quality", label: "Information To Customer Quality" },
-                          {
-                            id: "updating_customer_programme_data_sheet",
-                            label: "Updating Customer Programme Data Sheet",
-                          },
-                        ]}
-                        form={qualificationConfirmationForm}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </form>
-          </Form>
-        )
-      case 11:
-        return (
-          <Form {...okForLunchForm}>
-            <form className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>OK for Launch</CardTitle>
-                  <CardDescription>Final approval for launching the mass production process.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div className="flex items-center space-x-2">
-                      <FormField
-                        control={okForLunchForm.control}
-                        name="check"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>Approve Launch</FormLabel>
-                              <FormDescription>
-                                By checking this box, you confirm that this mass production process is approved for
-                                launch
-                              </FormDescription>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={okForLunchForm.control}
-                      name="date"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Approval Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={okForLunchForm.control}
-                      name="upload"
-                      render={({ field: { value, onChange, ...field } }) => (
-                        <FormItem>
-                          <FormLabel>Upload Approval Document</FormLabel>
-                          <FormControl>
-                            <Input type="file" onChange={(e) => onChange(e.target.files?.[0] || null)} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </form>
-          </Form>
-        )
-      default:
-        return null
-    }
-  }
-
-  // Main component render
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container px-4 py-8 mx-auto max-w-7xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Mass Production Process</h1>
-          <p className="mt-2 text-muted-foreground">Complete all steps to create a new mass production process.</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
-          {/* Stepper Navigation - Desktop */}
-          <div className="hidden lg:block">
-            <Card className="sticky top-24">
-              <CardHeader className="pb-3">
-                <CardTitle>Progress</CardTitle>
-                <CardDescription>
-                  Step {currentStep} of {STEP_TITLES.length}
-                </CardDescription>
-                <Progress value={(currentStep / STEP_TITLES.length) * 100} className="h-2" />
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[calc(100vh-300px)]">
-                  <div className="space-y-1">
-                    {STEP_TITLES.map((title, index) => (
-                      <Button
-                        key={index}
-                        variant="ghost"
-                        className={cn(
-                          "w-full justify-start",
-                          currentStep === index + 1 && "bg-accent text-accent-foreground",
-                        )}
-                        onClick={() => goToStep(index + 1)}
-                      >
-                        <div className="flex items-center">
-                          <div
-                            className={cn(
-                              "mr-2 flex h-6 w-6 items-center justify-center rounded-full border text-xs font-medium",
-                              currentStep > index + 1 ? "bg-primary text-primary-foreground border-primary" : "",
-                              currentStep === index + 1 ? "border-primary text-primary" : "",
-                            )}
-                          >
-                            {currentStep > index + 1 ? <Check className="w-3 h-3" /> : index + 1}
-                          </div>
-                          <span className="text-sm">{title}</span>
-                        </div>
-                      </Button>
                     ))}
                   </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Stepper Content */}
-          <div className="w-full">
-            {/* Mobile Stepper Navigation */}
-            <Card className="mb-6 lg:hidden">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle>Progress</CardTitle>
-                  <Badge variant="outline" className="px-3 py-1">
-                    {currentStep}/{STEP_TITLES.length}
-                  </Badge>
-                </div>
-                <Progress value={(currentStep / STEP_TITLES.length) * 100} className="h-2" />
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[120px]">
-                  <div className="space-y-1">
-                    {STEP_TITLES.map((title, index) => (
-                      <Button
-                        key={index}
-                        variant="ghost"
-                        className={cn(
-                          "w-full justify-start",
-                          currentStep === index + 1 && "bg-accent text-accent-foreground",
-                        )}
-                        onClick={() => goToStep(index + 1)}
-                      >
-                        <div className="flex items-center">
-                          <div
-                            className={cn(
-                              "mr-2 flex h-6 w-6 items-center justify-center rounded-full border text-xs font-medium",
-                              currentStep > index + 1 ? "bg-primary text-primary-foreground border-primary" : "",
-                              currentStep === index + 1 ? "border-primary text-primary" : "",
-                            )}
-                          >
-                            {currentStep > index + 1 ? <Check className="w-3 h-3" /> : index + 1}
-                          </div>
-                          <span className="text-sm">{title}</span>
-                        </div>
-                      </Button>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+            {/* Process Stages Tab */}
+            <TabsContent value="stages">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Process Stages</CardTitle>
+                  <CardDescription>Configure all process stages for this mass production record.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="feasibility" className="w-full">
+                    <TabsList className="grid w-full grid-cols-7">
+                      <TabsTrigger value="feasibility">Feasibility</TabsTrigger>
+                      <TabsTrigger value="kickoff">Kick-Off</TabsTrigger>
+                      <TabsTrigger value="design">Design</TabsTrigger>
+                      <TabsTrigger value="facilities">Facilities</TabsTrigger>
+                      <TabsTrigger value="pptuning">P/P Tuning</TabsTrigger>
+                      <TabsTrigger value="processqualif">Process Qualif</TabsTrigger>
+                      <TabsTrigger value="qualifconfirm">Qualif Confirm</TabsTrigger>
+                    </TabsList>
 
-            {/* Step Header */}
-            <Card className="mb-6">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>{STEP_TITLES[currentStep - 1]}</CardTitle>
-                  <Badge variant="outline" className="px-3 py-1">
-                    Step {currentStep} of {STEP_TITLES.length}
-                  </Badge>
-                </div>
-                <CardDescription>
-                  {currentStep === 1 && "Enter the basic information for the mass production process."}
-                  {currentStep === 2 && "Select the stakeholders involved in this mass production process."}
-                  {currentStep === 3 && "Evaluate the feasibility of the mass production process."}
-                  {currentStep === 4 && "Validate the offer details for this mass production."}
-                  {currentStep === 5 && "Define the kick-off parameters for the mass production process."}
-                  {currentStep === 6 && "Configure the design parameters for mass production."}
-                  {currentStep === 7 && "Configure the facilities required for mass production."}
-                  {currentStep === 8 && "Configure the product-process tuning parameters."}
-                  {currentStep === 9 && "Define the process qualification parameters."}
-                  {currentStep === 10 && "Confirm the qualification parameters for mass production."}
-                  {currentStep === 11 && "Final approval for launching the mass production process."}
-                </CardDescription>
-              </CardHeader>
-            </Card>
+                    {/* Feasibility Tab */}
+                    <TabsContent value="feasibility">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Feasibility</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Accordion type="single" collapsible className="w-full">
+                            {feasibilityFields.map((field, index) => (
+                              <AccordionItem key={field} value={`item-${index}`}>
+                                <AccordionTrigger className="text-lg font-semibold">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={field}
+                                      checked={feasibilityData[field].value}
+                                      onCheckedChange={(checked) =>
+                                        handleAccordionCheckboxChange(setFeasibilityData, field, checked)
+                                      }
+                                    />
+                                    <Label htmlFor={field} className="text-left">
+                                      {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                    </Label>
+                                  </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-description`}>Description</Label>
+                                      <Textarea
+                                        id={`${field}-description`}
+                                        value={feasibilityData[field].details.description}
+                                        onChange={(e) => handleDetailsChange(field, "description", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-cost`}>Cost</Label>
+                                      <Input
+                                        id={`${field}-cost`}
+                                        type="number"
+                                        value={feasibilityData[field].details.cost}
+                                        onChange={(e) => handleDetailsChange(field, "cost", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-sales-price`}>Sales Price</Label>
+                                      <Input
+                                        id={`${field}-sales-price`}
+                                        type="number"
+                                        value={feasibilityData[field].details.sales_price}
+                                        onChange={(e) => handleDetailsChange(field, "sales_price", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                      <Textarea
+                                        id={`${field}-comments`}
+                                        value={feasibilityData[field].details.comments}
+                                        onChange={(e) => handleDetailsChange(field, "comments", e.target.value)}
+                                      />
+                                    </div>
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            ))}
+                          </Accordion>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
 
-            {/* Step Content */}
-            <Card className="mb-6">
-              <CardContent className="pt-6">{renderStepContent()}</CardContent>
-            </Card>
+                    {/* Kick-Off Tab */}
+                    <TabsContent value="kickoff">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Kick-Off</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Accordion type="single" collapsible className="w-full">
+                            {kickOffFields.map((field, index) => (
+                              <AccordionItem key={field} value={`item-${index}`}>
+                                <AccordionTrigger className="text-lg font-semibold">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={field}
+                                      checked={kickOffData[field].value}
+                                      onCheckedChange={(checked) =>
+                                        handleAccordionCheckboxChange(setKickOffData, field, checked)
+                                      }
+                                    />
+                                    <Label htmlFor={field} className="text-left">
+                                      {field.replace(/([A-Z])/g, " $1").trim()}
+                                    </Label>
+                                  </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-responsible`}>Responsible</Label>
+                                      <Input
+                                        id={`${field}-responsible`}
+                                        type="text"
+                                        value={kickOffData[field].task.responsible}
+                                        onChange={(e) =>
+                                          handleTaskChange(setKickOffData, field, "responsible", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-planned`}>Planned Date</Label>
+                                      <Input
+                                        id={`${field}-planned`}
+                                        type="date"
+                                        value={kickOffData[field].task.planned}
+                                        onChange={(e) =>
+                                          handleTaskChange(setKickOffData, field, "planned", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                      <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                      <Textarea
+                                        id={`${field}-comments`}
+                                        value={kickOffData[field].task.comments}
+                                        onChange={(e) =>
+                                          handleTaskChange(setKickOffData, field, "comments", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`${field}-check`}
+                                        checked={kickOffData[field].task.check}
+                                        onCheckedChange={(checked) =>
+                                          handleTaskChange(setKickOffData, field, "check", checked)
+                                        }
+                                      />
+                                      <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+                                    </div>
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            ))}
+                          </Accordion>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
 
-            {/* Navigation Buttons */}
-            <Card>
-              <CardFooter className="flex items-center justify-between p-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={prevStep}
-                  disabled={currentStep === 1}
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Previous</span>
-                </Button>
+                    {/* Design Tab */}
+                    <TabsContent value="design">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Design</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Accordion type="single" collapsible className="w-full">
+                            {designFields.map((field, index) => (
+                              <AccordionItem key={field} value={`item-${index}`}>
+                                <AccordionTrigger className="text-lg font-semibold">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={field}
+                                      checked={designData[field].value}
+                                      onCheckedChange={(checked) =>
+                                        handleAccordionCheckboxChange(setDesignData, field, checked)
+                                      }
+                                    />
+                                    <Label htmlFor={field} className="text-left">
+                                      {field
+                                        .replace(/_/g, " ")
+                                        .replace(/([A-Z])/g, " $1")
+                                        .trim()}
+                                    </Label>
+                                  </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-responsible`}>Responsible</Label>
+                                      <Input
+                                        id={`${field}-responsible`}
+                                        type="text"
+                                        value={designData[field].task.responsible}
+                                        onChange={(e) =>
+                                          handleTaskChange(setDesignData, field, "responsible", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-planned`}>Planned Date</Label>
+                                      <Input
+                                        id={`${field}-planned`}
+                                        type="date"
+                                        value={designData[field].task.planned}
+                                        onChange={(e) =>
+                                          handleTaskChange(setDesignData, field, "planned", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                      <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                      <Textarea
+                                        id={`${field}-comments`}
+                                        value={designData[field].task.comments}
+                                        onChange={(e) =>
+                                          handleTaskChange(setDesignData, field, "comments", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`${field}-check`}
+                                        checked={designData[field].task.check}
+                                        onCheckedChange={(checked) =>
+                                          handleTaskChange(setDesignData, field, "check", checked)
+                                        }
+                                      />
+                                      <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+                                    </div>
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            ))}
+                          </Accordion>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
 
-                <div className="flex gap-2">
-                  {currentStep === 11 && (
-                    <Button type="button" variant="outline" onClick={resetForm} className="flex items-center gap-2">
-                      <RotateCcw className="w-4 h-4" />
-                      <span>Reset Form</span>
-                    </Button>
-                  )}
+                    {/* Facilities Tab */}
+                    <TabsContent value="facilities">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Facilities</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Accordion type="single" collapsible className="w-full">
+                            {facilitiesFields.map((field, index) => (
+                              <AccordionItem key={field} value={`item-${index}`}>
+                                <AccordionTrigger className="text-lg font-semibold">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={field}
+                                      checked={facilitiesData[field].value}
+                                      onCheckedChange={(checked) =>
+                                        handleAccordionCheckboxChange(setFacilitiesData, field, checked)
+                                      }
+                                    />
+                                    <Label htmlFor={field} className="text-left">
+                                      {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                    </Label>
+                                  </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-responsible`}>Responsible</Label>
+                                      <Input
+                                        id={`${field}-responsible`}
+                                        type="text"
+                                        value={facilitiesData[field].task.responsible}
+                                        onChange={(e) =>
+                                          handleTaskChange(setFacilitiesData, field, "responsible", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-planned`}>Planned Date</Label>
+                                      <Input
+                                        id={`${field}-planned`}
+                                        type="date"
+                                        value={facilitiesData[field].task.planned}
+                                        onChange={(e) =>
+                                          handleTaskChange(setFacilitiesData, field, "planned", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                      <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                      <Textarea
+                                        id={`${field}-comments`}
+                                        value={facilitiesData[field].task.comments}
+                                        onChange={(e) =>
+                                          handleTaskChange(setFacilitiesData, field, "comments", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`${field}-check`}
+                                        checked={facilitiesData[field].task.check}
+                                        onCheckedChange={(checked) =>
+                                          handleTaskChange(setFacilitiesData, field, "check", checked)
+                                        }
+                                      />
+                                      <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+                                    </div>
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            ))}
+                          </Accordion>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
 
-                  <Button type="button" onClick={nextStep} disabled={loading} className="flex items-center gap-2">
+                    {/* P/P Tuning Tab */}
+                    <TabsContent value="pptuning">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Process/Product Tuning</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Accordion type="single" collapsible className="w-full">
+                            {ppTuningFields.map((field, index) => (
+                              <AccordionItem key={field} value={`item-${index}`}>
+                                <AccordionTrigger className="text-lg font-semibold">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={field}
+                                      checked={ppTuningData[field].value}
+                                      onCheckedChange={(checked) =>
+                                        handleAccordionCheckboxChange(setPPTuningData, field, checked)
+                                      }
+                                    />
+                                    <Label htmlFor={field} className="text-left">
+                                      {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                    </Label>
+                                  </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-responsible`}>Responsible</Label>
+                                      <Input
+                                        id={`${field}-responsible`}
+                                        type="text"
+                                        value={ppTuningData[field].task.responsible}
+                                        onChange={(e) =>
+                                          handleTaskChange(setPPTuningData, field, "responsible", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-planned`}>Planned Date</Label>
+                                      <Input
+                                        id={`${field}-planned`}
+                                        type="date"
+                                        value={ppTuningData[field].task.planned}
+                                        onChange={(e) =>
+                                          handleTaskChange(setPPTuningData, field, "planned", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                      <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                      <Textarea
+                                        id={`${field}-comments`}
+                                        value={ppTuningData[field].task.comments}
+                                        onChange={(e) =>
+                                          handleTaskChange(setPPTuningData, field, "comments", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`${field}-check`}
+                                        checked={ppTuningData[field].task.check}
+                                        onCheckedChange={(checked) =>
+                                          handleTaskChange(setPPTuningData, field, "check", checked)
+                                        }
+                                      />
+                                      <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+                                    </div>
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            ))}
+                          </Accordion>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+
+                    {/* Process Qualification Tab */}
+                    <TabsContent value="processqualif">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Process Qualification</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Accordion type="single" collapsible className="w-full">
+                            {processQualifFields.map((field, index) => (
+                              <AccordionItem key={field} value={`item-${index}`}>
+                                <AccordionTrigger className="text-lg font-semibold">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={field}
+                                      checked={processQualifData[field].value}
+                                      onCheckedChange={(checked) =>
+                                        handleAccordionCheckboxChange(setProcessQualifData, field, checked)
+                                      }
+                                    />
+                                    <Label htmlFor={field} className="text-left">
+                                      {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                    </Label>
+                                  </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-responsible`}>Responsible</Label>
+                                      <Input
+                                        id={`${field}-responsible`}
+                                        type="text"
+                                        value={processQualifData[field].task.responsible}
+                                        onChange={(e) =>
+                                          handleTaskChange(setProcessQualifData, field, "responsible", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-planned`}>Planned Date</Label>
+                                      <Input
+                                        id={`${field}-planned`}
+                                        type="date"
+                                        value={processQualifData[field].task.planned}
+                                        onChange={(e) =>
+                                          handleTaskChange(setProcessQualifData, field, "planned", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                      <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                      <Textarea
+                                        id={`${field}-comments`}
+                                        value={processQualifData[field].task.comments}
+                                        onChange={(e) =>
+                                          handleTaskChange(setProcessQualifData, field, "comments", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`${field}-check`}
+                                        checked={processQualifData[field].task.check}
+                                        onCheckedChange={(checked) =>
+                                          handleTaskChange(setProcessQualifData, field, "check", checked)
+                                        }
+                                      />
+                                      <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+                                    </div>
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            ))}
+                          </Accordion>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+
+                    {/* Qualification Confirmation Tab */}
+                    <TabsContent value="qualifconfirm">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Qualification Confirmation</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Accordion type="single" collapsible className="w-full">
+                            {qualificationConfirmationFields.map((field, index) => (
+                              <AccordionItem key={field} value={`item-${index}`}>
+                                <AccordionTrigger className="text-lg font-semibold">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={field}
+                                      checked={qualificationConfirmationData[field].value}
+                                      onCheckedChange={(checked) =>
+                                        handleAccordionCheckboxChange(setQualificationConfirmationData, field, checked)
+                                      }
+                                    />
+                                    <Label htmlFor={field} className="text-left">
+                                      {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                    </Label>
+                                  </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-responsible`}>Responsible</Label>
+                                      <Input
+                                        id={`${field}-responsible`}
+                                        type="text"
+                                        value={qualificationConfirmationData[field].task.responsible}
+                                        onChange={(e) =>
+                                          handleTaskChange(
+                                            setQualificationConfirmationData,
+                                            field,
+                                            "responsible",
+                                            e.target.value,
+                                          )
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`${field}-planned`}>Planned Date</Label>
+                                      <Input
+                                        id={`${field}-planned`}
+                                        type="date"
+                                        value={qualificationConfirmationData[field].task.planned}
+                                        onChange={(e) =>
+                                          handleTaskChange(
+                                            setQualificationConfirmationData,
+                                            field,
+                                            "planned",
+                                            e.target.value,
+                                          )
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                      <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                      <Textarea
+                                        id={`${field}-comments`}
+                                        value={qualificationConfirmationData[field].task.comments}
+                                        onChange={(e) =>
+                                          handleTaskChange(
+                                            setQualificationConfirmationData,
+                                            field,
+                                            "comments",
+                                            e.target.value,
+                                          )
+                                        }
+                                      />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`${field}-check`}
+                                        checked={qualificationConfirmationData[field].task.check}
+                                        onCheckedChange={(checked) =>
+                                          handleTaskChange(setQualificationConfirmationData, field, "check", checked)
+                                        }
+                                      />
+                                      <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+                                    </div>
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            ))}
+                          </Accordion>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+                <CardFooter>
+                  <Button type="submit" disabled={loading} className="w-full">
                     {loading ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Processing...</span>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Creating...
                       </>
                     ) : (
-                      <>
-                        <span>{currentStep === 11 ? "Submit" : "Next"}</span>
-                        {currentStep === 11 ? <Save className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
-                      </>
+                      "Create Mass Production Record"
                     )}
                   </Button>
-                </div>
-              </CardFooter>
-            </Card>
-          </div>
-        </div>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </form>
       </div>
+      <ContactUs />
     </div>
   )
 }
+
+// Field definitions
+const feasibilityFields = [
+  "product",
+  "raw_material_type",
+  "raw_material_qty",
+  "packaging",
+  "purchased_part",
+  "injection_cycle_time",
+  "moulding_labor",
+  "press_size",
+  "assembly_finishing_paint_cycle_time",
+  "assembly_finishing_paint_labor",
+  "ppm_level",
+  "pre_study",
+  "project_management",
+  "study_design",
+  "cae_design",
+  "monitoring",
+  "measurement_metrology",
+  "validation",
+  "molds",
+  "special_machines",
+  "checking_fixture",
+  "equipment_painting_prehension",
+  "run_validation",
+  "stock_production_coverage",
+  "is_presentation",
+  "documentation_update",
+]
+
+const kickOffFields = [
+  "timeScheduleApproved",
+  "modificationLaunchOrder",
+  "projectRiskAssessment",
+  "standardsImpact",
+  "validationOfCosts",
+]
+
+const designFields = [
+  "Validation_of_the_validation",
+  "Modification_of_bought_product",
+  "Modification_of_tolerance",
+  "Modification_of_checking_fixtures",
+  "Modification_of_Product_FMEA",
+  "Modification_of_part_list_form",
+  "Modification_of_control_plan",
+  "Modification_of_Process_FMEA",
+  "Modification_of_production_facilities",
+  "Modification_of_tools",
+  "Modification_of_packaging",
+  "Modification_of_information_system",
+  "Updating_of_drawings",
+]
+
+const facilitiesFields = [
+  "reception_of_modified_means",
+  "reception_of_modified_tools",
+  "reception_of_modified_fixtures",
+  "reception_of_modified_parts",
+  "control_plan",
+]
+
+const ppTuningFields = [
+  "product_process_tuning",
+  "functional_validation_test",
+  "dimensional_validation_test",
+  "aspect_validation_test",
+  "supplier_order_modification",
+  "acceptation_of_supplier",
+  "capability",
+  "manufacturing_of_control_parts",
+  "product_training",
+  "process_training",
+  "purchase_file",
+  "means_technical_file_data",
+  "means_technical_file_manufacturing",
+  "means_technical_file_maintenance",
+  "tooling_file",
+  "product_file",
+  "internal_process",
+]
+
+const processQualifFields = [
+  "updating_of_capms",
+  "modification_of_customer_logistics",
+  "qualification_of_supplier",
+  "presentation_of_initial_samples",
+  "filing_of_initial_samples",
+  "information_on_modification_implementation",
+  "full_production_run",
+  "request_for_dispensation",
+  "process_qualification",
+  "initial_sample_acceptance",
+]
+
+const qualificationConfirmationFields = [
+  "using_up_old_stock",
+  "using_up_safety_stocks",
+  "updating_version_number_mould",
+  "updating_version_number_product_label",
+  "management_of_manufacturing_programmes",
+  "specific_spotting_of_packaging_with_label",
+  "management_of_galia_identification_labels",
+  "preservation_measure",
+  "product_traceability_label_modification",
+  "information_to_production",
+  "information_to_customer_logistics",
+  "information_to_customer_quality",
+  "updating_customer_programme_data_sheet",
+]
+
+export default MassPdCreate
 
