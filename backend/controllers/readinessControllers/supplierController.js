@@ -1,4 +1,4 @@
-const Supplier = require('../../models/readiness/SupplierModel');
+const Supplier = require('../../models/readiness/supplierModel');
 const Validation = require('../../models/readiness/ValidationModel');
 
 // Get all suppliers
