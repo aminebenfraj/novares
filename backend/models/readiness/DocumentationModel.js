@@ -2,7 +2,10 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 const ValidationModel = require("./ValidationModel"); // Import Validation model
 
-const ValidationSubSchema = new Schema(ValidationModel.schema.obj, { _id: false });
+const ValidationSubSchema = new Schema({
+  value: { type: Boolean, default: false },
+  details: { type: Schema.Types.ObjectId, ref: "Validation", default: null }
+});
 
 const DocumentationSchema = new Schema(
   {
