@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createSupplier, getAllSuppliers, getSupplierById, updateSupplier, deleteSupplier } = require("../../controllers/readinessControllers/supplierController");
+const { createSupplier, getAllSuppliers, getSupplierById, updateSupplier, deleteSupplier } = require("../../controllers/readinessControllers/suppliersController");
 
 router.post("/", createSupplier);
 router.get("/", getAllSuppliers);
