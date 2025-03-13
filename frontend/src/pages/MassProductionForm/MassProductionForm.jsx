@@ -392,6 +392,27 @@ const MassPdCreate = () => {
         checkin: feasibilityCheckinResponse.data._id,
       })
 
+      console.log("✅ Feasibility created successfully:", feasibilityResponse)
+
+      // Extract the feasibility ID correctly from the response
+      // The response structure appears to be { message: '...', data: { _id: '...' } }
+      const feasibilityId = feasibilityResponse.data && feasibilityResponse.data._id
+      console.log("✅ Feasibility ID:", feasibilityId)
+
+      // If feasibility ID is still undefined, try to extract it from a different location
+      let finalFeasibilityId = feasibilityId
+      if (!finalFeasibilityId && feasibilityResponse.data) {
+        // Try to find the ID in the response data
+        if (feasibilityResponse.data.id) {
+          finalFeasibilityId = feasibilityResponse.data.id
+        } else if (feasibilityResponse._id) {
+          finalFeasibilityId = feasibilityResponse._id
+        } else if (feasibilityResponse.id) {
+          finalFeasibilityId = feasibilityResponse.id
+        }
+        console.log("🔍 Extracted feasibility ID from alternative location:", finalFeasibilityId)
+      }
+
       // Create kick-off record
       const kickOffResponse = await createKickOff(kickOffData)
 
@@ -425,7 +446,7 @@ const MassPdCreate = () => {
       // Create the mass production record with references to created records
       const massProductionData = {
         ...updatedFormData,
-        feasability: feasibilityResponse.data._id,
+        feasability: finalFeasibilityId,
         kick_off: kickOffResponse.data._id,
         design: designResponse.data._id,
         facilities: facilitiesResponse.data._id,
@@ -436,8 +457,11 @@ const MassPdCreate = () => {
         validation_for_offer: validationForOfferResponse.data._id,
       }
 
+      console.log("✅ Mass Production data to be sent:", massProductionData)
+
       // Create the mass production record
-      await createMassProduction(massProductionData)
+      const massProductionResponse = await createMassProduction(massProductionData)
+      console.log("✅ Mass Production created successfully:", massProductionResponse)
 
       toast({
         title: "Success",
