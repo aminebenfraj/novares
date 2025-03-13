@@ -67,8 +67,7 @@ exports.createMassProduction = async (req, res) => {
       return res.status(400).json({ error: "No valid product designation IDs provided" });
     }
 
-    const validProducts = await ProductDesignation.find({ id: { $in: product_designation } });
-
+    const validProducts = await ProductDesignation.find({ _id: { $in: product_designation } });
     if (validProducts.length !== product_designation.length) {
       return res.status(400).json({
         error: "Some product designations are invalid or do not exist in the database",
