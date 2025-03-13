@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, ArrowLeft } from 'lucide-react'
+import MainLayout from "@/components/MainLayout"
 
 const MassPdCreate = () => {
   const navigate = useNavigate()
@@ -522,6 +523,7 @@ const MassPdCreate = () => {
   }
 
   return (
+    <MainLayout>
     <div className="min-h-screen bg-background">
       <div className="container py-8 mx-auto">
         <div className="flex items-center mb-6">
@@ -1638,6 +1640,8 @@ const MassPdCreate = () => {
         </form>
       </div>
     </div>
+        </MainLayout>
+
   )
 }
 
