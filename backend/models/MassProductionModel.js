@@ -18,6 +18,7 @@ const massProductionSchema = new Schema(
     customer_offer: { type: String, enum: ["F", "E"] },
     customer_order: { type: String, enum: ["F", "E"] },
     ok_for_lunch: { type: Schema.Types.ObjectId, ref: "OkForLunch" },
+    qualification_confirmation: { type: Schema.Types.ObjectId, ref: "QualificationConfirmation" }, 
     kick_off: { type: Schema.Types.ObjectId, ref: "KickOff" },
     design: { type: Schema.Types.ObjectId, ref: "Design" },
     facilities: { type: Schema.Types.ObjectId, ref: "Facilities" },
