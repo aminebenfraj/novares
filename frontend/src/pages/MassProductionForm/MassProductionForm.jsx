@@ -14,6 +14,7 @@ import { getAllpd } from "../../apis/ProductDesignation-api"
 import { createMassProduction } from "../../apis/massProductionApi"
 import { createP_P_Tuning } from "../../apis/p-p-tuning-api"
 import { createOkForLunch } from "../../apis/okForLunch"
+import { createValidationForOffer } from "../../apis/validationForOfferApi"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -25,8 +26,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, ArrowLeft } from "lucide-react"
-import Navbar from "@/components/NavBar"
-import ContactUs from "@/components/ContactUs"
 
 const MassPdCreate = () => {
   const navigate = useNavigate()
@@ -139,6 +138,13 @@ const MassPdCreate = () => {
 
   // Ok For Lunch form state
   const [okForLunchData, setOkForLunchData] = useState({
+    check: false,
+    upload: null,
+    date: new Date().toISOString().split("T")[0],
+  })
+
+  const [validationForOfferData, setValidationForOfferData] = useState({
+    name: "",
     check: false,
     upload: null,
     date: new Date().toISOString().split("T")[0],
@@ -263,6 +269,13 @@ const MassPdCreate = () => {
     }))
   }
 
+  const handleValidationForOfferChange = (field, value) => {
+    setValidationForOfferData((prev) => ({ ...prev, [field]: value }))
+  }
+  // Handle file upload for validation for offer
+  const handleValidationForOfferFileChange = (e) => {
+    setValidationForOfferData((prev) => ({ ...prev, upload: e.target.files[0] }))
+  }
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -331,6 +344,12 @@ const MassPdCreate = () => {
         checkin: checkinResponse.data._id,
       })
 
+      // Create validation for offer record
+      const validationForOfferResponse = await createValidationForOffer({
+        ...validationForOfferData,
+        checkin: checkinResponse.data._id,
+      })
+
       // Create the mass production record with references to created records
       const massProductionData = {
         ...updatedFormData,
@@ -342,6 +361,7 @@ const MassPdCreate = () => {
         process_qualif: processQualifResponse.data._id,
         qualification_confirmation: qualificationConfirmationResponse.data._id,
         ok_for_lunch: okForLunchResponse.data._id,
+        validation_for_offer: validationForOfferResponse.data._id,
         checkin: checkinResponse.data._id,
       }
 
@@ -369,7 +389,6 @@ const MassPdCreate = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
       <div className="container py-8 mx-auto">
         <div className="flex items-center mb-6">
           <Button variant="outline" onClick={() => navigate("/mass-production")} className="mr-4">
@@ -505,7 +524,7 @@ const MassPdCreate = () => {
 
                   <div className="space-y-2">
                     <Label className="text-base">Product Designation</Label>
-                    <p className="text-sm text-muted-foreground mb-2">
+                    <p className="mb-2 text-sm text-muted-foreground">
                       Select the product designations for this mass production.
                     </p>
                     {productDesignations.length === 0 ? (
@@ -547,7 +566,7 @@ const MassPdCreate = () => {
                       </div>
                     )}
                     {selectedProductDesignations.length > 0 && (
-                      <p className="text-sm text-muted-foreground mt-2">
+                      <p className="mt-2 text-sm text-muted-foreground">
                         {selectedProductDesignations.length} product designation(s) selected
                       </p>
                     )}
@@ -689,6 +708,50 @@ const MassPdCreate = () => {
                         <div className="space-y-2">
                           <Label htmlFor="ok-for-lunch-upload">Upload Document</Label>
                           <Input id="ok-for-lunch-upload" type="file" onChange={handleFileChange} />
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Validation For Offer</Label>
+                    <Card className="p-4">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="validation-for-offer-name">Name</Label>
+                          <Input
+                            id="validation-for-offer-name"
+                            value={validationForOfferData.name}
+                            onChange={(e) => handleValidationForOfferChange("name", e.target.value)}
+                          />
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="validation-for-offer-check"
+                            checked={validationForOfferData.check}
+                            onCheckedChange={(checked) => handleValidationForOfferChange("check", checked)}
+                          />
+                          <Label htmlFor="validation-for-offer-check">Approved</Label>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="validation-for-offer-date">Date</Label>
+                          <Input
+                            id="validation-for-offer-date"
+                            type="date"
+                            value={validationForOfferData.date}
+                            onChange={(e) => handleValidationForOfferChange("date", e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="validation-for-offer-upload">Upload Document</Label>
+                          <Input
+                            id="validation-for-offer-upload"
+                            type="file"
+                            onChange={handleValidationForOfferFileChange}
+                          />
                         </div>
                       </div>
                     </Card>
@@ -1408,7 +1471,6 @@ const MassPdCreate = () => {
           </Tabs>
         </form>
       </div>
-      <ContactUs />
     </div>
   )
 }

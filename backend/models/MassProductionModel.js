@@ -14,7 +14,7 @@ const massProductionSchema = new Schema(
     initial_request: { type: Date, required: true },
     request_original: { type: String, enum: ["internal", "customer"] },
     feasability: { type: Schema.Types.ObjectId, ref: "Feasibility" },
-    validation_for_offer: [{ type: Schema.Types.ObjectId, ref: "ValidationForOffer" }],
+    validation_for_offer: { type: Schema.Types.ObjectId, ref: "ValidationForOffer" },
     customer_offer: { type: String, enum: ["F", "E"] },
     customer_order: { type: String, enum: ["F", "E"] },
     ok_for_lunch: { type: Schema.Types.ObjectId, ref: "OkForLunch" },
