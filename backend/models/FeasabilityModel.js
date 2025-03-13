@@ -1,12 +1,12 @@
-const mongoose = require("mongoose");
-const { Schema } = mongoose;
-const FeasabilityDetail = require("./FeasabilityDetailModel");
+const mongoose = require("mongoose")
+const { Schema } = mongoose
+const FeasabilityDetail = require("./FeasabilityDetailModel")
 
 // Reusable Schema for Feasibility Fields
 const FeasibilityFieldSchema = new Schema({
   value: { type: Boolean, default: false },
-  details: { type: Schema.Types.ObjectId, ref: "FeasabilityDetail", default: null }
-});
+  details: { type: Schema.Types.ObjectId, ref: "FeasabilityDetail", default: null },
+})
 
 // Main Feasibility Schema
 const FeasabilitySchema = new Schema(
@@ -45,7 +45,8 @@ const FeasabilitySchema = new Schema(
     // Check-in & Mass Production References
     checkin: { type: Schema.Types.ObjectId, ref: "Checkin", required: true },
   },
-  { timestamps: true }
-);
+  { timestamps: true },
+)
 
-module.exports = mongoose.model("Feasability", FeasabilitySchema);
+module.exports = mongoose.model("Feasibility", FeasabilitySchema)
+

@@ -1,18 +1,20 @@
-import axios from "axios";
+import axios from "axios"
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "http://localhost:5000/api"
 
 export const getFeasibilities = async () => {
-  return axios.get(`${API_URL}/feasibility`);
-};
+  return axios.get(`${API_URL}/feasibility`)
+}
 
 export const getFeasibilityById = async (id) => {
-  return axios.get(`${API_URL}/feasibility/${id}`);
-};
+  return axios.get(`${API_URL}/feasibility/${id}`)
+}
 
 export const createFeasibility = async (data) => {
-  return axios.post(`${API_URL}/feasibility`, data);
-};
+  return axios.post(`${API_URL}/feasibility`, data)
+}
+
 export const updateFeasibility = async (id, data) => {
-  return axios.put(`${API_URL}/feasibility/${id}`, data);
-};
+  return axios.put(`${API_URL}/feasibility/${id}`, data)
+}
+

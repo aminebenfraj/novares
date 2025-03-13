@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { createCheckin } from "../../apis/checkIn"
 import { createKickOff } from "../../apis/kickOffApi"
 import { createDesign } from "../../apis/designApi"
 import { createfacilities } from "../../apis/facilitiesApi"
-import { createFeasibility } from "../../apis/feasabilityApi"
+import { createFeasibility } from "../../apis/feasabilityApi" // Note: API file name remains the same for backward compatibility
 import { createQualificationProcess } from "../../apis/process_qualifApi"
 import { createQualificationConfirmation } from "../../apis/qualificationconfirmationapi"
 import { getAllCustomers } from "../../apis/customerApi"
@@ -25,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, ArrowLeft } from "lucide-react"
+import { Loader2, ArrowLeft } from 'lucide-react'
 
 const MassPdCreate = () => {
   const navigate = useNavigate()
@@ -381,36 +380,70 @@ const MassPdCreate = () => {
         product_designation: selectedProductDesignations,
       }
 
-      // Create separate checkin records for each form
-      const validationForOfferCheckinResponse = await createCheckin(validationForOfferCheckinData)
-      const okForLunchCheckinResponse = await createCheckin(okForLunchCheckinData)
-      const feasibilityCheckinResponse = await createCheckin(feasibilityCheckinData)
-
-      // Create feasibility record with its own checkin
+      // Create feasibility record with embedded checkin data
       const feasibilityResponse = await createFeasibility({
         ...feasibilityData,
-        checkin: feasibilityCheckinResponse.data._id,
+        checkin: feasibilityCheckinData, // Pass the checkin data directly
       })
 
       console.log("✅ Feasibility created successfully:", feasibilityResponse)
 
-      // Extract the feasibility ID correctly from the response
-      // The response structure appears to be { message: '...', data: { _id: '...' } }
-      const feasibilityId = feasibilityResponse.data && feasibilityResponse.data._id
-      console.log("✅ Feasibility ID:", feasibilityId)
+      // Extract the feasibility ID correctly from the nested response structure
+      let feasibilityId = null
 
-      // If feasibility ID is still undefined, try to extract it from a different location
-      let finalFeasibilityId = feasibilityId
-      if (!finalFeasibilityId && feasibilityResponse.data) {
-        // Try to find the ID in the response data
-        if (feasibilityResponse.data.id) {
-          finalFeasibilityId = feasibilityResponse.data.id
-        } else if (feasibilityResponse._id) {
-          finalFeasibilityId = feasibilityResponse._id
-        } else if (feasibilityResponse.id) {
-          finalFeasibilityId = feasibilityResponse.id
+      // Check the nested response structure based on the console output
+      if (feasibilityResponse && feasibilityResponse.data) {
+        if (feasibilityResponse.data.data && feasibilityResponse.data.data.feasibility) {
+          // Extract from the nested structure where feasibility is in data.data.feasibility
+          if (feasibilityResponse.data.data.feasibility._id) {
+            feasibilityId = feasibilityResponse.data.data.feasibility._id
+          } else if (feasibilityResponse.data.data.feasibility.id) {
+            feasibilityId = feasibilityResponse.data.data.feasibility.id
+          }
+        } else if (feasibilityResponse.data._id) {
+          // Fallback to direct data._id if available
+          feasibilityId = feasibilityResponse.data._id
+        } else if (feasibilityResponse.data.id) {
+          // Fallback to direct data.id if available
+          feasibilityId = feasibilityResponse.data.id
+        } else if (feasibilityResponse.data.feasibility) {
+          // Check if feasibility is directly in data
+          if (feasibilityResponse.data.feasibility._id) {
+            feasibilityId = feasibilityResponse.data.feasibility._id
+          } else if (feasibilityResponse.data.feasibility.id) {
+            feasibilityId = feasibilityResponse.data.feasibility.id
+          }
         }
-        console.log("🔍 Extracted feasibility ID from alternative location:", finalFeasibilityId)
+      }
+
+      console.log("✅ Extracted feasibility ID:", feasibilityId)
+
+      // Add additional debugging to see the exact structure
+      if (!feasibilityId) {
+        console.error(
+          "Failed to extract feasibility ID from response. Response structure:",
+          JSON.stringify(feasibilityResponse.data, null, 2),
+        )
+
+        // Try one more approach - look for any _id in the response that might be the feasibility ID
+        if (feasibilityResponse.data && feasibilityResponse.data.data && feasibilityResponse.data.data.feasibility) {
+          console.log("Attempting to extract ID from feasibility object:", feasibilityResponse.data.data.feasibility)
+          feasibilityId =
+            feasibilityResponse.data.data.feasibility._id ||
+            feasibilityResponse.data.data.feasibility.id ||
+            feasibilityResponse.data.data.feasibility
+          console.log("Final attempt at ID extraction:", feasibilityId)
+        }
+
+        if (!feasibilityId) {
+          toast({
+            title: "Error",
+            description: "Failed to extract feasibility ID. Please check the console for details.",
+            variant: "destructive",
+          })
+          setLoading(false)
+          return
+        }
       }
 
       // Create kick-off record
@@ -431,22 +464,28 @@ const MassPdCreate = () => {
       // Create qualification confirmation record
       const qualificationConfirmationResponse = await createQualificationConfirmation(qualificationConfirmationData)
 
-      // Create ok for lunch record with its own checkin
+      // Create ok for lunch record with embedded checkin data
+      // Make sure the structure matches exactly how feasibility checkin is working
       const okForLunchResponse = await createOkForLunch({
         ...okForLunchData,
-        checkin: okForLunchCheckinResponse.data._id,
+        checkin: okForLunchCheckinData, // Pass the checkin data directly
       })
 
-      // Create validation for offer record with its own checkin
+      console.log("✅ OkForLunch created successfully:", okForLunchResponse)
+
+      // Create validation for offer record with embedded checkin data
+      // Make sure the structure matches exactly how feasibility checkin is working
       const validationForOfferResponse = await createValidationForOffer({
         ...validationForOfferData,
-        checkin: validationForOfferCheckinResponse.data._id,
+        checkin: validationForOfferCheckinData, // Pass the checkin data directly
       })
+
+      console.log("✅ ValidationForOffer created successfully:", validationForOfferResponse)
 
       // Create the mass production record with references to created records
       const massProductionData = {
         ...updatedFormData,
-        feasability: finalFeasibilityId,
+        feasibility: feasibilityId, // FIXED: Changed from feasability to feasibility
         kick_off: kickOffResponse.data._id,
         design: designResponse.data._id,
         facilities: facilitiesResponse.data._id,
@@ -1714,4 +1753,3 @@ const qualificationConfirmationFields = [
 ]
 
 export default MassPdCreate
-
