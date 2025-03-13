@@ -5,7 +5,7 @@ const {
   getMassProductionById,
   updateMassProduction,
   deleteMassProduction,
-  updateMassProductionStep,
+
 } = require("../controllers/massProductionController");
 
 const { protect, verifyAdmin } = require("../middlewares/authMiddleware"); // ✅ Middleware for security
@@ -18,7 +18,7 @@ router.get("/", protect, getAllMassProductions); // ✅ Get all (only authentica
 router.get("/:id", protect, getMassProductionById); // ✅ Get one by ID
 router.put("/:id", protect, verifyAdmin, updateMassProduction); // ✅ Only Admin can update
 router.delete("/:id", protect, verifyAdmin, deleteMassProduction); // ✅ Only Admin can delete
-router.post("/:id/steps", updateMassProductionStep)
+
 
 
 module.exports = router;

@@ -7,8 +7,7 @@ import { format } from "date-fns"
 import { getAllMassProductions, deleteMassProduction } from "../../apis/massProductionApi"
 import { getAllCustomers } from "../../apis/customerApi"
 import { getAllpd } from "../../apis/ProductDesignation-api"
-import Navbar from "../../components/NavBar"
-import ContactUs from "../../components/ContactUs"
+
 
 // shadcn components
 import { Button } from "@/components/ui/button"
@@ -17,15 +16,53 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 
 // Lucide icons
-import { Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, FileText, Download, Calendar, RefreshCw, CheckCircle2, XCircle, AlertCircle, Clock, ArrowUpDown, Loader2 } from 'lucide-react'
+import {
+  Plus,
+  Search,
+  Filter,
+  MoreVertical,
+  Eye,
+  Edit,
+  Trash2,
+  FileText,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Clock,
+  ArrowUpDown,
+  Loader2,
+} from "lucide-react"
 
 const MassProductionList = () => {
   const navigate = useNavigate()
@@ -55,7 +92,7 @@ const MassProductionList = () => {
         const [massProductionsData, customersData, productDesignationsData] = await Promise.all([
           getAllMassProductions(),
           getAllCustomers(),
-          getAllpd()
+          getAllpd(),
         ])
 
         // Process and set mass productions data
@@ -107,58 +144,58 @@ const MassProductionList = () => {
     if (searchTerm) {
       const lowerCaseSearchTerm = searchTerm.toLowerCase()
       result = result.filter(
-        item =>
+        (item) =>
           (item.id && item.id.toLowerCase().includes(lowerCaseSearchTerm)) ||
           (item.project_n && item.project_n.toLowerCase().includes(lowerCaseSearchTerm)) ||
-          (item.description && item.description.toLowerCase().includes(lowerCaseSearchTerm))
+          (item.description && item.description.toLowerCase().includes(lowerCaseSearchTerm)),
       )
     }
 
     // Apply status filter
     if (statusFilter !== "all") {
-      result = result.filter(item => item.status === statusFilter)
+      result = result.filter((item) => item.status === statusFilter)
     }
 
     // Apply customer filter
     if (customerFilter !== "all") {
-      result = result.filter(item => 
-        item.customer && item.customer._id === customerFilter
-      )
+      result = result.filter((item) => item.customer && item.customer._id === customerFilter)
     }
 
     // Apply sorting
     if (sortConfig.key) {
       result.sort((a, b) => {
         // Handle nested properties like customer.username
-        if (sortConfig.key.includes('.')) {
-          const keys = sortConfig.key.split('.')
+        if (sortConfig.key.includes(".")) {
+          const keys = sortConfig.key.split(".")
           let aValue = a
           let bValue = b
-          
+
           for (const key of keys) {
             aValue = aValue?.[key]
             bValue = bValue?.[key]
           }
-          
-          if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
-          if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
+
+          if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1
+          if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1
           return 0
         }
-        
+
         // Handle dates
-        if (sortConfig.key === 'createdAt' || sortConfig.key === 'initial_request' || 
-            sortConfig.key === 'ppap_submission_date' || sortConfig.key === 'next_review') {
+        if (
+          sortConfig.key === "createdAt" ||
+          sortConfig.key === "initial_request" ||
+          sortConfig.key === "ppap_submission_date" ||
+          sortConfig.key === "next_review"
+        ) {
           const dateA = a[sortConfig.key] ? new Date(a[sortConfig.key]) : new Date(0)
           const dateB = b[sortConfig.key] ? new Date(b[sortConfig.key]) : new Date(0)
-          
-          return sortConfig.direction === 'asc' 
-            ? dateA.getTime() - dateB.getTime() 
-            : dateB.getTime() - dateA.getTime()
+
+          return sortConfig.direction === "asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime()
         }
-        
+
         // Handle regular string/number properties
-        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1
-        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1
+        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === "asc" ? -1 : 1
+        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === "asc" ? 1 : -1
         return 0
       })
     }
@@ -177,9 +214,9 @@ const MassProductionList = () => {
 
   // Handle sort request
   const requestSort = (key) => {
-    let direction = 'asc'
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc'
+    let direction = "asc"
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc"
     }
     setSortConfig({ key, direction })
   }
@@ -193,16 +230,14 @@ const MassProductionList = () => {
   // Handle delete action
   const handleDelete = async () => {
     if (!itemToDelete) return
-    
+
     setDeleteLoading(true)
     try {
       await deleteMassProduction(itemToDelete._id)
-      
+
       // Update local state
-      setMassProductions(prevState => 
-        prevState.filter(item => item._id !== itemToDelete._id)
-      )
-      
+      setMassProductions((prevState) => prevState.filter((item) => item._id !== itemToDelete._id))
+
       toast({
         title: "Success",
         description: "Mass production record deleted successfully.",
@@ -226,7 +261,7 @@ const MassProductionList = () => {
     try {
       setLoading(true)
       const massProductionsData = await getAllMassProductions()
-      
+
       if (Array.isArray(massProductionsData)) {
         setMassProductions(massProductionsData)
         toast({
@@ -274,7 +309,7 @@ const MassProductionList = () => {
 
   // Get customer name
   const getCustomerName = (customerId) => {
-    const customer = customers.find(c => c._id === customerId)
+    const customer = customers.find((c) => c._id === customerId)
     return customer ? customer.username : "N/A"
   }
 
@@ -283,126 +318,145 @@ const MassProductionList = () => {
     if (!designationIds || !Array.isArray(designationIds) || designationIds.length === 0) {
       return "N/A"
     }
-    
-    const names = designationIds.map(id => {
-      const designation = productDesignations.find(pd => pd._id === id)
+
+    const names = designationIds.map((id) => {
+      const designation = productDesignations.find((pd) => pd._id === id)
       return designation ? designation.part_name : "Unknown"
     })
-    
+
     return names.join(", ")
   }
 
   // Render loading skeletons
   const renderSkeletons = () => {
-    return Array(5).fill().map((_, index) => (
-      <TableRow key={`skeleton-${index}`}>
-        <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-[40px]" /></TableCell>
-      </TableRow>
-    ))
+    return Array(5)
+      .fill()
+      .map((_, index) => (
+        <TableRow key={`skeleton-${index}`}>
+          <TableCell>
+            <Skeleton className="h-4 w-[80px]" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-[100px]" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-[120px]" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-[100px]" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-[80px]" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-[100px]" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-[40px]" />
+          </TableCell>
+        </TableRow>
+      ))
   }
 
   // Render card skeletons
   const renderCardSkeletons = () => {
-    return Array(6).fill().map((_, index) => (
-      <motion.div
-        key={`card-skeleton-${index}`}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: index * 0.05 }}
-      >
-        <Card className="h-[220px]">
-          <CardHeader className="pb-2">
-            <Skeleton className="h-4 w-[140px] mb-2" />
-            <Skeleton className="h-3 w-[100px]" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="w-full h-3 mb-2" />
-            <Skeleton className="w-3/4 h-3 mb-2" />
-            <Skeleton className="w-1/2 h-3 mb-4" />
-            <div className="flex justify-between">
-              <Skeleton className="h-6 w-[80px]" />
-              <Skeleton className="h-6 w-[40px]" />
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    ))
+    return Array(6)
+      .fill()
+      .map((_, index) => (
+        <motion.div
+          key={`card-skeleton-${index}`}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: index * 0.05 }}
+        >
+          <Card className="h-[220px]">
+            <CardHeader className="pb-2">
+              <Skeleton className="h-4 w-[140px] mb-2" />
+              <Skeleton className="h-3 w-[100px]" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="w-full h-3 mb-2" />
+              <Skeleton className="w-3/4 h-3 mb-2" />
+              <Skeleton className="w-1/2 h-3 mb-4" />
+              <div className="flex justify-between">
+                <Skeleton className="h-6 w-[80px]" />
+                <Skeleton className="h-6 w-[40px]" />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ))
   }
 
   // Render pagination controls
   const renderPagination = () => {
     if (totalPages <= 1) return null
-    
+
     return (
       <Pagination>
         <PaginationContent>
           <PaginationItem>
-            <PaginationPrevious 
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            <PaginationPrevious
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
               className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
             />
           </PaginationItem>
-          
+
           {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
             // Show first page, last page, current page, and pages around current
             let pageToShow
-            
+
             if (totalPages <= 5) {
               // If 5 or fewer pages, show all
               pageToShow = i + 1
             } else if (currentPage <= 3) {
               // If near start, show first 5
               pageToShow = i + 1
-              if (i === 4) return (
-                <PaginationItem key="ellipsis-end">
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )
+              if (i === 4)
+                return (
+                  <PaginationItem key="ellipsis-end">
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )
             } else if (currentPage >= totalPages - 2) {
               // If near end, show last 5
               pageToShow = totalPages - 4 + i
-              if (i === 0) return (
-                <PaginationItem key="ellipsis-start">
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )
+              if (i === 0)
+                return (
+                  <PaginationItem key="ellipsis-start">
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )
             } else {
               // If in middle, show current and surrounding
               pageToShow = currentPage - 2 + i
-              if (i === 0) return (
-                <PaginationItem key="ellipsis-start">
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )
-              if (i === 4) return (
-                <PaginationItem key="ellipsis-end">
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )
+              if (i === 0)
+                return (
+                  <PaginationItem key="ellipsis-start">
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )
+              if (i === 4)
+                return (
+                  <PaginationItem key="ellipsis-end">
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )
             }
-            
+
             return (
               <PaginationItem key={pageToShow}>
-                <PaginationLink
-                  isActive={currentPage === pageToShow}
-                  onClick={() => setCurrentPage(pageToShow)}
-                >
+                <PaginationLink isActive={currentPage === pageToShow} onClick={() => setCurrentPage(pageToShow)}>
                   {pageToShow}
                 </PaginationLink>
               </PaginationItem>
             )
           })}
-          
+
           <PaginationItem>
-            <PaginationNext 
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            <PaginationNext
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
               className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
             />
@@ -415,44 +469,44 @@ const MassProductionList = () => {
   // Render table view
   const renderTableView = () => {
     const currentItems = getCurrentPageItems()
-    
+
     return (
       <div className="border rounded-md">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[100px]">
-                <div className="flex items-center cursor-pointer" onClick={() => requestSort('id')}>
+                <div className="flex items-center cursor-pointer" onClick={() => requestSort("id")}>
                   ID
                   <ArrowUpDown className="w-4 h-4 ml-1" />
                 </div>
               </TableHead>
               <TableHead>
-                <div className="flex items-center cursor-pointer" onClick={() => requestSort('project_n')}>
+                <div className="flex items-center cursor-pointer" onClick={() => requestSort("project_n")}>
                   Project
                   <ArrowUpDown className="w-4 h-4 ml-1" />
                 </div>
               </TableHead>
               <TableHead>
-                <div className="flex items-center cursor-pointer" onClick={() => requestSort('customer.username')}>
+                <div className="flex items-center cursor-pointer" onClick={() => requestSort("customer.username")}>
                   Customer
                   <ArrowUpDown className="w-4 h-4 ml-1" />
                 </div>
               </TableHead>
               <TableHead>
-                <div className="flex items-center cursor-pointer" onClick={() => requestSort('initial_request')}>
+                <div className="flex items-center cursor-pointer" onClick={() => requestSort("initial_request")}>
                   Request Date
                   <ArrowUpDown className="w-4 h-4 ml-1" />
                 </div>
               </TableHead>
               <TableHead>
-                <div className="flex items-center cursor-pointer" onClick={() => requestSort('status')}>
+                <div className="flex items-center cursor-pointer" onClick={() => requestSort("status")}>
                   Status
                   <ArrowUpDown className="w-4 h-4 ml-1" />
                 </div>
               </TableHead>
               <TableHead>
-                <div className="flex items-center cursor-pointer" onClick={() => requestSort('next_review')}>
+                <div className="flex items-center cursor-pointer" onClick={() => requestSort("next_review")}>
                   Next Review
                   <ArrowUpDown className="w-4 h-4 ml-1" />
                 </div>
@@ -482,15 +536,10 @@ const MassProductionList = () => {
                   >
                     <TableCell className="font-medium">{item.id}</TableCell>
                     <TableCell>{item.project_n}</TableCell>
-                    <TableCell>
-                      {item.customer ? item.customer.username : "N/A"}
-                    </TableCell>
+                    <TableCell>{item.customer ? item.customer.username : "N/A"}</TableCell>
                     <TableCell>{formatDate(item.initial_request)}</TableCell>
                     <TableCell>
-                      <Badge 
-                        variant={getStatusBadge(item.status).variant}
-                        className="flex items-center w-fit"
-                      >
+                      <Badge variant={getStatusBadge(item.status).variant} className="flex items-center w-fit">
                         {getStatusBadge(item.status).icon}
                         {item.status}
                       </Badge>
@@ -515,7 +564,7 @@ const MassProductionList = () => {
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onClick={() => handleDeleteClick(item)}
                           >
@@ -538,15 +587,11 @@ const MassProductionList = () => {
   // Render card view
   const renderCardView = () => {
     const currentItems = getCurrentPageItems()
-    
+
     if (loading) {
-      return (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {renderCardSkeletons()}
-        </div>
-      )
+      return <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">{renderCardSkeletons()}</div>
     }
-    
+
     if (currentItems.length === 0) {
       return (
         <Card className="w-full">
@@ -557,7 +602,7 @@ const MassProductionList = () => {
         </Card>
       )
     }
-    
+
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <AnimatePresence>
@@ -578,10 +623,7 @@ const MassProductionList = () => {
                       <CardTitle className="text-lg">{item.project_n}</CardTitle>
                       <CardDescription>ID: {item.id}</CardDescription>
                     </div>
-                    <Badge 
-                      variant={getStatusBadge(item.status).variant}
-                      className="flex items-center"
-                    >
+                    <Badge variant={getStatusBadge(item.status).variant} className="flex items-center">
                       {getStatusBadge(item.status).icon}
                       {item.status}
                     </Badge>
@@ -603,30 +645,20 @@ const MassProductionList = () => {
                     </div>
                   </div>
                   {item.description && (
-                    <p className="mb-2 text-sm line-clamp-2 text-muted-foreground">
-                      {item.description}
-                    </p>
+                    <p className="mb-2 text-sm line-clamp-2 text-muted-foreground">{item.description}</p>
                   )}
                 </CardContent>
                 <CardFooter className="flex justify-between pt-0">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => navigate(`/mass-production/${item._id}`)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/mass-production/${item._id}`)}>
                     <Eye className="w-4 h-4 mr-2" />
                     View
                   </Button>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => navigate(`/mass-production/edit/${item._id}`)}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => navigate(`/mass-production/edit/${item._id}`)}>
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="sm"
                       className="text-destructive hover:text-destructive"
                       onClick={() => handleDeleteClick(item)}
@@ -645,16 +677,13 @@ const MassProductionList = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
       <div className="container py-8 mx-auto">
         <div className="flex flex-col gap-6">
           {/* Header */}
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Mass Production</h1>
-              <p className="text-muted-foreground">
-                Manage and track all mass production records.
-              </p>
+              <p className="text-muted-foreground">Manage and track all mass production records.</p>
             </div>
             <div className="flex items-center gap-2">
               <Button onClick={handleRefresh} variant="outline" size="icon" className="h-9 w-9">
@@ -705,7 +734,7 @@ const MassProductionList = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Customers</SelectItem>
-                  {customers.map(customer => (
+                  {customers.map((customer) => (
                     <SelectItem key={customer._id} value={customer._id}>
                       {customer.username}
                     </SelectItem>
@@ -715,44 +744,35 @@ const MassProductionList = () => {
             </div>
           </div>
 
-          {/* View Toggle and Stats */}
-          <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-            <div className="flex items-center gap-2">
-              <Tabs value={viewMode} onValueChange={setViewMode} className="w-[400px]">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="table">Table View</TabsTrigger>
-                  <TabsTrigger value="cards">Card View</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>
-                Showing {filteredProductions.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}-
-                {Math.min(currentPage * itemsPerPage, filteredProductions.length)} of {filteredProductions.length} records
-              </span>
-              {loading && (
-                <div className="flex items-center gap-1 text-primary">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span>Loading</span>
-                </div>
-              )}
-            </div>
+          {/* Stats */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>
+              Showing {filteredProductions.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}-
+              {Math.min(currentPage * itemsPerPage, filteredProductions.length)} of {filteredProductions.length} records
+            </span>
+            {loading && (
+              <div className="flex items-center gap-1 text-primary">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Loading</span>
+              </div>
+            )}
           </div>
 
           {/* Content */}
           <div>
-            <TabsContent value="table" className="mt-0">
-              {renderTableView()}
-            </TabsContent>
-            <TabsContent value="cards" className="mt-0">
-              {renderCardView()}
-            </TabsContent>
+            <Tabs value={viewMode} onValueChange={setViewMode}>
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="table">Table View</TabsTrigger>
+                <TabsTrigger value="cards">Card View</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="table">{renderTableView()}</TabsContent>
+              <TabsContent value="cards">{renderCardView()}</TabsContent>
+            </Tabs>
           </div>
 
           {/* Pagination */}
-          <div className="flex justify-center mt-4">
-            {renderPagination()}
-          </div>
+          <div className="flex justify-center mt-4">{renderPagination()}</div>
         </div>
       </div>
 
@@ -784,9 +804,9 @@ const MassProductionList = () => {
         </DialogContent>
       </Dialog>
 
-      <ContactUs />
     </div>
   )
 }
 
 export default MassProductionList
+
