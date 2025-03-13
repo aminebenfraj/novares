@@ -150,6 +150,54 @@ const MassPdCreate = () => {
     date: new Date().toISOString().split("T")[0],
   })
 
+  // Checkin data for ValidationForOffer
+  const [validationForOfferCheckinData, setValidationForOfferCheckinData] = useState({
+    project_manager: false,
+    business_manager: false,
+    engineering_leader_manager: false,
+    quality_leader: false,
+    plant_quality_leader: false,
+    industrial_engineering: false,
+    launch_manager_method: false,
+    maintenance: false,
+    purchasing: false,
+    logistics: false,
+    sales: false,
+    economic_financial_leader: false,
+  })
+
+  // Checkin data for OkForLunch
+  const [okForLunchCheckinData, setOkForLunchCheckinData] = useState({
+    project_manager: false,
+    business_manager: false,
+    engineering_leader_manager: false,
+    quality_leader: false,
+    plant_quality_leader: false,
+    industrial_engineering: false,
+    launch_manager_method: false,
+    maintenance: false,
+    purchasing: false,
+    logistics: false,
+    sales: false,
+    economic_financial_leader: false,
+  })
+
+  // Checkin data for Feasibility
+  const [feasibilityCheckinData, setFeasibilityCheckinData] = useState({
+    project_manager: false,
+    business_manager: false,
+    engineering_leader_manager: false,
+    quality_leader: false,
+    plant_quality_leader: false,
+    industrial_engineering: false,
+    launch_manager_method: false,
+    maintenance: false,
+    purchasing: false,
+    logistics: false,
+    sales: false,
+    economic_financial_leader: false,
+  })
+
   // Fetch customers and product designations on component mount
   useEffect(() => {
     const fetchData = async () => {
@@ -271,11 +319,30 @@ const MassPdCreate = () => {
 
   const handleValidationForOfferChange = (field, value) => {
     setValidationForOfferData((prev) => ({ ...prev, [field]: value }))
+
+    // Log the updated state for debugging
+    console.log(`Updated validation for offer ${field}:`, value)
   }
   // Handle file upload for validation for offer
   const handleValidationForOfferFileChange = (e) => {
     setValidationForOfferData((prev) => ({ ...prev, upload: e.target.files[0] }))
   }
+
+  // Handle ValidationForOffer checkin checkbox changes
+  const handleValidationForOfferCheckinChange = (field, checked) => {
+    setValidationForOfferCheckinData((prev) => ({ ...prev, [field]: checked }))
+  }
+
+  // Handle OkForLunch checkin checkbox changes
+  const handleOkForLunchCheckinChange = (field, checked) => {
+    setOkForLunchCheckinData((prev) => ({ ...prev, [field]: checked }))
+  }
+
+  // Handle Feasibility checkin checkbox changes
+  const handleFeasibilityCheckinChange = (field, checked) => {
+    setFeasibilityCheckinData((prev) => ({ ...prev, [field]: checked }))
+  }
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -314,11 +381,16 @@ const MassPdCreate = () => {
         product_designation: selectedProductDesignations,
       }
 
-      // Create checkin record
-      const checkinResponse = await createCheckin(checkinData)
+      // Create separate checkin records for each form
+      const validationForOfferCheckinResponse = await createCheckin(validationForOfferCheckinData)
+      const okForLunchCheckinResponse = await createCheckin(okForLunchCheckinData)
+      const feasibilityCheckinResponse = await createCheckin(feasibilityCheckinData)
 
-      // Create feasibility record
-      const feasibilityResponse = await createFeasibility(feasibilityData)
+      // Create feasibility record with its own checkin
+      const feasibilityResponse = await createFeasibility({
+        ...feasibilityData,
+        checkin: feasibilityCheckinResponse.data._id,
+      })
 
       // Create kick-off record
       const kickOffResponse = await createKickOff(kickOffData)
@@ -338,16 +410,16 @@ const MassPdCreate = () => {
       // Create qualification confirmation record
       const qualificationConfirmationResponse = await createQualificationConfirmation(qualificationConfirmationData)
 
-      // Create ok for lunch record
+      // Create ok for lunch record with its own checkin
       const okForLunchResponse = await createOkForLunch({
         ...okForLunchData,
-        checkin: checkinResponse.data._id,
+        checkin: okForLunchCheckinResponse.data._id,
       })
 
-      // Create validation for offer record
+      // Create validation for offer record with its own checkin
       const validationForOfferResponse = await createValidationForOffer({
         ...validationForOfferData,
-        checkin: checkinResponse.data._id,
+        checkin: validationForOfferCheckinResponse.data._id,
       })
 
       // Create the mass production record with references to created records
@@ -362,7 +434,6 @@ const MassPdCreate = () => {
         qualification_confirmation: qualificationConfirmationResponse.data._id,
         ok_for_lunch: okForLunchResponse.data._id,
         validation_for_offer: validationForOfferResponse.data._id,
-        checkin: checkinResponse.data._id,
       }
 
       // Create the mass production record
@@ -399,11 +470,10 @@ const MassPdCreate = () => {
 
         <form onSubmit={handleSubmit}>
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
               <TabsTrigger value="details">Project Details</TabsTrigger>
               <TabsTrigger value="dates">Key Dates</TabsTrigger>
-              <TabsTrigger value="checkin">Check-in</TabsTrigger>
               <TabsTrigger value="stages">Process Stages</TabsTrigger>
             </TabsList>
 
@@ -709,6 +779,27 @@ const MassPdCreate = () => {
                           <Label htmlFor="ok-for-lunch-upload">Upload Document</Label>
                           <Input id="ok-for-lunch-upload" type="file" onChange={handleFileChange} />
                         </div>
+
+                        <div className="pt-4 mt-6 border-t">
+                          <h4 className="mb-3 text-sm font-medium">Check-in for OK for Launch</h4>
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            {Object.keys(okForLunchCheckinData).map((field) => (
+                              <div key={field} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`ok-for-lunch-${field}`}
+                                  checked={okForLunchCheckinData[field]}
+                                  onCheckedChange={(checked) => handleOkForLunchCheckinChange(field, checked)}
+                                />
+                                <Label
+                                  htmlFor={`ok-for-lunch-${field}`}
+                                  className="text-sm font-medium leading-none capitalize"
+                                >
+                                  {field.replace(/_/g, " ")}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </Card>
                   </div>
@@ -752,6 +843,27 @@ const MassPdCreate = () => {
                             type="file"
                             onChange={handleValidationForOfferFileChange}
                           />
+                        </div>
+
+                        <div className="pt-4 mt-6 border-t">
+                          <h4 className="mb-3 text-sm font-medium">Check-in for Validation For Offer</h4>
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            {Object.keys(validationForOfferCheckinData).map((field) => (
+                              <div key={field} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`validation-for-offer-${field}`}
+                                  checked={validationForOfferCheckinData[field]}
+                                  onCheckedChange={(checked) => handleValidationForOfferCheckinChange(field, checked)}
+                                />
+                                <Label
+                                  htmlFor={`validation-for-offer-${field}`}
+                                  className="text-sm font-medium leading-none capitalize"
+                                >
+                                  {field.replace(/_/g, " ")}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </Card>
@@ -856,35 +968,6 @@ const MassPdCreate = () => {
               </Card>
             </TabsContent>
 
-            {/* Check-in Tab */}
-            <TabsContent value="checkin">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Check-in</CardTitle>
-                  <CardDescription>Select all the roles that have been checked in for this project.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {Object.keys(checkinData).map((field) => (
-                      <div key={field} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={field}
-                          checked={checkinData[field]}
-                          onCheckedChange={(checked) => handleCheckinChange(field, checked)}
-                        />
-                        <Label
-                          htmlFor={field}
-                          className="text-sm font-medium leading-none capitalize peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          {field.replace(/_/g, " ")}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
             {/* Process Stages Tab */}
             <TabsContent value="stages">
               <Card>
@@ -969,6 +1052,26 @@ const MassPdCreate = () => {
                               </AccordionItem>
                             ))}
                           </Accordion>
+                          <div className="pt-4 mt-6 border-t">
+                            <h4 className="mb-3 text-lg font-medium">Check-in for Feasibility</h4>
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                              {Object.keys(feasibilityCheckinData).map((field) => (
+                                <div key={field} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`feasibility-${field}`}
+                                    checked={feasibilityCheckinData[field]}
+                                    onCheckedChange={(checked) => handleFeasibilityCheckinChange(field, checked)}
+                                  />
+                                  <Label
+                                    htmlFor={`feasibility-${field}`}
+                                    className="text-sm font-medium leading-none capitalize"
+                                  >
+                                    {field.replace(/_/g, " ")}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </CardContent>
                       </Card>
                     </TabsContent>
