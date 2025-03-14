@@ -4,15 +4,20 @@ const path = require("path");
 const fs = require("fs");
 const mongoose = require("mongoose");
 
-// ✅ Create a new "validationForOffer" entry
+  // ✅ Create a new "validationForOffer" entry
 exports.createValidationForOffer = async (req, res) => {
   try {
-    const { name, check, date } = req.body;
-    const uploadPath = req.file ? req.file.path : null;
+    const { name, check, date, checkin } = req.body
+    const uploadPath = req.file ? req.file.path : null
 
-    // ✅ Create the Checkin entry first
-    const newCheckin = new Checkin({});
-    await newCheckin.save();
+    console.log("Received data:", { name, check, date, checkin })
+
+    // ✅ Create the Checkin entry with the provided checkin data
+    const checkinData = checkin || {} // Default to empty object if not provided
+    const newCheckin = new Checkin(checkinData)
+    await newCheckin.save()
+
+    console.log("Created checkin:", newCheckin)
 
     // ✅ Create the ValidationForOffer entry linked to the Checkin
     const newEntry = new ValidationForOffer({
@@ -21,19 +26,21 @@ exports.createValidationForOffer = async (req, res) => {
       upload: uploadPath,
       check,
       date,
-    });
+    })
 
-    await newEntry.save();
+    await newEntry.save()
 
     res.status(201).json({
       message: "ValidationForOffer and Checkin entries created successfully",
       data: newEntry,
       checkin: newCheckin,
-    });
+    })
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Error creating ValidationForOffer:", error)
+    res.status(500).json({ message: "Server error", error: error.message })
   }
-};
+}
+
 
 // ✅ Get all "validationForOffer" entries
 exports.getAllValidationForOffers = async (req, res) => {
