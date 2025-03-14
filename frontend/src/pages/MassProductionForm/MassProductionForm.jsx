@@ -536,7 +536,7 @@ const MassPdCreate = () => {
       <div className="min-h-screen bg-background">
         <div className="container py-8 mx-auto">
           <div className="flex items-center mb-6">
-            <Button variant="outline" onClick={() => navigate("/mass-production")} className="mr-4">
+            <Button variant="outline" onClick={() => navigate("/massppd")} className="mr-4">
               <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
             </Button>
             <h1 className="text-3xl font-bold">Create Mass Production</h1>
