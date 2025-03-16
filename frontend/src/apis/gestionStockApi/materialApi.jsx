@@ -2,9 +2,49 @@ import { apiRequest } from "../api"
 
 const BASE_URL = "api/materials"
 
-// Get all materials
-export const getAllMaterials = () => {
-  return apiRequest("GET", BASE_URL)
+export const getAllMaterials = async (page = 1, limit = 10, search = "", filters = {}, sort = {}) => {
+  // Build query string with all parameters
+  const queryParams = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  })
+
+  // Add search term if provided
+  if (search) {
+    queryParams.append("search", search)
+  }
+
+  // Add sorting parameters if provided
+  if (sort.field) {
+    queryParams.append("sortBy", sort.field)
+    queryParams.append("sortOrder", sort.order || -1)
+  }
+
+  // Add all filters
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      queryParams.append(key, value.toString())
+    }
+  })
+
+  const url = `${BASE_URL}?${queryParams.toString()}`
+
+  try {
+    return await apiRequest("GET", url)
+  } catch (error) {
+    console.error("Error fetching materials:", error)
+    throw error // Rethrow the error for better error handling
+  }
+}
+
+// Get filter options for dropdowns
+export const getFilterOptions = async (field) => {
+  try {
+    return await apiRequest("GET", `${BASE_URL}/filters/${field}`)
+  } catch (error) {
+    console.error(`Error fetching ${field} options:`, error)
+    throw error
+  }
 }
 
 // Get a single material by ID
