@@ -8,7 +8,6 @@ import { getAllMassProductions, deleteMassProduction } from "../../apis/massProd
 import { getAllCustomers } from "../../apis/customerApi"
 import { getAllpd } from "../../apis/ProductDesignation-api"
 
-
 // shadcn components
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -63,6 +62,7 @@ import {
   ArrowUpDown,
   Loader2,
 } from "lucide-react"
+
 
 const MassProductionList = () => {
   const navigate = useNavigate()
@@ -471,7 +471,7 @@ const MassProductionList = () => {
     const currentItems = getCurrentPageItems()
 
     return (
-      <div className="border rounded-md">
+        <div className="border rounded-md">
         <Table>
           <TableHeader>
             <TableRow>
@@ -555,11 +555,11 @@ const MassProductionList = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => navigate(`/mass-production/${item._id}`)}>
+                          <DropdownMenuItem onClick={() => navigate(`/masspd/detail/${item._id}`)}>
                             <Eye className="w-4 h-4 mr-2" />
                             View
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/mass-production/edit/${item._id}`)}>
+                          <DropdownMenuItem onClick={() => navigate(`/masspd/edit/${item._id}`)}>
                             <Edit className="w-4 h-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
@@ -580,7 +580,8 @@ const MassProductionList = () => {
             )}
           </TableBody>
         </Table>
-      </div>
+        </div>
+      
     )
   }
 
@@ -649,12 +650,12 @@ const MassProductionList = () => {
                   )}
                 </CardContent>
                 <CardFooter className="flex justify-between pt-0">
-                  <Button variant="outline" size="sm" onClick={() => navigate(`/mass-production/${item._id}`)}>
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/masspd/detail/${item._id}`)}>
                     <Eye className="w-4 h-4 mr-2" />
                     View
                   </Button>
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => navigate(`/mass-production/edit/${item._id}`)}>
+                    <Button variant="ghost" size="sm" onClick={() => navigate(`/masspd/edit/${item._id}`)}>
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button
@@ -675,7 +676,7 @@ const MassProductionList = () => {
     )
   }
 
-  return (
+  return (    
     <div className="min-h-screen bg-background">
       <div className="container py-8 mx-auto">
         <div className="flex flex-col gap-6">
@@ -803,7 +804,6 @@ const MassProductionList = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   )
 }

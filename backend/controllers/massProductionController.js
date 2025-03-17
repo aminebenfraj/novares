@@ -169,7 +169,7 @@ exports.getAllMassProductions = async (req, res) => {
       .populate("customer", "username email")
       .populate("product_designation", "part_name reference")
       .populate("feasability")
-      .populate("validation_for_offer")
+      .populate("validation_for_offer", null, "validationForOffer") // ✅ FIX: Specify model name
       .populate("ok_for_lunch")
       .populate("kick_off")
       .populate("design")
@@ -195,7 +195,7 @@ exports.getMassProductionById = async (req, res) => {
       .populate("customer", "username email")
       .populate("product_designation", "part_name reference")
       .populate("feasability")
-      .populate("validation_for_offer")
+      .populate("validation_for_offer", null, "validationForOffer") // ✅ FIX: Specify model name
       .populate("ok_for_lunch")
       .populate("kick_off")
       .populate("design")

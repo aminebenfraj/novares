@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext';
 import MassProductionForm from './pages/MassProductionForm/MassProductionForm';
 import MassProductionEdit from './pages/MassProductionForm/EditMassProductionForm';
 import MassProductionTable from './pages/MassProductionForm/MassProductionList'
+import MassProductionDetails from './pages/MassProductionForm/MassProductionDetails'
 
 import  Home from './pages/homepage/Home';
 import  Test  from './pages/D01/Test';
@@ -91,6 +92,7 @@ function App() {
           <Route path="/pd/edit/:id" element={<EditProductDesignation />} />
           <Route path="/masspd/create" element={<MassProductionForm />} />
           <Route path="/masspd/edit/:id" element={<MassProductionEdit />} />
+          <Route path="/masspd/detail/:id" element={<MassProductionDetails />} />
           <Route path="/masspd" element={<MassProductionTable />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

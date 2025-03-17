@@ -134,7 +134,7 @@ export default function EditMassProductionForm() {
     try {
       await updateMassProduction(id, formData)
       setMessage("Mass production updated successfully!")
-      navigate("/mass-productions") // Redirect to the list page after successful update
+      navigate("/masspd") // Redirect to the list page after successful update
     } catch (error) {
       console.error("Error updating mass production:", error)
       setMessage(error.response?.data?.message || "Error updating mass production. Please try again.")
