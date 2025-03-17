@@ -689,7 +689,7 @@ const MassProductionList = () => {
               <Button onClick={handleRefresh} variant="outline" size="icon" className="h-9 w-9">
                 <RefreshCw className="w-4 h-4" />
               </Button>
-              <Button onClick={() => navigate("/mass-production/create")} className="gap-1">
+              <Button onClick={() => navigate("/masspd/create")} className="gap-1">
                 <Plus className="w-4 h-4" />
                 New Record
               </Button>

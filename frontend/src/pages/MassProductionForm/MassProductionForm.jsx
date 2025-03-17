@@ -75,7 +75,10 @@ const MassPdCreate = () => {
   // Kick-off form state
   const [kickOffData, setKickOffData] = useState(
     kickOffFields.reduce((acc, field) => {
-      acc[field] = { value: false, task: { check: false, responsible: "", planned: "", comments: "" } }
+      acc[field] = {
+        value: false,
+        task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+      }
       return acc
     }, {}),
   )
@@ -83,7 +86,10 @@ const MassPdCreate = () => {
   // Design form state
   const [designData, setDesignData] = useState(
     designFields.reduce((acc, field) => {
-      acc[field] = { value: false, task: { check: false, responsible: "", planned: "", comments: "" } }
+      acc[field] = {
+        value: false,
+        task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+      }
       return acc
     }, {}),
   )
@@ -91,7 +97,10 @@ const MassPdCreate = () => {
   // Facilities form state
   const [facilitiesData, setFacilitiesData] = useState(
     facilitiesFields.reduce((acc, field) => {
-      acc[field] = { value: false, task: { check: false, responsible: "", planned: "", comments: "" } }
+      acc[field] = {
+        value: false,
+        task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+      }
       return acc
     }, {}),
   )
@@ -99,7 +108,10 @@ const MassPdCreate = () => {
   // P_P_Tuning form state
   const [ppTuningData, setPPTuningData] = useState(
     ppTuningFields.reduce((acc, field) => {
-      acc[field] = { value: false, task: { check: false, responsible: "", planned: "", comments: "" } }
+      acc[field] = {
+        value: false,
+        task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+      }
       return acc
     }, {}),
   )
@@ -107,7 +119,10 @@ const MassPdCreate = () => {
   // Process Qualification form state
   const [processQualifData, setProcessQualifData] = useState(
     processQualifFields.reduce((acc, field) => {
-      acc[field] = { value: false, task: { check: false, responsible: "", planned: "", comments: "" } }
+      acc[field] = {
+        value: false,
+        task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+      }
       return acc
     }, {}),
   )
@@ -115,7 +130,10 @@ const MassPdCreate = () => {
   // Qualification Confirmation form state
   const [qualificationConfirmationData, setQualificationConfirmationData] = useState(
     qualificationConfirmationFields.reduce((acc, field) => {
-      acc[field] = { value: false, task: { check: false, responsible: "", planned: "", comments: "" } }
+      acc[field] = {
+        value: false,
+        task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+      }
       return acc
     }, {}),
   )
@@ -348,6 +366,138 @@ const MassPdCreate = () => {
     setFeasibilityCheckinData((prev) => ({ ...prev, [field]: checked }))
   }
 
+  // Handle file upload for kick-off tasks
+  const handleKickOffFileChange = (field, file) => {
+    setKickOffData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, filePath: file },
+      },
+    }))
+  }
+
+  // Handle date changes for kick-off tasks
+  const handleKickOffDateChange = (field, dateType, value) => {
+    setKickOffData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [dateType]: value },
+      },
+    }))
+  }
+
+  // Add handler for design file uploads
+  const handleDesignFileChange = (field, file) => {
+    setDesignData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, filePath: file },
+      },
+    }))
+  }
+
+  // Add handler for design date changes
+  const handleDesignDateChange = (field, dateType, value) => {
+    setDesignData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [dateType]: value },
+      },
+    }))
+  }
+
+  // Add handler for facilities file uploads
+  const handleFacilitiesFileChange = (field, file) => {
+    setFacilitiesData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, filePath: file },
+      },
+    }))
+  }
+
+  // Add handler for facilities date changes
+  const handleFacilitiesDateChange = (field, dateType, value) => {
+    setFacilitiesData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [dateType]: value },
+      },
+    }))
+  }
+
+  // Add handler for P/P Tuning file uploads
+  const handlePPTuningFileChange = (field, file) => {
+    setPPTuningData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, filePath: file },
+      },
+    }))
+  }
+
+  // Add handler for P/P Tuning date changes
+  const handlePPTuningDateChange = (field, dateType, value) => {
+    setPPTuningData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [dateType]: value },
+      },
+    }))
+  }
+
+  // Add handler for process qualification file uploads
+  const handleProcessQualifFileChange = (field, file) => {
+    setProcessQualifData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, filePath: file },
+      },
+    }))
+  }
+
+  // Add handler for process qualification date changes
+  const handleProcessQualifDateChange = (field, dateType, value) => {
+    setProcessQualifData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [dateType]: value },
+      },
+    }))
+  }
+
+  // Add handler for qualification confirmation file uploads
+  const handleQualificationConfirmationFileChange = (field, file) => {
+    setQualificationConfirmationData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, filePath: file },
+      },
+    }))
+  }
+
+  // Add handler for qualification confirmation date changes
+  const handleQualificationConfirmationDateChange = (field, dateType, value) => {
+    setQualificationConfirmationData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [dateType]: value },
+      },
+    }))
+  }
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -452,23 +602,74 @@ const MassPdCreate = () => {
         }
       }
 
+      // Process kickOffData to handle file paths
+      const processedKickOffData = { ...kickOffData }
+      Object.keys(processedKickOffData).forEach((field) => {
+        if (processedKickOffData[field].task.filePath instanceof File) {
+          processedKickOffData[field].task.filePath = processedKickOffData[field].task.filePath.name
+        }
+      })
+
       // Create kick-off record
-      const kickOffResponse = await createKickOff(kickOffData)
+      const kickOffResponse = await createKickOff(processedKickOffData)
+
+      // Process designData to handle file paths
+      const processedDesignData = { ...designData }
+      Object.keys(processedDesignData).forEach((field) => {
+        if (processedDesignData[field].task.filePath instanceof File) {
+          processedDesignData[field].task.filePath = processedDesignData[field].task.filePath.name
+        }
+      })
 
       // Create design record
-      const designResponse = await createDesign(designData)
+      const designResponse = await createDesign(processedDesignData)
+
+      // Process facilitiesData to handle file paths
+      const processedFacilitiesData = { ...facilitiesData }
+      Object.keys(processedFacilitiesData).forEach((field) => {
+        if (processedFacilitiesData[field].task.filePath instanceof File) {
+          processedFacilitiesData[field].task.filePath = processedFacilitiesData[field].task.filePath.name
+        }
+      })
 
       // Create facilities record
-      const facilitiesResponse = await createfacilities(facilitiesData)
+      const facilitiesResponse = await createfacilities(processedFacilitiesData)
+
+      // Process ppTuningData to handle file paths
+      const processedPPTuningData = { ...ppTuningData }
+      Object.keys(processedPPTuningData).forEach((field) => {
+        if (processedPPTuningData[field].task.filePath instanceof File) {
+          processedPPTuningData[field].task.filePath = processedPPTuningData[field].task.filePath.name
+        }
+      })
 
       // Create P_P_Tuning record
-      const ppTuningResponse = await createP_P_Tuning(ppTuningData)
+      const ppTuningResponse = await createP_P_Tuning(processedPPTuningData)
+
+      // Process processQualifData to handle file paths
+      const processedProcessQualifData = { ...processQualifData }
+      Object.keys(processedProcessQualifData).forEach((field) => {
+        if (processedProcessQualifData[field].task.filePath instanceof File) {
+          processedProcessQualifData[field].task.filePath = processedProcessQualifData[field].task.filePath.name
+        }
+      })
 
       // Create process qualification record
-      const processQualifResponse = await createQualificationProcess(processQualifData)
+      const processQualifResponse = await createQualificationProcess(processedProcessQualifData)
+
+      // Process qualificationConfirmationData to handle file paths
+      const processedQualificationConfirmationData = { ...qualificationConfirmationData }
+      Object.keys(processedQualificationConfirmationData).forEach((field) => {
+        if (processedQualificationConfirmationData[field].task.filePath instanceof File) {
+          processedQualificationConfirmationData[field].task.filePath =
+            processedQualificationConfirmationData[field].task.filePath.name
+        }
+      })
 
       // Create qualification confirmation record
-      const qualificationConfirmationResponse = await createQualificationConfirmation(qualificationConfirmationData)
+      const qualificationConfirmationResponse = await createQualificationConfirmation(
+        processedQualificationConfirmationData,
+      )
 
       // Create ok for lunch record with embedded checkin data
       // Make sure the structure matches exactly how feasibility checkin is working
@@ -536,7 +737,7 @@ const MassPdCreate = () => {
       <div className="min-h-screen bg-background">
         <div className="container py-8 mx-auto">
           <div className="flex items-center mb-6">
-            <Button variant="outline" onClick={() => navigate("/massppd")} className="mr-4">
+            <Button variant="outline" onClick={() => navigate("/masspd")} className="mr-4">
               <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
             </Button>
             <h1 className="text-3xl font-bold">Create Mass Production</h1>
@@ -1198,6 +1399,17 @@ const MassPdCreate = () => {
                                           }
                                         />
                                       </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
+                                        <Input
+                                          id={`${field}-done`}
+                                          type="date"
+                                          value={kickOffData[field].task.done}
+                                          onChange={(e) =>
+                                            handleTaskChange(setKickOffData, field, "done", e.target.value)
+                                          }
+                                        />
+                                      </div>
                                       <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
                                         <Textarea
@@ -1207,6 +1419,21 @@ const MassPdCreate = () => {
                                             handleTaskChange(setKickOffData, field, "comments", e.target.value)
                                           }
                                         />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
+                                        <Input
+                                          id={`${field}-file`}
+                                          type="file"
+                                          onChange={(e) => handleKickOffFileChange(field, e.target.files[0])}
+                                        />
+                                        {kickOffData[field].task.filePath && (
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {typeof kickOffData[field].task.filePath === "string"
+                                              ? kickOffData[field].task.filePath
+                                              : kickOffData[field].task.filePath.name}
+                                          </p>
+                                        )}
                                       </div>
                                       <div className="flex items-center space-x-2">
                                         <Checkbox
@@ -1278,6 +1505,15 @@ const MassPdCreate = () => {
                                           }
                                         />
                                       </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
+                                        <Input
+                                          id={`${field}-done`}
+                                          type="date"
+                                          value={designData[field].task.done}
+                                          onChange={(e) => handleDesignDateChange(field, "done", e.target.value)}
+                                        />
+                                      </div>
                                       <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
                                         <Textarea
@@ -1287,6 +1523,21 @@ const MassPdCreate = () => {
                                             handleTaskChange(setDesignData, field, "comments", e.target.value)
                                           }
                                         />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
+                                        <Input
+                                          id={`${field}-file`}
+                                          type="file"
+                                          onChange={(e) => handleDesignFileChange(field, e.target.files[0])}
+                                        />
+                                        {designData[field].task.filePath && (
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {typeof designData[field].task.filePath === "string"
+                                              ? designData[field].task.filePath
+                                              : designData[field].task.filePath.name}
+                                          </p>
+                                        )}
                                       </div>
                                       <div className="flex items-center space-x-2">
                                         <Checkbox
@@ -1355,6 +1606,15 @@ const MassPdCreate = () => {
                                           }
                                         />
                                       </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
+                                        <Input
+                                          id={`${field}-done`}
+                                          type="date"
+                                          value={facilitiesData[field].task.done}
+                                          onChange={(e) => handleFacilitiesDateChange(field, "done", e.target.value)}
+                                        />
+                                      </div>
                                       <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
                                         <Textarea
@@ -1364,6 +1624,21 @@ const MassPdCreate = () => {
                                             handleTaskChange(setFacilitiesData, field, "comments", e.target.value)
                                           }
                                         />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
+                                        <Input
+                                          id={`${field}-file`}
+                                          type="file"
+                                          onChange={(e) => handleFacilitiesFileChange(field, e.target.files[0])}
+                                        />
+                                        {facilitiesData[field].task.filePath && (
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {typeof facilitiesData[field].task.filePath === "string"
+                                              ? facilitiesData[field].task.filePath
+                                              : facilitiesData[field].task.filePath.name}
+                                          </p>
+                                        )}
                                       </div>
                                       <div className="flex items-center space-x-2">
                                         <Checkbox
@@ -1432,6 +1707,15 @@ const MassPdCreate = () => {
                                           }
                                         />
                                       </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
+                                        <Input
+                                          id={`${field}-done`}
+                                          type="date"
+                                          value={ppTuningData[field].task.done}
+                                          onChange={(e) => handlePPTuningDateChange(field, "done", e.target.value)}
+                                        />
+                                      </div>
                                       <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
                                         <Textarea
@@ -1441,6 +1725,21 @@ const MassPdCreate = () => {
                                             handleTaskChange(setPPTuningData, field, "comments", e.target.value)
                                           }
                                         />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
+                                        <Input
+                                          id={`${field}-file`}
+                                          type="file"
+                                          onChange={(e) => handlePPTuningFileChange(field, e.target.files[0])}
+                                        />
+                                        {ppTuningData[field].task.filePath && (
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {typeof ppTuningData[field].task.filePath === "string"
+                                              ? ppTuningData[field].task.filePath
+                                              : ppTuningData[field].task.filePath.name}
+                                          </p>
+                                        )}
                                       </div>
                                       <div className="flex items-center space-x-2">
                                         <Checkbox
@@ -1509,6 +1808,15 @@ const MassPdCreate = () => {
                                           }
                                         />
                                       </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
+                                        <Input
+                                          id={`${field}-done`}
+                                          type="date"
+                                          value={processQualifData[field].task.done}
+                                          onChange={(e) => handleProcessQualifDateChange(field, "done", e.target.value)}
+                                        />
+                                      </div>
                                       <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
                                         <Textarea
@@ -1518,6 +1826,21 @@ const MassPdCreate = () => {
                                             handleTaskChange(setProcessQualifData, field, "comments", e.target.value)
                                           }
                                         />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
+                                        <Input
+                                          id={`${field}-file`}
+                                          type="file"
+                                          onChange={(e) => handleProcessQualifFileChange(field, e.target.files[0])}
+                                        />
+                                        {processQualifData[field].task.filePath && (
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {typeof processQualifData[field].task.filePath === "string"
+                                              ? processQualifData[field].task.filePath
+                                              : processQualifData[field].task.filePath.name}
+                                          </p>
+                                        )}
                                       </div>
                                       <div className="flex items-center space-x-2">
                                         <Checkbox
@@ -1600,6 +1923,17 @@ const MassPdCreate = () => {
                                           }
                                         />
                                       </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
+                                        <Input
+                                          id={`${field}-done`}
+                                          type="date"
+                                          value={qualificationConfirmationData[field].task.done}
+                                          onChange={(e) =>
+                                            handleQualificationConfirmationDateChange(field, "done", e.target.value)
+                                          }
+                                        />
+                                      </div>
                                       <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
                                         <Textarea
@@ -1614,6 +1948,23 @@ const MassPdCreate = () => {
                                             )
                                           }
                                         />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
+                                        <Input
+                                          id={`${field}-file`}
+                                          type="file"
+                                          onChange={(e) =>
+                                            handleQualificationConfirmationFileChange(field, e.target.files[0])
+                                          }
+                                        />
+                                        {qualificationConfirmationData[field].task.filePath && (
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {typeof qualificationConfirmationData[field].task.filePath === "string"
+                                              ? qualificationConfirmationData[field].task.filePath
+                                              : qualificationConfirmationData[field].task.filePath.name}
+                                          </p>
+                                        )}
                                       </div>
                                       <div className="flex items-center space-x-2">
                                         <Checkbox
