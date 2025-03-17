@@ -3,238 +3,152 @@
 import React, { useState } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { LayoutDashboard, Box, Atom, Users, Settings, ClipboardCheck, FileText, Rocket, ListChecks, Utensils, CheckCircle, MapPin, LogOut, HelpCircle, Briefcase, Truck, PenToolIcon as Tool, Database, ChevronDown, Plus, List, Edit } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Box,
+  Atom,
+  Settings,
+  MapPin,
+  LogOut,
+  HelpCircle,
+  Briefcase,
+  PenToolIcon as Tool,
+  ChevronDown,
+  Plus,
+  List,
+  Edit,
+  Wrench,
+  ShoppingCart,
+  Warehouse,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
-// Restructured menu items with nested actions
+// Restructured menu items with nested actions - focused on the models provided
 const menuItems = [
-  { 
-    icon: LayoutDashboard, 
-    label: "Dashboard", 
+  {
+    icon: LayoutDashboard,
+    label: "Dashboard",
     path: "/",
-    noDropdown: true 
+    noDropdown: true,
   },
-  { 
-    icon: Box, 
-    label: "Product Designation", 
-    path: "/pd",
+  {
+    icon: Tool,
+    label: "Materials",
+    path: "/materials",
     actions: [
-      { label: "List", path: "/pd", icon: List },
-      { label: "Create", path: "/pd/create", icon: Plus },
-      { label: "Edit", path: "/pd/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
+      { label: "List", path: "/materials", icon: List },
+      { label: "Create", path: "/materials/create", icon: Plus },
+      {
+        label: "Details",
+        path: "/materials/details",
+        icon: Edit,
+        disabled: true,
+        tooltip: "Select from list to view details",
+      },
+    ],
   },
-  { 
-    icon: Atom, 
-    label: "Mass Production", 
-    path: "/masspd",
-    actions: [
-      { label: "List", path: "/masspd", icon: List },
-      { label: "Create", path: "/masspd/create", icon: Plus },
-      { label: "Edit", path: "/masspd/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
-  },
-  { 
-    icon: Users, 
-    label: "User Management", 
-    path: "/admin",
-    actions: [
-      { label: "List", path: "/admin", icon: List },
-      { label: "Create", path: "/admin/create-user", icon: Plus },
-      { label: "Edit", path: "/admin/edit-user", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
-  },
-  { 
-    icon: Settings, 
-    label: "Tests", 
-    path: "/test",
-    actions: [
-      { label: "Test", path: "/test", icon: List },
-      { label: "Test 1", path: "/test1", icon: List },
-      { label: "Test 2", path: "/test2", icon: List },
-      { label: "Test 3", path: "/test3", icon: List },
-      { label: "Test 4", path: "/test4", icon: List },
-      { label: "Test 5", path: "/test5", icon: List },
-    ]
-  },
-  { 
-    icon: ClipboardCheck, 
-    label: "Feasibility", 
-    path: "/Feasibility",
-    actions: [
-      { label: "List", path: "/Feasibility", icon: List },
-      { label: "Create", path: "/CreateFeasibility", icon: Plus },
-      { label: "Edit", path: "/feasibility/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
-  },
-  { 
-    icon: CheckCircle, 
-    label: "Check-ins", 
-    path: "/checkins",
-    actions: [
-      { label: "List", path: "/checkins", icon: List },
-      { label: "Create", path: "/checkins/create", icon: Plus },
-      { label: "Edit", path: "/checkins/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
-  },
-  { 
-    icon: Utensils, 
-    label: "Ok For Lunch", 
-    path: "/okforlunch",
-    actions: [
-      { label: "List", path: "/okforlunch", icon: List },
-      { label: "Create", path: "/okforlunch/create", icon: Plus },
-      { label: "Edit", path: "/okforlunch/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
-  },
-  { 
-    icon: FileText, 
-    label: "Validation For Offer", 
-    path: "/validationforoffer",
-    actions: [
-      { label: "List", path: "/validationforoffer", icon: List },
-      { label: "Create", path: "/validationforoffer/create", icon: Plus },
-      { label: "Edit", path: "/validationforoffer/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
-  },
-  { 
-    icon: ListChecks, 
-    label: "Tasks", 
-    path: "/tasklist",
-    actions: [
-      { label: "List", path: "/tasklist", icon: List },
-      { label: "Create", path: "/task/create", icon: Plus },
-      { label: "Edit", path: "/task/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
-  },
-  { 
-    icon: Rocket, 
-    label: "Kickoff", 
-    path: "/kickoff",
-    actions: [
-      { label: "List", path: "/kickoff", icon: List },
-      { label: "Create", path: "/kickoff/create", icon: Plus },
-      { label: "Edit", path: "/kickoff/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
-  },
-  { 
-    icon: FileText, 
-    label: "Design", 
-    path: "/design",
-    actions: [
-      { label: "List", path: "/design", icon: List },
-      { label: "Create", path: "/design/create", icon: Plus },
-      { label: "Edit", path: "/design/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
-  },
-  { 
-    icon: Box, 
-    label: "Categories", 
-    path: "/categories",
-    actions: [
-      { label: "List", path: "/categories", icon: List },
-      { label: "Create", path: "/categories/create", icon: Plus },
-      { label: "Edit", path: "/categories/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
-  },
-  { 
-    icon: MapPin, 
-    label: "Locations", 
-    path: "/locations",
-    actions: [
-      { label: "List", path: "/locations", icon: List },
-      { label: "Create", path: "/locations/create", icon: Plus },
-      { label: "Edit", path: "/locations/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
-  },
-  { 
-    icon: Settings, 
-    label: "Machines", 
+  {
+    icon: Wrench,
+    label: "Machines",
     path: "/machines",
     actions: [
       { label: "List", path: "/machines", icon: List },
       { label: "Create", path: "/machines/create", icon: Plus },
       { label: "Edit", path: "/machines/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
+    ],
   },
-  { 
-    icon: Briefcase, 
-    label: "Suppliers", 
+  {
+    icon: Warehouse,
+    label: "Material Allocations",
+    path: "/machinematerial",
+    actions: [
+      { label: "List", path: "/machinematerial", icon: List },
+      { label: "Create", path: "/machinematerial/create", icon: Plus },
+      {
+        label: "Details",
+        path: "/machinematerial/detail",
+        icon: Edit,
+        disabled: true,
+        tooltip: "Select from list to view details",
+      },
+    ],
+  },
+  {
+    icon: MapPin,
+    label: "Locations",
+    path: "/locations",
+    actions: [
+      { label: "List", path: "/locations", icon: List },
+      { label: "Create", path: "/locations/create", icon: Plus },
+      { label: "Edit", path: "/locations/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
+    ],
+  },
+  {
+    icon: Box,
+    label: "Categories",
+    path: "/categories",
+    actions: [
+      { label: "List", path: "/categories", icon: List },
+      { label: "Create", path: "/categories/create", icon: Plus },
+      { label: "Edit", path: "/categories/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
+    ],
+  },
+  {
+    icon: Briefcase,
+    label: "Suppliers",
     path: "/suppliers",
     actions: [
       { label: "List", path: "/suppliers", icon: List },
       { label: "Create", path: "/suppliers/create", icon: Plus },
       { label: "Edit", path: "/suppliers/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
+    ],
   },
-  { 
-    icon: Tool, 
-    label: "Materials", 
-    path: "/materials",
+  {
+    icon: Atom,
+    label: "Mass Production",
+    path: "/masspd",
     actions: [
-      { label: "List", path: "/materials", icon: List },
-      { label: "Create", path: "/materials/create", icon: Plus },
-      { label: "Edit", path: "/materials/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
+      { label: "List", path: "/masspd", icon: List },
+      { label: "Create", path: "/masspd/create", icon: Plus },
+      {
+        label: "Details",
+        path: "/masspd/detail",
+        icon: Edit,
+        disabled: true,
+        tooltip: "Select from list to view details",
+      },
+    ],
   },
-  { 
-    icon: Database, 
-    label: "Facilities", 
-    path: "/facilities",
+  {
+    icon: ShoppingCart,
+    label: "Orders",
+    path: "/pedido",
     actions: [
-      { label: "List", path: "/facilities", icon: List },
-      { label: "Create", path: "/facilities/create", icon: Plus },
-      { label: "Edit", path: "/facilities/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
+      { label: "List", path: "/pedido", icon: List },
+      { label: "Create", path: "/pedido/create", icon: Plus },
+      { label: "Details", path: "/pedido", icon: Edit, disabled: true, tooltip: "Select from list to view details" },
+    ],
   },
-  { 
-    icon: Truck, 
-    label: "P-P Tuning", 
-    path: "/pptuning",
-    actions: [
-      { label: "List", path: "/pptuning", icon: List },
-      { label: "Create", path: "/pptuning/create", icon: Plus },
-      { label: "Edit", path: "/p_p_tuning/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
-  },
-  { 
-    icon: FileText, 
-    label: "Qualification Confirmation", 
-    path: "/qualificationconfirmation",
-    actions: [
-      { label: "List", path: "/qualificationconfirmation", icon: List },
-      { label: "Create", path: "/qualificationconfirmation/create", icon: Plus },
-      { label: "Edit", path: "/qualificationconfirmation/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
-  },
-  { 
-    icon: ClipboardCheck, 
-    label: "Process Qualification", 
-    path: "/processQualification",
-    actions: [
-      { label: "List", path: "/processQualification", icon: List },
-      { label: "Create", path: "/processQualification/create", icon: Plus },
-      { label: "Edit", path: "/processQualification/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ]
+  {
+    icon: Settings,
+    label: "Settings",
+    path: "/settings",
+    noDropdown: true,
   },
 ]
 
 export const Sidebar = ({ isOpen, toggleSidebar }) => {
-  const [openItems, setOpenItems] = useState({});
+  const [openItems, setOpenItems] = useState({})
 
   const toggleItem = (label) => {
-    setOpenItems(prev => ({
+    setOpenItems((prev) => ({
       ...prev,
-      [label]: !prev[label]
-    }));
-  };
+      [label]: !prev[label],
+    }))
+  }
 
   return (
     <>
@@ -264,8 +178,8 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
           <div className="py-2">
             {menuItems.map((item, index) => (
               <React.Fragment key={item.label}>
-                {index === 6 && <Separator className="mx-4 my-2" />}
-                
+                {index === 7 && <Separator className="mx-4 my-2" />}
+
                 {item.noDropdown ? (
                   <Link
                     to={item.path}
@@ -282,9 +196,7 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
                     className="mx-2 my-1"
                   >
                     <CollapsibleTrigger asChild>
-                      <button
-                        className="flex items-center justify-between w-full gap-3 px-4 py-2 text-gray-700 transition-colors rounded-md hover:bg-gray-100"
-                      >
+                      <button className="flex items-center justify-between w-full gap-3 px-4 py-2 text-gray-700 transition-colors rounded-md hover:bg-gray-100">
                         <div className="flex items-center gap-3">
                           <item.icon className="w-5 h-5" />
                           <span className="text-sm">{item.label}</span>
@@ -309,10 +221,10 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
                             }`}
                             onClick={(e) => {
                               if (action.disabled) {
-                                e.preventDefault();
-                                return;
+                                e.preventDefault()
+                                return
                               }
-                              if (window.innerWidth < 768) toggleSidebar();
+                              if (window.innerWidth < 768) toggleSidebar()
                             }}
                             title={action.disabled ? action.tooltip : ""}
                           >
@@ -351,3 +263,4 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
 }
 
 export default Sidebar
+
