@@ -1,3 +1,4 @@
+"use client"
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
@@ -34,22 +35,36 @@ const MaterialMachineCreate = () => {
   useEffect(() => {
     if (selectedMaterial) {
       fetchMaterialDetails(selectedMaterial)
+    } else {
+      setMaterialDetails(null)
     }
   }, [selectedMaterial])
 
   useEffect(() => {
     // Calculate total allocated stock
     const total = allocations.reduce((sum, allocation) => {
-      return sum + (Number.parseInt(allocation.allocatedStock) || 0)
+      return sum + (Number.parseInt(allocation.allocatedStock, 10) || 0)
     }, 0)
     setTotalAllocated(total)
   }, [allocations])
 
   const fetchMaterials = async () => {
     try {
-      const data = await getAllMaterials()
-      setMaterials(data)
+      const response = await getAllMaterials()
+      console.log("Materials API response:", response)
+
+      // Handle the specific paginated response structure
+      if (response && response.data && Array.isArray(response.data)) {
+        setMaterials(response.data)
+      } else if (Array.isArray(response)) {
+        setMaterials(response)
+      } else {
+        console.error("Unexpected materials data format:", response)
+        setMaterials([])
+      }
     } catch (error) {
+      console.error("Error fetching materials:", error)
+      setMaterials([])
       toast({
         title: "Error",
         description: "Failed to fetch materials",
@@ -60,9 +75,21 @@ const MaterialMachineCreate = () => {
 
   const fetchMachines = async () => {
     try {
-      const data = await getAllMachines()
-      setMachines(data)
+      const response = await getAllMachines()
+      console.log("Machines API response:", response)
+
+      // Handle the specific paginated response structure
+      if (response && response.data && Array.isArray(response.data)) {
+        setMachines(response.data)
+      } else if (Array.isArray(response)) {
+        setMachines(response)
+      } else {
+        console.error("Unexpected machines data format:", response)
+        setMachines([])
+      }
     } catch (error) {
+      console.error("Error fetching machines:", error)
+      setMachines([])
       toast({
         title: "Error",
         description: "Failed to fetch machines",
@@ -76,6 +103,8 @@ const MaterialMachineCreate = () => {
       const data = await getMaterialById(materialId)
       setMaterialDetails(data)
     } catch (error) {
+      console.error("Error fetching material details:", error)
+      setMaterialDetails(null)
       toast({
         title: "Error",
         description: "Failed to fetch material details",
@@ -92,6 +121,14 @@ const MaterialMachineCreate = () => {
 
   const handleAllocationChange = (index, field, value) => {
     const newAllocations = [...allocations]
+
+    // Ensure allocatedStock is always a valid number
+    if (field === "allocatedStock") {
+      value = Number.parseInt(value, 10) || 0
+      // Prevent negative values
+      if (value < 0) value = 0
+    }
+
     newAllocations[index][field] = value
     setAllocations(newAllocations)
   }
@@ -120,7 +157,10 @@ const MaterialMachineCreate = () => {
     }
 
     // Validate all allocations have machine selected
-    const invalidAllocation = allocations.find((alloc) => !alloc.machineId || alloc.allocatedStock <= 0)
+    const invalidAllocation = allocations.find(
+      (alloc) => !alloc.machineId || Number.parseInt(alloc.allocatedStock, 10) <= 0,
+    )
+
     if (invalidAllocation) {
       toast({
         title: "Error",
@@ -157,9 +197,15 @@ const MaterialMachineCreate = () => {
       // Get current user ID from localStorage
       const userId = localStorage.getItem("userId")
 
+      // Prepare allocations with proper integer values
+      const formattedAllocations = allocations.map((alloc) => ({
+        ...alloc,
+        allocatedStock: Number.parseInt(alloc.allocatedStock, 10),
+      }))
+
       const response = await allocateStock({
         materialId: selectedMaterial,
-        allocations: allocations,
+        allocations: formattedAllocations,
         userId: userId || "unknown", // Fallback if userId is not available
       })
 
@@ -169,7 +215,7 @@ const MaterialMachineCreate = () => {
       })
 
       // Update material details with new stock
-      if (response.updatedStock !== undefined) {
+      if (response && response.updatedStock !== undefined) {
         setMaterialDetails({
           ...materialDetails,
           currentStock: response.updatedStock,
@@ -182,6 +228,7 @@ const MaterialMachineCreate = () => {
       // Reset form
       setAllocations([{ machineId: "", allocatedStock: 0 }])
     } catch (error) {
+      console.error("Error allocating stock:", error)
       toast({
         title: "Error",
         description: error.message || "Failed to allocate stock",
@@ -215,11 +262,17 @@ const MaterialMachineCreate = () => {
                     <SelectValue placeholder="Select a material" />
                   </SelectTrigger>
                   <SelectContent>
-                    {materials.map((material) => (
-                      <SelectItem key={material._id} value={material._id}>
-                        {material.reference} - {material.description}
+                    {materials && materials.length > 0 ? (
+                      materials.map((material) => (
+                        <SelectItem key={material._id} value={material._id}>
+                          {material.reference} - {material.description || ""}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-materials" disabled>
+                        No materials available
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -290,11 +343,17 @@ const MaterialMachineCreate = () => {
                           <SelectValue placeholder="Select a machine" />
                         </SelectTrigger>
                         <SelectContent>
-                          {machines.map((machine) => (
-                            <SelectItem key={machine._id} value={machine._id}>
-                              {machine.name}
+                          {machines && machines.length > 0 ? (
+                            machines.map((machine) => (
+                              <SelectItem key={machine._id} value={machine._id}>
+                                {machine.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="no-machines" disabled>
+                              No machines available
                             </SelectItem>
-                          ))}
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
