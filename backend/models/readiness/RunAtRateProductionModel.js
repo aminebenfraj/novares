@@ -10,13 +10,13 @@ const ValidationSubSchema = new Schema({
 
 const RunAtRateProductionSchema = new Schema(
   {
-    qualityWallInPlace: { type: ValidationSubSchema, default: {} }, // Quality Wall in place per Customer & NOVARES Std
-    selfRunRatePerformed: { type: ValidationSubSchema, default: {} }, // Self Run@Rate performed, capacity meets customer expectations
-    dimensionalInspectionsConform: { type: ValidationSubSchema, default: {} }, // Dimensional inspections done & conform
-    rampUpDefined: { type: ValidationSubSchema, default: {} }, // Ramp-up phase clearly defined
-    mppAuditCompleted: { type: ValidationSubSchema, default: {} }, // MPP audit performed & action plan closed
-    reversePFMEACompleted: { type: ValidationSubSchema, default: {} }, // Reverse PFMEA completed
-    paceBoardFollowUp: { type: ValidationSubSchema, default: {} }, // Pace Board follow-up for ramp-up
+    qualityWallInPlace: { type: ValidationSubSchema, default: {} },
+    selfRunRatePerformed: { type: ValidationSubSchema, default: {} }, 
+    dimensionalInspectionsConform: { type: ValidationSubSchema, default: {} }, 
+    rampUpDefined: { type: ValidationSubSchema, default: {} }, 
+    mppAuditCompleted: { type: ValidationSubSchema, default: {} }, 
+    reversePFMEACompleted: { type: ValidationSubSchema, default: {} }, 
+    paceBoardFollowUp: { type: ValidationSubSchema, default: {} },
   },
   { timestamps: true, strict: true }
 );
