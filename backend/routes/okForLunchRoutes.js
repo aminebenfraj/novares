@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
-const okForLunchController = require("../controllers/OkForLunchController");
+const { createOkForLunch, getAllOkForLunch, getOkForLunchById, updateOkForLunch, deleteOkForLunch } = require("../controllers/okForLunchController");
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
@@ -17,10 +17,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Routes
-router.post("/", upload.single("upload"), okForLunchController.createOkForLunch);
-router.get("/", okForLunchController.getAllOkForLunch);
-router.get("/:id", okForLunchController.getOkForLunchById);
-router.put("/:id", upload.single("upload"), okForLunchController.updateOkForLunch);
-router.delete("/:id", okForLunchController.deleteOkForLunch);
+router.post("/", upload.single("upload"), createOkForLunch);
+router.get("/", getAllOkForLunch);
+router.get("/:id", getOkForLunchById);
+router.put("/:id", upload.single("upload"), updateOkForLunch);
+router.delete("/:id", deleteOkForLunch);
 
 module.exports = router;
