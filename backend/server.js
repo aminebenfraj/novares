@@ -25,8 +25,8 @@ const p_p_tuningRoutes = require("./routes/p_p_tuningRoutes");
 const qualificationConfirmationRoutes = require("./routes/qualificationConfirmationRoutes");
 const processQualifRoutes = require("./routes/processQualifRoutes");
 const pedidoRoutes = require("./routes/pedidoRoutes");
-const documentationRoutes = require("./routes/readinessRoutes/DocumentationRoutes");
-const logisticsRoutes = require("./routes/readinessRoutes/LogisticsRoutes");
+const documentationRoutes = require("./routes/readinessRoutes/documentationRoutes");
+const logisticsRoutes = require("./routes/readinessRoutes/logisticsRoutes");
 const maintenanceRoutes = require("./routes/readinessRoutes/maintenanceRoutes");
 const packagingRoutes = require("./routes/readinessRoutes/packagingRoutes");
 const processStatusIndustrialsRoutes = require("./routes/readinessRoutes/processStatusIndustrialsRoutes");
@@ -91,7 +91,6 @@ app.use("/api/Suppliers", suppliersRoutes);
 app.use("/api/ToolingStatus", toolingStatusRoutes);
 app.use("/api/Training", trainingRoutes);
 app.use("/api/Validation", validationRoutes);
-
 
 
 
