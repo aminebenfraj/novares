@@ -38,6 +38,7 @@ const toolingStatusRoutes = require("./routes/readinessRoutes/toolingStatusRoute
 const trainingRoutes = require("./routes/readinessRoutes/trainingRoutes");
 const validationRoutes = require("./routes/readinessRoutes/validationRoutes");
 const machineMaterialRoutes = require("./routes/gestionStockRoutes/machineMaterialRoutes");
+const readinessRoutes = require("./routes/readinessRoutes/readinessRoutes");
 
 
 const app = express()
@@ -91,6 +92,7 @@ app.use("/api/Suppliers", suppliersRoutes);
 app.use("/api/ToolingStatus", toolingStatusRoutes);
 app.use("/api/Training", trainingRoutes);
 app.use("/api/Validation", validationRoutes);
+app.use("/api/readiness", readinessRoutes);
 
 
 
