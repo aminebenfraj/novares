@@ -92,7 +92,7 @@ app.use("/api/Suppliers", suppliersRoutes);
 app.use("/api/ToolingStatus", toolingStatusRoutes);
 app.use("/api/Training", trainingRoutes);
 app.use("/api/Validation", validationRoutes);
-app.use("/api/readiness", readinessRoutes);
+app.use("/api/Readiness", readinessRoutes);
 
 
 
