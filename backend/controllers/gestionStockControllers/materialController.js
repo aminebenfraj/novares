@@ -252,7 +252,6 @@ exports.getFilterOptions = async (req, res) => {
   }
 }
 
-
 // Get a single material by ID
 exports.getMaterialById = async (req, res) => {
   try {
@@ -261,7 +260,6 @@ exports.getMaterialById = async (req, res) => {
       .populate("location")
       .populate("machines")
       .populate("category")
-    console.log(material)
 
     if (!material) {
       return res.status(404).json({ message: "Material not found" })
@@ -269,7 +267,12 @@ exports.getMaterialById = async (req, res) => {
 
     res.status(200).json(material)
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    console.error("Error fetching material by ID:", error)
+    res.status(500).json({
+      message: "Error fetching material details",
+      error: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    })
   }
 }
 
