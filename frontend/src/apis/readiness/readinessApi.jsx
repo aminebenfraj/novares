@@ -1,5 +1,5 @@
 // readinessApi.js
-import { apiRequest } from "./api";
+import { apiRequest } from "../api";
 
 const BASE_URL = "api/Readiness";
 

@@ -1,6 +1,6 @@
-import { apiRequest } from "./api";
+import { apiRequest } from "../api";
 
-const BASE_URL = "api/Suppliers";
+const BASE_URL = "api/Supplier";
 
 // ✅ Get all Supplierss
 export const getAllSuppliers = () => {

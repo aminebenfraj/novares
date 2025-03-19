@@ -88,7 +88,7 @@ app.use("/api/ProcessStatusIndustrials", processStatusIndustrialsRoutes);
 app.use("/api/ProductProcesses", productProcessRoutes);
 app.use("/api/RunAtRateProduction", runAtRateProductionRoutes);
 app.use("/api/Safety", safetyRoutes);
-app.use("/api/Suppliers", suppliersRoutes);
+app.use("/api/Supplier", suppliersRoutes);
 app.use("/api/ToolingStatus", toolingStatusRoutes);
 app.use("/api/Training", trainingRoutes);
 app.use("/api/Validation", validationRoutes);
