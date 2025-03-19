@@ -1,35 +1,47 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { getMassProductionById, updateMassProduction } from "../../apis/massProductionApi"
 import { getAllCustomers } from "../../apis/customerApi"
 import { getAllpd } from "../../apis/ProductDesignation-api"
-import MainLayout from "../../components/MainLayout"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { useToast } from "@/hooks/use-toast"
+import { Loader2, ArrowLeft } from "lucide-react"
+import MainLayout from "@/components/MainLayout"
 
-export default function EditMassProductionForm() {
+const EditMassProductionForm = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [customers, setCustomers] = useState([])
+  const [productDesignations, setProductDesignations] = useState([])
+  const [selectedProductDesignations, setSelectedProductDesignations] = useState([])
 
+  // Initial form state with all required fields
   const [formData, setFormData] = useState({
     id: "",
-    status: "",
-    status_type: "",
+    status: "on-going",
+    status_type: "ok",
     project_n: "",
     product_designation: [],
     description: "",
     customer: "",
-    technical_skill: "",
-    initial_request: "",
-    request_original: "",
-    frasability: "",
-    validation_for_offer: "",
-    customer_offer: "",
-    customer_order: "",
-    ok_for_lunch: "",
-    kick_off: "",
-    design: "",
-    facilities: "",
-    p_p_tuning: "",
-    process_qualif: "",
+    technical_skill: "sc",
+    initial_request: new Date().toISOString().split("T")[0],
+    request_original: "customer",
+    customer_offer: "F",
+    customer_order: "F",
     ppap_submission_date: "",
     ppap_submitted: false,
     closure: "",
@@ -41,456 +53,2081 @@ export default function EditMassProductionForm() {
     pt1: "",
     pt2: "",
     sop: "",
-    days_until_ppap_submission: 0,
+    assignedRole: "",
+    assignedEmail: "",
   })
 
-  const [customers, setCustomers] = useState([])
-  const [productDesignations, setProductDesignations] = useState([])
-  const [message, setMessage] = useState("")
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+  // Feasibility form state
+  const [feasibilityData, setFeasibilityData] = useState(
+    feasibilityFields.reduce((acc, field) => {
+      acc[field] = { value: false, details: { description: "", cost: 0, sales_price: 0, comments: "" } }
+      return acc
+    }, {}),
+  )
 
+  // Kick-off form state
+  const [kickOffData, setKickOffData] = useState(
+    kickOffFields.reduce((acc, field) => {
+      acc[field] = {
+        value: false,
+        task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+      }
+      return acc
+    }, {}),
+  )
+
+  // Design form state
+  const [designData, setDesignData] = useState(
+    designFields.reduce((acc, field) => {
+      acc[field] = {
+        value: false,
+        task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+      }
+      return acc
+    }, {}),
+  )
+
+  // Facilities form state
+  const [facilitiesData, setFacilitiesData] = useState(
+    facilitiesFields.reduce((acc, field) => {
+      acc[field] = {
+        value: false,
+        task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+      }
+      return acc
+    }, {}),
+  )
+
+  // P_P_Tuning form state
+  const [ppTuningData, setPPTuningData] = useState(
+    ppTuningFields.reduce((acc, field) => {
+      acc[field] = {
+        value: false,
+        task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+      }
+      return acc
+    }, {}),
+  )
+
+  // Process Qualification form state
+  const [processQualifData, setProcessQualifData] = useState(
+    processQualifFields.reduce((acc, field) => {
+      acc[field] = {
+        value: false,
+        task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+      }
+      return acc
+    }, {}),
+  )
+
+  // Qualification Confirmation form state
+  const [qualificationConfirmationData, setQualificationConfirmationData] = useState(
+    qualificationConfirmationFields.reduce((acc, field) => {
+      acc[field] = {
+        value: false,
+        task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+      }
+      return acc
+    }, {}),
+  )
+
+  // Checkin form state
+  const [checkinData, setCheckinData] = useState({
+    project_manager: false,
+    business_manager: false,
+    engineering_leader_manager: false,
+    quality_leader: false,
+    plant_quality_leader: false,
+    industrial_engineering: false,
+    launch_manager_method: false,
+    maintenance: false,
+    purchasing: false,
+    logistics: false,
+    sales: false,
+    economic_financial_leader: false,
+  })
+
+  // Ok For Lunch form state
+  const [okForLunchData, setOkForLunchData] = useState({
+    check: false,
+    upload: null,
+    date: new Date().toISOString().split("T")[0],
+  })
+
+  const [validationForOfferData, setValidationForOfferData] = useState({
+    name: "",
+    check: false,
+    upload: null,
+    date: new Date().toISOString().split("T")[0],
+  })
+
+  // Checkin data for ValidationForOffer
+  const [validationForOfferCheckinData, setValidationForOfferCheckinData] = useState({
+    project_manager: false,
+    business_manager: false,
+    engineering_leader_manager: false,
+    quality_leader: false,
+    plant_quality_leader: false,
+    industrial_engineering: false,
+    launch_manager_method: false,
+    maintenance: false,
+    purchasing: false,
+    logistics: false,
+    sales: false,
+    economic_financial_leader: false,
+  })
+
+  // Checkin data for OkForLunch
+  const [okForLunchCheckinData, setOkForLunchCheckinData] = useState({
+    project_manager: false,
+    business_manager: false,
+    engineering_leader_manager: false,
+    quality_leader: false,
+    plant_quality_leader: false,
+    industrial_engineering: false,
+    launch_manager_method: false,
+    maintenance: false,
+    purchasing: false,
+    logistics: false,
+    sales: false,
+    economic_financial_leader: false,
+  })
+
+  // Checkin data for Feasibility
+  const [feasibilityCheckinData, setFeasibilityCheckinData] = useState({
+    project_manager: false,
+    business_manager: false,
+    engineering_leader_manager: false,
+    quality_leader: false,
+    plant_quality_leader: false,
+    industrial_engineering: false,
+    launch_manager_method: false,
+    maintenance: false,
+    purchasing: false,
+    logistics: false,
+    sales: false,
+    economic_financial_leader: false,
+  })
+
+  // Fetch data on component mount
   useEffect(() => {
-    if (id) {
-      fetchMassProduction()
-      fetchCustomersAndProductDesignations()
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        await Promise.all([fetchMassProduction(), fetchCustomers(), fetchProductDesignations()])
+      } catch (error) {
+        console.error("Error loading data:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load data. Please refresh the page.",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [id])
+
+    fetchData()
+  }, [id, toast])
 
   const fetchMassProduction = async () => {
     try {
       const data = await getMassProductionById(id)
-      setFormData(data)
-      setLoading(false)
+
+      // Set main form data
+      setFormData({
+        ...data,
+        product_designation: data.product_designation.map((pd) => pd._id || pd),
+      })
+
+      // Set selected product designations
+      setSelectedProductDesignations(data.product_designation.map((pd) => pd._id || pd))
+
+      // Set related data if available
+      if (data.feasability) {
+        setFeasibilityData(mapDataToFormState(data.feasability, feasibilityFields))
+        if (data.feasability.checkin) {
+          setFeasibilityCheckinData(data.feasability.checkin)
+        }
+      }
+
+      if (data.kick_off) {
+        setKickOffData(mapDataToFormState(data.kick_off, kickOffFields))
+      }
+
+      if (data.design) {
+        setDesignData(mapDataToFormState(data.design, designFields))
+      }
+
+      if (data.facilities) {
+        setFacilitiesData(mapDataToFormState(data.facilities, facilitiesFields))
+      }
+
+      if (data.p_p_tuning) {
+        setPPTuningData(mapDataToFormState(data.p_p_tuning, ppTuningFields))
+      }
+
+      if (data.process_qualif) {
+        setProcessQualifData(mapDataToFormState(data.process_qualif, processQualifFields))
+      }
+
+      if (data.qualification_confirmation) {
+        setQualificationConfirmationData(
+          mapDataToFormState(data.qualification_confirmation, qualificationConfirmationFields),
+        )
+      }
+
+      if (data.ok_for_lunch) {
+        setOkForLunchData({
+          check: data.ok_for_lunch.check || false,
+          date: data.ok_for_lunch.date || new Date().toISOString().split("T")[0],
+          upload: null,
+        })
+
+        if (data.ok_for_lunch.checkin) {
+          setOkForLunchCheckinData(data.ok_for_lunch.checkin)
+        }
+      }
+
+      if (data.validation_for_offer) {
+        setValidationForOfferData({
+          name: data.validation_for_offer.name || "",
+          check: data.validation_for_offer.check || false,
+          date: data.validation_for_offer.date || new Date().toISOString().split("T")[0],
+          upload: null,
+        })
+
+        if (data.validation_for_offer.checkin) {
+          setValidationForOfferCheckinData(data.validation_for_offer.checkin)
+        }
+      }
     } catch (error) {
-      console.error("Error fetching mass production:", error)
-      setError("Failed to load mass production data. Please try again.")
-      setLoading(false)
+      console.error("Failed to fetch mass production:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load mass production data. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
-  const fetchCustomersAndProductDesignations = async () => {
+  const mapDataToFormState = (data, fields) => {
+    const result = {}
+
+    fields.forEach((field) => {
+      if (data[field]) {
+        result[field] = data[field]
+      } else {
+        result[field] = {
+          value: false,
+          task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+        }
+      }
+    })
+
+    return result
+  }
+
+  const fetchCustomers = async () => {
     try {
-      const [customersData, pdData] = await Promise.all([getAllCustomers(), getAllpd()])
-      setCustomers(customersData.filter((customer) => customer.role === "Customer"))
-      setProductDesignations(pdData)
+      const data = await getAllCustomers()
+      setCustomers(data)
     } catch (error) {
-      console.error("Error fetching customers or product designations:", error)
+      console.error("Failed to fetch customers:", error)
     }
   }
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target
-    const newValue = type === "checkbox" ? checked : value
-
-    if (name === "ppap_submission_date") {
-      const ppapDate = new Date(value)
-      const today = new Date()
-      const timeDiff = ppapDate.getTime() - today.getTime()
-      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24))
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
-        days_until_ppap_submission: daysDiff,
-      }))
-    } else if (name === "closure") {
-      const closureDate = new Date(value)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
-        ppap_submitted: closureDate < today,
-      }))
-    } else {
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: newValue,
-      }))
+  const fetchProductDesignations = async () => {
+    try {
+      const data = await getAllpd()
+      setProductDesignations(data)
+    } catch (error) {
+      console.error("Failed to fetch product designations:", error)
     }
   }
 
-  const toggleProductDesignation = (pdId) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      product_designation: prevData.product_designation.includes(pdId)
-        ? prevData.product_designation.filter((id) => id !== pdId)
-        : [...prevData.product_designation, pdId],
+  // Handle input changes for main form
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  // Handle checkbox changes for main form
+  const handleCheckboxChange = (name, checked) => {
+    setFormData((prev) => ({ ...prev, [name]: checked }))
+  }
+
+  // Handle select changes for main form
+  const handleSelectChange = (name, value) => {
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  // Handle product designation selection
+  const handleProductDesignationChange = (id) => {
+    setSelectedProductDesignations((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((item) => item !== id)
+      } else {
+        return [...prev, id]
+      }
+    })
+  }
+
+  // Handle checkin checkbox changes
+  const handleCheckinChange = (field, checked) => {
+    setCheckinData((prev) => ({ ...prev, [field]: checked }))
+  }
+
+  // Handle ok for lunch changes
+  const handleOkForLunchChange = (field, value) => {
+    setOkForLunchData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // Handle file upload for ok for lunch
+  const handleFileChange = (e) => {
+    setOkForLunchData((prev) => ({ ...prev, upload: e.target.files[0] }))
+  }
+
+  // Generic handler for accordion form data changes
+  const handleAccordionCheckboxChange = (setter, field, checked) => {
+    setter((prev) => ({
+      ...prev,
+      [field]: { ...prev[field], value: checked },
     }))
   }
 
+  // Generic handler for task changes in accordion forms
+  const handleTaskChange = (setter, field, taskField, value) => {
+    setter((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [taskField]: value },
+      },
+    }))
+  }
+
+  // Generic handler for details changes in feasibility form
+  const handleDetailsChange = (field, detailField, value) => {
+    setFeasibilityData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        details: { ...prev[field].details, [detailField]: value },
+      },
+    }))
+  }
+
+  const handleValidationForOfferChange = (field, value) => {
+    setValidationForOfferData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // Handle file upload for validation for offer
+  const handleValidationForOfferFileChange = (e) => {
+    setValidationForOfferData((prev) => ({ ...prev, upload: e.target.files[0] }))
+  }
+
+  // Handle ValidationForOffer checkin checkbox changes
+  const handleValidationForOfferCheckinChange = (field, checked) => {
+    setValidationForOfferCheckinData((prev) => {
+      const updatedData = { ...prev, [field]: checked }
+      return updatedData
+    })
+  }
+
+  // Handle OkForLunch checkin checkbox changes
+  const handleOkForLunchCheckinChange = (field, checked) => {
+    setOkForLunchCheckinData((prev) => ({ ...prev, [field]: checked }))
+  }
+
+  // Handle Feasibility checkin checkbox changes
+  const handleFeasibilityCheckinChange = (field, checked) => {
+    setFeasibilityCheckinData((prev) => ({ ...prev, [field]: checked }))
+  }
+
+  // Handle file upload for kick-off tasks
+  const handleKickOffFileChange = (field, file) => {
+    setKickOffData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, filePath: file },
+      },
+    }))
+  }
+
+  // Handle date changes for kick-off tasks
+  const handleKickOffDateChange = (field, dateType, value) => {
+    setKickOffData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [dateType]: value },
+      },
+    }))
+  }
+
+  // Add handler for design file uploads
+  const handleDesignFileChange = (field, file) => {
+    setDesignData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, filePath: file },
+      },
+    }))
+  }
+
+  // Add handler for design date changes
+  const handleDesignDateChange = (field, dateType, value) => {
+    setDesignData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [dateType]: value },
+      },
+    }))
+  }
+
+  // Add handler for facilities file uploads
+  const handleFacilitiesFileChange = (field, file) => {
+    setFacilitiesData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, filePath: file },
+      },
+    }))
+  }
+
+  // Add handler for facilities date changes
+  const handleFacilitiesDateChange = (field, dateType, value) => {
+    setFacilitiesData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [dateType]: value },
+      },
+    }))
+  }
+
+  // Add handler for P/P Tuning file uploads
+  const handlePPTuningFileChange = (field, file) => {
+    setPPTuningData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, filePath: file },
+      },
+    }))
+  }
+
+  // Add handler for P/P Tuning date changes
+  const handlePPTuningDateChange = (field, dateType, value) => {
+    setPPTuningData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [dateType]: value },
+      },
+    }))
+  }
+
+  // Add handler for process qualification file uploads
+  const handleProcessQualifFileChange = (field, file) => {
+    setProcessQualifData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, filePath: file },
+      },
+    }))
+  }
+
+  // Add handler for process qualification date changes
+  const handleProcessQualifDateChange = (field, dateType, value) => {
+    setProcessQualifData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [dateType]: value },
+      },
+    }))
+  }
+
+  // Add handler for qualification confirmation file uploads
+  const handleQualificationConfirmationFileChange = (field, file) => {
+    setQualificationConfirmationData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, filePath: file },
+      },
+    }))
+  }
+
+  // Add handler for qualification confirmation date changes
+  const handleQualificationConfirmationDateChange = (field, dateType, value) => {
+    setQualificationConfirmationData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        task: { ...prev[field].task, [dateType]: value },
+      },
+    }))
+  }
+
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
-    setMessage("")
-
-    if (formData.product_designation.length === 0) {
-      setMessage("Please select at least one product designation.")
-      setLoading(false)
-      return
-    }
+    setSubmitting(true)
 
     try {
-      await updateMassProduction(id, formData)
-      setMessage("Mass production updated successfully!")
-      navigate("/masspd") // Redirect to the list page after successful update
-    } catch (error) {
-      console.error("Error updating mass production:", error)
-      setMessage(error.response?.data?.message || "Error updating mass production. Please try again.")
-    }
+      // Validate product designations before submission
+      if (selectedProductDesignations.length === 0) {
+        toast({
+          title: "Warning",
+          description: "Please select at least one product designation.",
+          variant: "destructive",
+        })
+        setSubmitting(false)
+        return
+      }
 
-    setLoading(false)
+      // Update product designations in form data
+      const updatedFormData = {
+        ...formData,
+        product_designation: selectedProductDesignations,
+      }
+
+      // Update related records if they exist
+      const updatedRelatedData = {}
+
+      // Update feasibility if it exists
+      if (formData.feasability) {
+        const feasibilityResponse = await updateRelatedRecord("feasibility", formData.feasability, {
+          ...feasibilityData,
+          checkin: feasibilityCheckinData,
+        })
+        updatedRelatedData.feasability = feasibilityResponse._id
+      }
+
+      // Update kick_off if it exists
+      if (formData.kick_off) {
+        const kickOffResponse = await updateRelatedRecord(
+          "kick_off",
+          formData.kick_off,
+          processFilePathsForUpdate(kickOffData),
+        )
+        updatedRelatedData.kick_off = kickOffResponse._id
+      }
+
+      // Update design if it exists
+      if (formData.design) {
+        const designResponse = await updateRelatedRecord(
+          "design",
+          formData.design,
+          processFilePathsForUpdate(designData),
+        )
+        updatedRelatedData.design = designResponse._id
+      }
+
+      // Update facilities if it exists
+      if (formData.facilities) {
+        const facilitiesResponse = await updateRelatedRecord(
+          "facilities",
+          formData.facilities,
+          processFilePathsForUpdate(facilitiesData),
+        )
+        updatedRelatedData.facilities = facilitiesResponse._id
+      }
+
+      // Update p_p_tuning if it exists
+      if (formData.p_p_tuning) {
+        const ppTuningResponse = await updateRelatedRecord(
+          "p_p_tuning",
+          formData.p_p_tuning,
+          processFilePathsForUpdate(ppTuningData),
+        )
+        updatedRelatedData.p_p_tuning = ppTuningResponse._id
+      }
+
+      // Update process_qualif if it exists
+      if (formData.process_qualif) {
+        const processQualifResponse = await updateRelatedRecord(
+          "process_qualif",
+          formData.process_qualif,
+          processFilePathsForUpdate(processQualifData),
+        )
+        updatedRelatedData.process_qualif = processQualifResponse._id
+      }
+
+      // Update qualification_confirmation if it exists
+      if (formData.qualification_confirmation) {
+        const qualificationConfirmationResponse = await updateRelatedRecord(
+          "qualification_confirmation",
+          formData.qualification_confirmation,
+          processFilePathsForUpdate(qualificationConfirmationData),
+        )
+        updatedRelatedData.qualification_confirmation = qualificationConfirmationResponse._id
+      }
+
+      // Update ok_for_lunch if it exists
+      if (formData.ok_for_lunch) {
+        const okForLunchResponse = await updateRelatedRecord("ok_for_lunch", formData.ok_for_lunch, {
+          ...okForLunchData,
+          checkin: okForLunchCheckinData,
+        })
+        updatedRelatedData.ok_for_lunch = okForLunchResponse._id
+      }
+
+      // Update validation_for_offer if it exists
+      if (formData.validation_for_offer) {
+        const validationForOfferResponse = await updateRelatedRecord(
+          "validation_for_offer",
+          formData.validation_for_offer,
+          { ...validationForOfferData, checkin: validationForOfferCheckinData },
+        )
+        updatedRelatedData.validation_for_offer = validationForOfferResponse._id
+      }
+
+      // Update the mass production record with all changes
+      const massProductionResponse = await updateMassProduction(id, {
+        ...updatedFormData,
+        ...updatedRelatedData,
+      })
+
+      toast({
+        title: "Success",
+        description: "Mass production record updated successfully!",
+      })
+
+      // Redirect to the mass production list page
+      navigate("/masspd")
+    } catch (error) {
+      console.error("Failed to update mass production record:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update mass production record. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // Helper function to update related records
+  const updateRelatedRecord = async (type, id, data) => {
+    // This is a placeholder - in a real implementation, you would call the appropriate update API
+    // For now, we'll just return the data with the ID
+    return { ...data, _id: id }
+  }
+
+  // Helper function to process file paths for update
+  const processFilePathsForUpdate = (data) => {
+    const processed = { ...data }
+    Object.keys(processed).forEach((field) => {
+      if (processed[field].task && processed[field].task.filePath instanceof File) {
+        processed[field].task.filePath = processed[field].task.filePath.name
+      }
+    })
+    return processed
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
-  }
-
-  if (error) {
-    return <div className="flex items-center justify-center min-h-screen text-red-500">{error}</div>
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-16 h-16 border-4 rounded-full border-t-primary animate-spin"></div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
     <MainLayout>
-      <div className="container px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <h1 className="mb-6 text-3xl font-bold text-gray-900">Edit Mass Production</h1>
-        <div className="overflow-hidden bg-white rounded-lg shadow-xl">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {message && (
-              <div className="p-4 mb-4 text-sm text-center text-green-700 bg-green-100 rounded-lg">{message}</div>
-            )}
+      <div className="min-h-screen bg-background">
+        <div className="container py-8 mx-auto">
+          <div className="flex items-center mb-6">
+            <Button variant="outline" onClick={() => navigate("/masspd")} className="mr-4">
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
+            </Button>
+            <h1 className="text-3xl font-bold">Edit Mass Production</h1>
+          </div>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {/* ID */}
-              <div>
-                <label htmlFor="id" className="block mb-2 text-sm font-medium text-gray-700">
-                  ID
-                </label>
-                <input
-                  type="text"
-                  id="id"
-                  name="id"
-                  value={formData.id}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                  readOnly
-                />
-              </div>
+          <form onSubmit={handleSubmit}>
+            <Tabs defaultValue="basic" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                <TabsTrigger value="details">Project Details</TabsTrigger>
+                <TabsTrigger value="dates">Key Dates</TabsTrigger>
+                <TabsTrigger value="stages">Process Stages</TabsTrigger>
+              </TabsList>
 
-              {/* Status */}
-              <div>
-                <label htmlFor="status" className="block mb-2 text-sm font-medium text-gray-700">
-                  Status
-                </label>
-                <select
-                  id="status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select Status</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="closed">Closed</option>
-                  <option value="on-going">On-Going</option>
-                  <option value="stand-by">Stand-By</option>
-                </select>
-              </div>
+              {/* Basic Information Tab */}
+              <TabsContent value="basic">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Basic Information</CardTitle>
+                    <CardDescription>Edit the basic information for the mass production record.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="id">
+                          ID <span className="text-red-500">*</span>
+                        </Label>
+                        <Input id="id" name="id" value={formData.id} onChange={handleInputChange} required readOnly />
+                      </div>
 
-              {/* Status Type */}
-              <div>
-                <label htmlFor="status_type" className="block mb-2 text-sm font-medium text-gray-700">
-                  Status Type
-                </label>
-                <select
-                  id="status_type"
-                  name="status_type"
-                  value={formData.status_type}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select Status Type</option>
-                  <option value="ok">OK</option>
-                  <option value="no">NO</option>
-                </select>
-              </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="project_n">
+                          Project Number <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="project_n"
+                          name="project_n"
+                          value={formData.project_n}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                    </div>
 
-              {/* Project Number */}
-              <div>
-                <label htmlFor="project_n" className="block mb-2 text-sm font-medium text-gray-700">
-                  Project Number
-                </label>
-                <input
-                  type="text"
-                  id="project_n"
-                  name="project_n"
-                  value={formData.project_n}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="status">
+                          Status <span className="text-red-500">*</span>
+                        </Label>
+                        <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="on-going">On-going</SelectItem>
+                            <SelectItem value="stand-by">Stand-by</SelectItem>
+                            <SelectItem value="closed">Closed</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-              {/* Product Designation */}
-              <div className="md:col-span-2">
-                <label className="block mb-2 text-sm font-medium text-gray-700">Product Designation</label>
-                <div className="flex flex-wrap gap-2 p-2 border rounded-md">
-                  {productDesignations.map((pd) => (
-                    <button
-                      key={pd.id}
-                      type="button"
-                      onClick={() => toggleProductDesignation(pd.id)}
-                      className={`px-3 py-1 text-sm font-medium rounded-full transition-colors duration-200 ${
-                        formData.product_designation.includes(pd.id)
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                      }`}
-                    >
-                      {pd.part_name}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="status_type">
+                          Status Type <span className="text-red-500">*</span>
+                        </Label>
+                        <Select
+                          value={formData.status_type}
+                          onValueChange={(value) => handleSelectChange("status_type", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ok">OK</SelectItem>
+                            <SelectItem value="no">NO</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
-              {/* Description */}
-              <div className="md:col-span-2">
-                <label htmlFor="description" className="block mb-2 text-sm font-medium text-gray-700">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                ></textarea>
-              </div>
-
-              {/* Customer */}
-              <div>
-                <label htmlFor="customer" className="block mb-2 text-sm font-medium text-gray-700">
-                  Customer
-                </label>
-                <select
-                  id="customer"
-                  name="customer"
-                  value={formData.customer}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select Customer</option>
-                  {customers.map((customer) => (
-                    <option key={customer._id} value={customer._id}>
-                      {customer.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Initial Request */}
-              <div>
-                <label htmlFor="initial_request" className="block mb-2 text-sm font-medium text-gray-700">
-                  Initial Request
-                </label>
-                <input
-                  type="date"
-                  id="initial_request"
-                  name="initial_request"
-                  value={formData.initial_request}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Technical Skill */}
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Technical Skill</label>
-              <div className="flex gap-4">
-                {["sc", "tc"].map((skill) => (
-                  <label key={skill} className="flex items-center">
-                    <input
-                      type="radio"
-                      name="technical_skill"
-                      value={skill}
-                      checked={formData.technical_skill === skill}
-                      onChange={handleChange}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm font-medium text-gray-700">{skill.toUpperCase()}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Request Original */}
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Request Original</label>
-              <div className="flex gap-4">
-                {["internal", "customer"].map((origin) => (
-                  <label key={origin} className="flex items-center">
-                    <input
-                      type="radio"
-                      name="request_original"
-                      value={origin}
-                      checked={formData.request_original === origin}
-                      onChange={handleChange}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm font-medium text-gray-700">
-                      {origin.charAt(0).toUpperCase() + origin.slice(1)}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Process Steps */}
-            <div className="p-4 rounded-lg bg-gray-50">
-              <h3 className="mb-4 text-lg font-semibold text-gray-700">Process Steps</h3>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                {[
-                  "frasability",
-                  "validation_for_offer",
-                  "customer_offer",
-                  "customer_order",
-                  "ok_for_lunch",
-                  "kick_off",
-                  "design",
-                  "facilities",
-                  "p_p_tuning",
-                  "process_qualif",
-                ].map((field) => (
-                  <div key={field}>
-                    <label htmlFor={field} className="block mb-2 text-sm font-medium text-gray-700">
-                      {field.replace(/_/g, " ")}
-                    </label>
-                    <select
-                      id={field}
-                      name={field}
-                      value={formData[field]}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select</option>
-                      <option value="F">F</option>
-                      <option value="E">E</option>
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Date Fields */}
-            <div className="p-4 rounded-lg bg-gray-50">
-              <h3 className="mb-4 text-lg font-semibold text-gray-700">Date Fields</h3>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                {["mlo", "tko", "cv", "pt1", "pt2", "sop", "ppap_submission_date", "closure", "next_review"].map(
-                  (field) => (
-                    <div key={field}>
-                      <label htmlFor={field} className="block mb-2 text-sm font-medium text-gray-700">
-                        {field.replace(/_/g, " ").toUpperCase()}
-                      </label>
-                      <input
-                        type="date"
-                        id={field}
-                        name={field}
-                        value={formData[field]}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows={3}
                       />
                     </div>
-                  ),
-                )}
-              </div>
-            </div>
 
-            {/* New field for Days Until PPAP Submission */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div>
-                <label htmlFor="ppap_submission_date" className="block mb-2 text-sm font-medium text-gray-700">
-                  PPAP Submission Date
-                </label>
-                <input
-                  type="date"
-                  id="ppap_submission_date"
-                  name="ppap_submission_date"
-                  value={formData.ppap_submission_date}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="days_until_ppap_submission" className="block mb-2 text-sm font-medium text-gray-700">
-                  Days Until PPAP Submission
-                </label>
-                <input
-                  type="number"
-                  id="days_until_ppap_submission"
-                  name="days_until_ppap_submission"
-                  value={formData.days_until_ppap_submission}
-                  readOnly
-                  className="w-full px-3 py-2 text-gray-700 bg-gray-100 border rounded-md focus:outline-none"
-                />
-              </div>
-            </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="customer">Customer</Label>
+                        <Select
+                          value={formData.customer}
+                          onValueChange={(value) => handleSelectChange("customer", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select customer" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {customers.map((customer) => (
+                              <SelectItem key={customer._id} value={customer._id}>
+                                {customer.username}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-            {/* PPAP Submitted Checkbox */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="ppap_submitted"
-                name="ppap_submitted"
-                checked={formData.ppap_submitted}
-                onChange={handleChange}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                disabled={formData.closure && new Date(formData.closure) < new Date()}
-              />
-              <label htmlFor="ppap_submitted" className="ml-2 text-sm font-medium text-gray-700">
-                PPAP Submitted
-                {formData.closure && new Date(formData.closure) < new Date() && (
-                  <span className="ml-2 text-xs text-gray-500">(Auto-checked based on closure date)</span>
-                )}
-              </label>
-            </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="technical_skill">Technical Skill</Label>
+                        <Select
+                          value={formData.technical_skill}
+                          onValueChange={(value) => handleSelectChange("technical_skill", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select technical skill" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sc">SC</SelectItem>
+                            <SelectItem value="tc">TC</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
-            {/* Comment */}
-            <div>
-              <label htmlFor="comment" className="block mb-2 text-sm font-medium text-gray-700">
-                Comment
-              </label>
-              <textarea
-                id="comment"
-                name="comment"
-                value={formData.comment}
-                onChange={handleChange}
-                className="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={4}
-              ></textarea>
-            </div>
+                    <div className="space-y-2">
+                      <Label className="text-base">Product Designation</Label>
+                      <p className="mb-2 text-sm text-muted-foreground">
+                        Select the product designations for this mass production.
+                      </p>
+                      {productDesignations.length === 0 ? (
+                        <div className="p-4 border rounded-md bg-muted/20">
+                          <p className="text-sm text-muted-foreground">
+                            No product designations available. Please check the database.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                          {productDesignations.map((item) => (
+                            <div key={item._id} className="flex flex-row items-start p-3 space-x-3 border rounded-md">
+                              <Checkbox
+                                id={`pd-${item._id}`}
+                                checked={selectedProductDesignations.includes(item._id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedProductDesignations((prev) => [...prev, item._id])
+                                    // Also update the formData to keep it in sync
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      product_designation: [...prev.product_designation, item._id],
+                                    }))
+                                  } else {
+                                    setSelectedProductDesignations((prev) => prev.filter((id) => id !== item._id))
+                                    // Also update the formData to keep it in sync
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      product_designation: prev.product_designation.filter((id) => id !== item._id),
+                                    }))
+                                  }
+                                }}
+                              />
+                              <Label htmlFor={`pd-${item._id}`} className="font-normal">
+                                {item.part_name}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {selectedProductDesignations.length > 0 && (
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {selectedProductDesignations.length} product designation(s) selected
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-            {/* Submit Button */}
-            <div>
-              <button
-                type="submit"
-                className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                disabled={loading}
-              >
-                {loading ? "Updating..." : "Update Mass Production"}
-              </button>
-            </div>
+              {/* Project Details Tab */}
+              <TabsContent value="details">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Project Details</CardTitle>
+                    <CardDescription>Edit the project details for the mass production record.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="initial_request">
+                          Initial Request Date <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="initial_request"
+                          name="initial_request"
+                          type="date"
+                          value={formData.initial_request}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="request_original">Request Origin</Label>
+                        <Select
+                          value={formData.request_original}
+                          onValueChange={(value) => handleSelectChange("request_original", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select request origin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="internal">Internal</SelectItem>
+                            <SelectItem value="customer">Customer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="customer_offer">Customer Offer</Label>
+                        <Select
+                          value={formData.customer_offer}
+                          onValueChange={(value) => handleSelectChange("customer_offer", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select customer offer" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="F">F</SelectItem>
+                            <SelectItem value="E">E</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="customer_order">Customer Order</Label>
+                        <Select
+                          value={formData.customer_order}
+                          onValueChange={(value) => handleSelectChange("customer_order", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select customer order" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="F">F</SelectItem>
+                            <SelectItem value="E">E</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="ppap_submitted"
+                          checked={formData.ppap_submitted}
+                          onCheckedChange={(checked) => handleCheckboxChange("ppap_submitted", checked)}
+                        />
+                        <Label htmlFor="ppap_submitted">PPAP Submitted</Label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="ppap_submission_date">PPAP Submission Date</Label>
+                      <Input
+                        id="ppap_submission_date"
+                        name="ppap_submission_date"
+                        type="date"
+                        value={formData.ppap_submission_date}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="comment">Comments</Label>
+                      <Textarea
+                        id="comment"
+                        name="comment"
+                        value={formData.comment}
+                        onChange={handleInputChange}
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>OK for Launch</Label>
+                      <Card className="p-4">
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="ok-for-lunch-check"
+                              checked={okForLunchData.check}
+                              onCheckedChange={(checked) => handleOkForLunchChange("check", checked)}
+                            />
+                            <Label htmlFor="ok-for-lunch-check">Approved</Label>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="ok-for-lunch-date">Date</Label>
+                            <Input
+                              id="ok-for-lunch-date"
+                              type="date"
+                              value={okForLunchData.date}
+                              onChange={(e) => handleOkForLunchChange("date", e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="ok-for-lunch-upload">Upload Document</Label>
+                            <Input id="ok-for-lunch-upload" type="file" onChange={handleFileChange} />
+                          </div>
+
+                          <div className="pt-4 mt-6 border-t">
+                            <h4 className="mb-3 text-sm font-medium">Check-in for OK for Launch</h4>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              {Object.keys(okForLunchCheckinData).map((field) => (
+                                <div key={field} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`ok-for-lunch-${field}`}
+                                    checked={okForLunchCheckinData[field]}
+                                    onCheckedChange={(checked) => handleOkForLunchCheckinChange(field, checked)}
+                                  />
+                                  <Label
+                                    htmlFor={`ok-for-lunch-${field}`}
+                                    className="text-sm font-medium leading-none capitalize"
+                                  >
+                                    {field.replace(/_/g, " ")}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Validation For Offer</Label>
+                      <Card className="p-4">
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="validation-for-offer-name">Name</Label>
+                            <Input
+                              id="validation-for-offer-name"
+                              value={validationForOfferData.name}
+                              onChange={(e) => handleValidationForOfferChange("name", e.target.value)}
+                            />
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="validation-for-offer-check"
+                              checked={validationForOfferData.check}
+                              onCheckedChange={(checked) => handleValidationForOfferChange("check", checked)}
+                            />
+                            <Label htmlFor="validation-for-offer-check">Approved</Label>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="validation-for-offer-date">Date</Label>
+                            <Input
+                              id="validation-for-offer-date"
+                              type="date"
+                              value={validationForOfferData.date}
+                              onChange={(e) => handleValidationForOfferChange("date", e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="validation-for-offer-upload">Upload Document</Label>
+                            <Input
+                              id="validation-for-offer-upload"
+                              type="file"
+                              onChange={handleValidationForOfferFileChange}
+                            />
+                          </div>
+
+                          <div className="pt-4 mt-6 border-t">
+                            <h4 className="mb-3 text-sm font-medium">Check-in for Validation For Offer</h4>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              {Object.keys(validationForOfferCheckinData).map((field) => (
+                                <div key={field} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`validation-for-offer-${field}`}
+                                    checked={validationForOfferCheckinData[field]}
+                                    onCheckedChange={(checked) => handleValidationForOfferCheckinChange(field, checked)}
+                                  />
+                                  <Label
+                                    htmlFor={`validation-for-offer-${field}`}
+                                    className="text-sm font-medium leading-none capitalize"
+                                  >
+                                    {field.replace(/_/g, " ")}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Key Dates Tab */}
+              <TabsContent value="dates">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Key Dates</CardTitle>
+                    <CardDescription>Edit the key dates for the mass production record.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="next_review">Next Review Date</Label>
+                        <Input
+                          id="next_review"
+                          name="next_review"
+                          type="date"
+                          value={formData.next_review}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="closure">Closure Date</Label>
+                        <Input
+                          id="closure"
+                          name="closure"
+                          type="date"
+                          value={formData.closure}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-medium">Milestone Dates</h3>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="mlo">MLO</Label>
+                        <Input id="mlo" name="mlo" type="date" value={formData.mlo} onChange={handleInputChange} />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="tko">TKO</Label>
+                        <Input id="tko" name="tko" type="date" value={formData.tko} onChange={handleInputChange} />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="cv">CV</Label>
+                        <Input id="cv" name="cv" type="date" value={formData.cv} onChange={handleInputChange} />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="pt1">PT1</Label>
+                        <Input id="pt1" name="pt1" type="date" value={formData.pt1} onChange={handleInputChange} />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="pt2">PT2</Label>
+                        <Input id="pt2" name="pt2" type="date" value={formData.pt2} onChange={handleInputChange} />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="sop">SOP</Label>
+                        <Input id="sop" name="sop" type="date" value={formData.sop} onChange={handleInputChange} />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="assignedRole">
+                        Assigned Role <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="assignedRole"
+                        name="assignedRole"
+                        value={formData.assignedRole}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="assignedEmail">
+                        Assigned Email <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="assignedEmail"
+                        name="assignedEmail"
+                        type="email"
+                        value={formData.assignedEmail}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Process Stages Tab */}
+              <TabsContent value="stages">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Process Stages</CardTitle>
+                    <CardDescription>Configure all process stages for this mass production record.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue="feasibility" className="w-full">
+                      <TabsList className="grid w-full grid-cols-7">
+                        <TabsTrigger value="feasibility">Feasibility</TabsTrigger>
+                        <TabsTrigger value="kickoff">Kick-Off</TabsTrigger>
+                        <TabsTrigger value="design">Design</TabsTrigger>
+                        <TabsTrigger value="facilities">Facilities</TabsTrigger>
+                        <TabsTrigger value="pptuning">P/P Tuning</TabsTrigger>
+                        <TabsTrigger value="processqualif">Process Qualif</TabsTrigger>
+                        <TabsTrigger value="qualifconfirm">Qualif Confirm</TabsTrigger>
+                      </TabsList>
+
+                      {/* Feasibility Tab */}
+                      <TabsContent value="feasibility">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Feasibility</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <Accordion type="single" collapsible className="w-full">
+                              {feasibilityFields.map((field, index) => (
+                                <AccordionItem key={field} value={`item-${index}`}>
+                                  <AccordionTrigger className="text-lg font-semibold">
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={field}
+                                        checked={feasibilityData[field]?.value || false}
+                                        onCheckedChange={(checked) =>
+                                          handleAccordionCheckboxChange(setFeasibilityData, field, checked)
+                                        }
+                                      />
+                                      <Label htmlFor={field} className="text-left">
+                                        {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                      </Label>
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-description`}>Description</Label>
+                                        <Textarea
+                                          id={`${field}-description`}
+                                          value={feasibilityData[field]?.details?.description || ""}
+                                          onChange={(e) => handleDetailsChange(field, "description", e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-cost`}>Cost</Label>
+                                        <Input
+                                          id={`${field}-cost`}
+                                          type="number"
+                                          value={feasibilityData[field]?.details?.cost || 0}
+                                          onChange={(e) => handleDetailsChange(field, "cost", e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-sales-price`}>Sales Price</Label>
+                                        <Input
+                                          id={`${field}-sales-price`}
+                                          type="number"
+                                          value={feasibilityData[field]?.details?.sales_price || 0}
+                                          onChange={(e) => handleDetailsChange(field, "sales_price", e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                        <Textarea
+                                          id={`${field}-comments`}
+                                          value={feasibilityData[field]?.details?.comments || ""}
+                                          onChange={(e) => handleDetailsChange(field, "comments", e.target.value)}
+                                        />
+                                      </div>
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ))}
+                            </Accordion>
+                            <div className="pt-4 mt-6 border-t">
+                              <h4 className="mb-3 text-lg font-medium">Check-in for Feasibility</h4>
+                              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                {Object.keys(feasibilityCheckinData).map((field) => (
+                                  <div key={field} className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`feasibility-${field}`}
+                                      checked={feasibilityCheckinData[field]}
+                                      onCheckedChange={(checked) => handleFeasibilityCheckinChange(field, checked)}
+                                    />
+                                    <Label
+                                      htmlFor={`feasibility-${field}`}
+                                      className="text-sm font-medium leading-none capitalize"
+                                    >
+                                      {field.replace(/_/g, " ")}
+                                    </Label>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      {/* Kick-Off Tab */}
+                      <TabsContent value="kickoff">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Kick-Off</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <Accordion type="single" collapsible className="w-full">
+                              {kickOffFields.map((field, index) => (
+                                <AccordionItem key={field} value={`item-${index}`}>
+                                  <AccordionTrigger className="text-lg font-semibold">
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={field}
+                                        checked={kickOffData[field]?.value || false}
+                                        onCheckedChange={(checked) =>
+                                          handleAccordionCheckboxChange(setKickOffData, field, checked)
+                                        }
+                                      />
+                                      <Label htmlFor={field} className="text-left">
+                                        {field.replace(/([A-Z])/g, " $1").trim()}
+                                      </Label>
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-responsible`}>Responsible</Label>
+                                        <Input
+                                          id={`${field}-responsible`}
+                                          type="text"
+                                          value={kickOffData[field]?.task?.responsible || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setKickOffData, field, "responsible", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-planned`}>Planned Date</Label>
+                                        <Input
+                                          id={`${field}-planned`}
+                                          type="date"
+                                          value={kickOffData[field]?.task?.planned || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setKickOffData, field, "planned", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
+                                        <Input
+                                          id={`${field}-done`}
+                                          type="date"
+                                          value={kickOffData[field]?.task?.done || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setKickOffData, field, "done", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2 md:col-span-2">
+                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                        <Textarea
+                                          id={`${field}-comments`}
+                                          value={kickOffData[field]?.task?.comments || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setKickOffData, field, "comments", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
+                                        <Input
+                                          id={`${field}-file`}
+                                          type="file"
+                                          onChange={(e) => handleKickOffFileChange(field, e.target.files[0])}
+                                        />
+                                        {kickOffData[field]?.task?.filePath && (
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {typeof kickOffData[field].task.filePath === "string"
+                                              ? kickOffData[field].task.filePath
+                                              : kickOffData[field].task.filePath.name}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                          id={`${field}-check`}
+                                          checked={kickOffData[field]?.task?.check || false}
+                                          onCheckedChange={(checked) =>
+                                            handleTaskChange(setKickOffData, field, "check", checked)
+                                          }
+                                        />
+                                        <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+                                      </div>
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ))}
+                            </Accordion>
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      {/* Design Tab */}
+                      <TabsContent value="design">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Design</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <Accordion type="single" collapsible className="w-full">
+                              {designFields.map((field, index) => (
+                                <AccordionItem key={field} value={`item-${index}`}>
+                                  <AccordionTrigger className="text-lg font-semibold">
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={field}
+                                        checked={designData[field]?.value || false}
+                                        onCheckedChange={(checked) =>
+                                          handleAccordionCheckboxChange(setDesignData, field, checked)
+                                        }
+                                      />
+                                      <Label htmlFor={field} className="text-left">
+                                        {field
+                                          .replace(/_/g, " ")
+                                          .replace(/([A-Z])/g, " $1")
+                                          .trim()}
+                                      </Label>
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-responsible`}>Responsible</Label>
+                                        <Input
+                                          id={`${field}-responsible`}
+                                          type="text"
+                                          value={designData[field]?.task?.responsible || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setDesignData, field, "responsible", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-planned`}>Planned Date</Label>
+                                        <Input
+                                          id={`${field}-planned`}
+                                          type="date"
+                                          value={designData[field]?.task?.planned || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setDesignData, field, "planned", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
+                                        <Input
+                                          id={`${field}-done`}
+                                          type="date"
+                                          value={designData[field]?.task?.done || ""}
+                                          onChange={(e) => handleDesignDateChange(field, "done", e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-2 md:col-span-2">
+                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                        <Textarea
+                                          id={`${field}-comments`}
+                                          value={designData[field]?.task?.comments || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setDesignData, field, "comments", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
+                                        <Input
+                                          id={`${field}-file`}
+                                          type="file"
+                                          onChange={(e) => handleDesignFileChange(field, e.target.files[0])}
+                                        />
+                                        {designData[field]?.task?.filePath && (
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {typeof designData[field].task.filePath === "string"
+                                              ? designData[field].task.filePath
+                                              : designData[field].task.filePath.name}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                          id={`${field}-check`}
+                                          checked={designData[field]?.task?.check || false}
+                                          onCheckedChange={(checked) =>
+                                            handleTaskChange(setDesignData, field, "check", checked)
+                                          }
+                                        />
+                                        <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+                                      </div>
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ))}
+                            </Accordion>
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      {/* Facilities Tab */}
+                      <TabsContent value="facilities">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Facilities</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <Accordion type="single" collapsible className="w-full">
+                              {facilitiesFields.map((field, index) => (
+                                <AccordionItem key={field} value={`item-${index}`}>
+                                  <AccordionTrigger className="text-lg font-semibold">
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={field}
+                                        checked={facilitiesData[field]?.value || false}
+                                        onCheckedChange={(checked) =>
+                                          handleAccordionCheckboxChange(setFacilitiesData, field, checked)
+                                        }
+                                      />
+                                      <Label htmlFor={field} className="text-left">
+                                        {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                      </Label>
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-responsible`}>Responsible</Label>
+                                        <Input
+                                          id={`${field}-responsible`}
+                                          type="text"
+                                          value={facilitiesData[field]?.task?.responsible || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setFacilitiesData, field, "responsible", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-planned`}>Planned Date</Label>
+                                        <Input
+                                          id={`${field}-planned`}
+                                          type="date"
+                                          value={facilitiesData[field]?.task?.planned || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setFacilitiesData, field, "planned", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
+                                        <Input
+                                          id={`${field}-done`}
+                                          type="date"
+                                          value={facilitiesData[field]?.task?.done || ""}
+                                          onChange={(e) => handleFacilitiesDateChange(field, "done", e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-2 md:col-span-2">
+                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                        <Textarea
+                                          id={`${field}-comments`}
+                                          value={facilitiesData[field]?.task?.comments || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setFacilitiesData, field, "comments", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
+                                        <Input
+                                          id={`${field}-file`}
+                                          type="file"
+                                          onChange={(e) => handleFacilitiesFileChange(field, e.target.files[0])}
+                                        />
+                                        {facilitiesData[field]?.task?.filePath && (
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {typeof facilitiesData[field].task.filePath === "string"
+                                              ? facilitiesData[field].task.filePath
+                                              : facilitiesData[field].task.filePath.name}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                          id={`${field}-check`}
+                                          checked={facilitiesData[field]?.task?.check || false}
+                                          onCheckedChange={(checked) =>
+                                            handleTaskChange(setFacilitiesData, field, "check", checked)
+                                          }
+                                        />
+                                        <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+                                      </div>
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ))}
+                            </Accordion>
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      {/* P/P Tuning Tab */}
+                      <TabsContent value="pptuning">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Process/Product Tuning</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <Accordion type="single" collapsible className="w-full">
+                              {ppTuningFields.map((field, index) => (
+                                <AccordionItem key={field} value={`item-${index}`}>
+                                  <AccordionTrigger className="text-lg font-semibold">
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={field}
+                                        checked={ppTuningData[field]?.value || false}
+                                        onCheckedChange={(checked) =>
+                                          handleAccordionCheckboxChange(setPPTuningData, field, checked)
+                                        }
+                                      />
+                                      <Label htmlFor={field} className="text-left">
+                                        {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                      </Label>
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-responsible`}>Responsible</Label>
+                                        <Input
+                                          id={`${field}-responsible`}
+                                          type="text"
+                                          value={ppTuningData[field]?.task?.responsible || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setPPTuningData, field, "responsible", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-planned`}>Planned Date</Label>
+                                        <Input
+                                          id={`${field}-planned`}
+                                          type="date"
+                                          value={ppTuningData[field]?.task?.planned || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setPPTuningData, field, "planned", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
+                                        <Input
+                                          id={`${field}-done`}
+                                          type="date"
+                                          value={ppTuningData[field]?.task?.done || ""}
+                                          onChange={(e) => handlePPTuningDateChange(field, "done", e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-2 md:col-span-2">
+                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                        <Textarea
+                                          id={`${field}-comments`}
+                                          value={ppTuningData[field]?.task?.comments || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setPPTuningData, field, "comments", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
+                                        <Input
+                                          id={`${field}-file`}
+                                          type="file"
+                                          onChange={(e) => handlePPTuningFileChange(field, e.target.files[0])}
+                                        />
+                                        {ppTuningData[field]?.task?.filePath && (
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {typeof ppTuningData[field].task.filePath === "string"
+                                              ? ppTuningData[field].task.filePath
+                                              : ppTuningData[field].task.filePath.name}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                          id={`${field}-check`}
+                                          checked={ppTuningData[field]?.task?.check || false}
+                                          onCheckedChange={(checked) =>
+                                            handleTaskChange(setPPTuningData, field, "check", checked)
+                                          }
+                                        />
+                                        <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+                                      </div>
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ))}
+                            </Accordion>
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      {/* Process Qualification Tab */}
+                      <TabsContent value="processqualif">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Process Qualification</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <Accordion type="single" collapsible className="w-full">
+                              {processQualifFields.map((field, index) => (
+                                <AccordionItem key={field} value={`item-${index}`}>
+                                  <AccordionTrigger className="text-lg font-semibold">
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={field}
+                                        checked={processQualifData[field]?.value || false}
+                                        onCheckedChange={(checked) =>
+                                          handleAccordionCheckboxChange(setProcessQualifData, field, checked)
+                                        }
+                                      />
+                                      <Label htmlFor={field} className="text-left">
+                                        {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                      </Label>
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-responsible`}>Responsible</Label>
+                                        <Input
+                                          id={`${field}-responsible`}
+                                          type="text"
+                                          value={processQualifData[field]?.task?.responsible || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setProcessQualifData, field, "responsible", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-planned`}>Planned Date</Label>
+                                        <Input
+                                          id={`${field}-planned`}
+                                          type="date"
+                                          value={processQualifData[field]?.task?.planned || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setProcessQualifData, field, "planned", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
+                                        <Input
+                                          id={`${field}-done`}
+                                          type="date"
+                                          value={processQualifData[field]?.task?.done || ""}
+                                          onChange={(e) => handleProcessQualifDateChange(field, "done", e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-2 md:col-span-2">
+                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                        <Textarea
+                                          id={`${field}-comments`}
+                                          value={processQualifData[field]?.task?.comments || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(setProcessQualifData, field, "comments", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
+                                        <Input
+                                          id={`${field}-file`}
+                                          type="file"
+                                          onChange={(e) => handleProcessQualifFileChange(field, e.target.files[0])}
+                                        />
+                                        {processQualifData[field]?.task?.filePath && (
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {typeof processQualifData[field].task.filePath === "string"
+                                              ? processQualifData[field].task.filePath
+                                              : processQualifData[field].task.filePath.name}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                          id={`${field}-check`}
+                                          checked={processQualifData[field]?.task?.check || false}
+                                          onCheckedChange={(checked) =>
+                                            handleTaskChange(setProcessQualifData, field, "check", checked)
+                                          }
+                                        />
+                                        <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+                                      </div>
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ))}
+                            </Accordion>
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      {/* Qualification Confirmation Tab */}
+                      <TabsContent value="qualifconfirm">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Qualification Confirmation</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <Accordion type="single" collapsible className="w-full">
+                              {qualificationConfirmationFields.map((field, index) => (
+                                <AccordionItem key={field} value={`item-${index}`}>
+                                  <AccordionTrigger className="text-lg font-semibold">
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={field}
+                                        checked={qualificationConfirmationData[field]?.value || false}
+                                        onCheckedChange={(checked) =>
+                                          handleAccordionCheckboxChange(
+                                            setQualificationConfirmationData,
+                                            field,
+                                            checked,
+                                          )
+                                        }
+                                      />
+                                      <Label htmlFor={field} className="text-left">
+                                        {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                      </Label>
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-responsible`}>Responsible</Label>
+                                        <Input
+                                          id={`${field}-responsible`}
+                                          type="text"
+                                          value={qualificationConfirmationData[field]?.task?.responsible || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(
+                                              setQualificationConfirmationData,
+                                              field,
+                                              "responsible",
+                                              e.target.value,
+                                            )
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-planned`}>Planned Date</Label>
+                                        <Input
+                                          id={`${field}-planned`}
+                                          type="date"
+                                          value={qualificationConfirmationData[field]?.task?.planned || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(
+                                              setQualificationConfirmationData,
+                                              field,
+                                              "planned",
+                                              e.target.value,
+                                            )
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
+                                        <Input
+                                          id={`${field}-done`}
+                                          type="date"
+                                          value={qualificationConfirmationData[field]?.task?.done || ""}
+                                          onChange={(e) =>
+                                            handleQualificationConfirmationDateChange(field, "done", e.target.value)
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2 md:col-span-2">
+                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
+                                        <Textarea
+                                          id={`${field}-comments`}
+                                          value={qualificationConfirmationData[field]?.task?.comments || ""}
+                                          onChange={(e) =>
+                                            handleTaskChange(
+                                              setQualificationConfirmationData,
+                                              field,
+                                              "comments",
+                                              e.target.value,
+                                            )
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
+                                        <Input
+                                          id={`${field}-file`}
+                                          type="file"
+                                          onChange={(e) =>
+                                            handleQualificationConfirmationFileChange(field, e.target.files[0])
+                                          }
+                                        />
+                                        {qualificationConfirmationData[field]?.task?.filePath && (
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {typeof qualificationConfirmationData[field].task.filePath === "string"
+                                              ? qualificationConfirmationData[field].task.filePath
+                                              : qualificationConfirmationData[field].task.filePath.name}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                          id={`${field}-check`}
+                                          checked={qualificationConfirmationData[field]?.task?.check || false}
+                                          onCheckedChange={(checked) =>
+                                            handleTaskChange(setQualificationConfirmationData, field, "check", checked)
+                                          }
+                                        />
+                                        <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+                                      </div>
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ))}
+                            </Accordion>
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                  <CardFooter>
+                    <Button type="submit" disabled={submitting} className="w-full">
+                      {submitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        "Update Mass Production Record"
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </form>
         </div>
       </div>
     </MainLayout>
-    </div>
   )
 }
+
+// Field definitions
+const feasibilityFields = [
+  "product",
+  "raw_material_type",
+  "raw_material_qty",
+  "packaging",
+  "purchased_part",
+  "injection_cycle_time",
+  "moulding_labor",
+  "press_size",
+  "assembly_finishing_paint_cycle_time",
+  "assembly_finishing_paint_labor",
+  "ppm_level",
+  "pre_study",
+  "project_management",
+  "study_design",
+  "cae_design",
+  "monitoring",
+  "measurement_metrology",
+  "validation",
+  "molds",
+  "special_machines",
+  "checking_fixture",
+  "equipment_painting_prehension",
+  "run_validation",
+  "stock_production_coverage",
+  "is_presentation",
+  "documentation_update",
+]
+
+const kickOffFields = [
+  "timeScheduleApproved",
+  "modificationLaunchOrder",
+  "projectRiskAssessment",
+  "standardsImpact",
+  "validationOfCosts",
+]
+
+const designFields = [
+  "Validation_of_the_validation",
+  "Modification_of_bought_product",
+  "Modification_of_tolerance",
+  "Modification_of_checking_fixtures",
+  "Modification_of_Product_FMEA",
+  "Modification_of_part_list_form",
+  "Modification_of_control_plan",
+  "Modification_of_Process_FMEA",
+  "Modification_of_production_facilities",
+  "Modification_of_tools",
+  "Modification_of_packaging",
+  "Modification_of_information_system",
+  "Updating_of_drawings",
+]
+
+const facilitiesFields = [
+  "reception_of_modified_means",
+  "reception_of_modified_tools",
+  "reception_of_modified_fixtures",
+  "reception_of_modified_parts",
+  "control_plan",
+]
+
+const ppTuningFields = [
+  "product_process_tuning",
+  "functional_validation_test",
+  "dimensional_validation_test",
+  "aspect_validation_test",
+  "supplier_order_modification",
+  "acceptation_of_supplier",
+  "capability",
+  "manufacturing_of_control_parts",
+  "product_training",
+  "process_training",
+  "purchase_file",
+  "means_technical_file_data",
+  "means_technical_file_manufacturing",
+  "means_technical_file_maintenance",
+  "tooling_file",
+  "product_file",
+  "internal_process",
+]
+
+const processQualifFields = [
+  "updating_of_capms",
+  "modification_of_customer_logistics",
+  "qualification_of_supplier",
+  "presentation_of_initial_samples",
+  "filing_of_initial_samples",
+  "information_on_modification_implementation",
+  "full_production_run",
+  "request_for_dispensation",
+  "process_qualification",
+  "initial_sample_acceptance",
+]
+
+const qualificationConfirmationFields = [
+  "using_up_old_stock",
+  "using_up_safety_stocks",
+  "updating_version_number_mould",
+  "updating_version_number_product_label",
+  "management_of_manufacturing_programmes",
+  "specific_spotting_of_packaging_with_label",
+  "management_of_galia_identification_labels",
+  "preservation_measure",
+  "product_traceability_label_modification",
+  "information_to_production",
+  "information_to_customer_logistics",
+  "information_to_customer_quality",
+  "updating_customer_programme_data_sheet",
+]
+
+export default EditMassProductionForm
 
