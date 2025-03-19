@@ -11,7 +11,7 @@ import { createProcessStatusIndustrials } from "../../apis/readiness/processStat
 import { createProductProcesses } from "../../apis/readiness/productProcessesApi"
 import { createRunAtRateProduction } from "../../apis/readiness/runAtRateProductionApi"
 import { createSafety } from "../../apis/readiness/safetyApi"
-import { createSuppliers } from "../../apis/readiness/suppliersApi"
+import { createSupp } from "../../apis/readiness/suppApi"
 import { createToolingStatus } from "../../apis/readiness/toolingStatusApi"
 import { createTraining } from "../../apis/readiness/trainingApi"
 import { createReadiness } from "../../apis/readiness/readinessApi"
@@ -73,7 +73,7 @@ const ReadinessForm = () => {
     createInitialState(fieldDefinitions.RunAtRateProduction),
   )
   const [safetyData, setSafetyData] = useState(createInitialState(fieldDefinitions.Safety))
-  const [suppliersData, setSuppliersData] = useState(createInitialState(fieldDefinitions.Suppliers))
+  const [suppData, setSuppData] = useState(createInitialState(fieldDefinitions.Supp))
   const [toolingStatusData, setToolingStatusData] = useState(createInitialState(fieldDefinitions.ToolingStatus))
   const [trainingData, setTrainingData] = useState(createInitialState(fieldDefinitions.Training))
 
@@ -103,8 +103,8 @@ const ReadinessForm = () => {
     try {
       setProgress((prev) => prev + 5) // Increment progress for each API call
 
-      // For suppliers specifically, we need to handle the data differently
-      if (entityName === "Suppliers") {
+      // For supp specifically, we need to handle the data differently
+      if (entityName === "Supp") {
         // Create a formatted version of the data that matches what the server expects
         const formattedData = Object.keys(data).reduce((acc, field) => {
           acc[field] = {
@@ -119,6 +119,7 @@ const ReadinessForm = () => {
               who: data[field]?.validation?.who || "",
               when: data[field]?.validation?.when || "",
               validation_check: data[field]?.validation?.validation_check || false,
+              comment: data[field]?.validation?.comment || "",
             },
           }
           return acc
@@ -157,9 +158,9 @@ const ReadinessForm = () => {
     }
   }
 
-  // Helper function to format data for the Suppliers API
+  // Helper function to format data for the Supp API
   const formatDataForApi = (data, entityName) => {
-    if (entityName === "Suppliers") {
+    if (entityName === "Supp") {
       return Object.keys(data).reduce((acc, field) => {
         acc[field] = {
           value: data[field]?.value || false,
@@ -173,6 +174,7 @@ const ReadinessForm = () => {
             who: data[field]?.validation?.who || "",
             when: data[field]?.validation?.when || "",
             validation_check: data[field]?.validation?.validation_check || false,
+            comment: data[field]?.validation?.comment || "",
           },
         }
         return acc
@@ -224,11 +226,7 @@ const ReadinessForm = () => {
           "Run At Rate Production",
         )
         readinessData.Safety = await safeApiCall(createSafety, safetyData, "Safety")
-        readinessData.Suppliers = await safeApiCall(
-          createSuppliers,
-          formatDataForApi(suppliersData, "Suppliers"),
-          "Suppliers",
-        )
+        readinessData.Supp = await safeApiCall(createSupp, formatDataForApi(suppData, "Supp"), "Supp")
         readinessData.ToolingStatus = await safeApiCall(createToolingStatus, toolingStatusData, "Tooling Status")
         readinessData.Training = await safeApiCall(createTraining, trainingData, "Training")
       } catch (error) {
@@ -369,8 +367,8 @@ const ReadinessForm = () => {
               <TabsTrigger value="safety" className="flex-grow">
                 Safety
               </TabsTrigger>
-              <TabsTrigger value="suppliers" className="flex-grow">
-                Suppliers
+              <TabsTrigger value="supp" className="flex-grow">
+                Supp
               </TabsTrigger>
               <TabsTrigger value="tooling" className="flex-grow">
                 Tooling Status
@@ -592,18 +590,18 @@ const ReadinessForm = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="suppliers">
+              <TabsContent value="supp">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Suppliers</CardTitle>
-                    <CardDescription>Manage supplier requirements for this readiness entry.</CardDescription>
+                    <CardTitle>Supp</CardTitle>
+                    <CardDescription>Manage supp requirements for this readiness entry.</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ValidationSection
-                      title="suppliers"
-                      fields={fieldDefinitions.Suppliers}
-                      data={suppliersData}
-                      setData={setSuppliersData}
+                      title="supp"
+                      fields={fieldDefinitions.Supp}
+                      data={suppData}
+                      setData={setSuppData}
                     />
                   </CardContent>
                 </Card>

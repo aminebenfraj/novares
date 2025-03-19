@@ -33,7 +33,7 @@ const processStatusIndustrialsRoutes = require("./routes/readinessRoutes/process
 const productProcessRoutes = require("./routes/readinessRoutes/productProcessRoutes");
 const runAtRateProductionRoutes = require("./routes/readinessRoutes/runAtRateProductionRoutes");
 const safetyRoutes = require("./routes/readinessRoutes/safetyRoutes");
-const suppliersRoutes = require("./routes/readinessRoutes/suppliersRoutes");
+const suppRoutes = require("./routes/readinessRoutes/suppRoutes");
 const toolingStatusRoutes = require("./routes/readinessRoutes/toolingStatusRoutes");
 const trainingRoutes = require("./routes/readinessRoutes/trainingRoutes");
 const validationRoutes = require("./routes/readinessRoutes/validationRoutes");
@@ -88,7 +88,7 @@ app.use("/api/ProcessStatusIndustrials", processStatusIndustrialsRoutes);
 app.use("/api/ProductProcesses", productProcessRoutes);
 app.use("/api/RunAtRateProduction", runAtRateProductionRoutes);
 app.use("/api/Safety", safetyRoutes);
-app.use("/api/Supplier", suppliersRoutes);
+app.use("/api/Supp", suppRoutes);
 app.use("/api/ToolingStatus", toolingStatusRoutes);
 app.use("/api/Training", trainingRoutes);
 app.use("/api/Validation", validationRoutes);

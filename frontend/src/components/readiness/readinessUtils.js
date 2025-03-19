@@ -71,7 +71,7 @@ export const createInitialState = (fields) => {
   
     Safety: ["industrialMeansCompliance", "teamTraining", "safetyOfficerInformed"],
   
-    Suppliers: [
+    Supp: [
       "componentsRawMaterialAvailable",
       "packagingDefined",
       "partsAccepted",
@@ -133,5 +133,4 @@ export const createInitialState = (fields) => {
   
     return Math.round((completedFields / totalFields) * 100)
   }
-  
   
