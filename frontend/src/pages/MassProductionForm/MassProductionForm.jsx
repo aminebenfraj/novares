@@ -1,19 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import { createKickOff } from "../../apis/kickOffApi"
-import { createDesign } from "../../apis/designApi"
-import { createfacilities } from "../../apis/facilitiesApi"
-import { createFeasibility } from "../../apis/feasabilityApi" // Note: API file name remains the same for backward compatibility
-import { createQualificationProcess } from "../../apis/process_qualifApi"
-import { createQualificationConfirmation } from "../../apis/qualificationconfirmationapi"
+import { useParams, useNavigate } from "react-router-dom"
+import { getMassProductionById, updateMassProduction } from "../../apis/massProductionApi"
 import { getAllCustomers } from "../../apis/customerApi"
 import { getAllpd } from "../../apis/ProductDesignation-api"
-import { createMassProduction } from "../../apis/massProductionApi"
-import { createP_P_Tuning } from "../../apis/p-p-tuning-api"
-import { createOkForLunch } from "../../apis/okForLunch"
-import { createValidationForOffer } from "../../apis/validationForOfferApi"
+import { getP_P_TuningById, updateP_P_Tuning } from "../../apis/p-p-tuning-api"
+import { getDesignById, updateDesign } from "../../apis/designApi"
+import { getFacilitiesById, updateFacilities } from "../../apis/facilitiesApi"
+import { getFeasibilityById, updateFeasibility } from "../../apis/feasabilityApi"
+import { getKickOffById, updateKickOff } from "../../apis/kickOffApi"
+import { getOkForLunchById, updateOkForLunch } from "../../apis/okForLunch"
+import { getProcessQualificationById, updateProcessQualification } from "../../apis/process_qualifApi"
+import {
+  getQualificationConfirmationById,
+  updateQualificationConfirmation,
+} from "../../apis/qualificationConfirmationApi"
+import { getValidationForOfferById, updateValidationForOffer } from "../../apis/validationForOfferApi"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -27,10 +30,12 @@ import { useToast } from "@/hooks/use-toast"
 import { Loader2, ArrowLeft } from "lucide-react"
 import MainLayout from "@/components/MainLayout"
 
-const MassPdCreate = () => {
+const EditMassProductionForm = () => {
+  const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [customers, setCustomers] = useState([])
   const [productDesignations, setProductDesignations] = useState([])
   const [selectedProductDesignations, setSelectedProductDesignations] = useState([])
@@ -216,52 +221,268 @@ const MassPdCreate = () => {
     economic_financial_leader: false,
   })
 
-  // Fetch customers and product designations on component mount
+  // Helper function to extract ID from object or string
+  const extractId = (idOrObject) => {
+    if (!idOrObject) return null
+    if (typeof idOrObject === "string") return idOrObject
+    if (typeof idOrObject === "object" && idOrObject._id) return idOrObject._id
+    return null
+  }
+
+  // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [customersData, productDesignationsData] = await Promise.all([getAllCustomers(), getAllpd()])
-
-        // Validate customers data
-        if (Array.isArray(customersData)) {
-          setCustomers(customersData)
-        } else {
-          console.error("Invalid customers data format:", customersData)
-          setCustomers([])
-        }
-
-        // Validate product designations data
-        if (Array.isArray(productDesignationsData)) {
-          // Filter out any invalid product designations
-          const validProductDesignations = productDesignationsData.filter(
-            (pd) => pd && pd._id && typeof pd._id === "string" && pd.part_name,
-          )
-
-          if (validProductDesignations.length !== productDesignationsData.length) {
-            console.warn(
-              `Filtered out ${productDesignationsData.length - validProductDesignations.length} invalid product designations`,
-            )
-          }
-
-          setProductDesignations(validProductDesignations)
-        } else {
-          console.error("Invalid product designations data format:", productDesignationsData)
-          setProductDesignations([])
-        }
+        setLoading(true)
+        await Promise.all([fetchMassProduction(), fetchCustomers(), fetchProductDesignations()])
       } catch (error) {
-        console.error("Error fetching data:", error)
+        console.error("Error loading data:", error)
         toast({
           title: "Error",
-          description: "Failed to load initial data. Please refresh the page.",
+          description: "Failed to load data. Please refresh the page.",
           variant: "destructive",
         })
-        setCustomers([])
-        setProductDesignations([])
+      } finally {
+        setLoading(false)
       }
     }
 
     fetchData()
-  }, [toast])
+  }, [id, toast])
+
+  const fetchMassProduction = async () => {
+    try {
+      const data = await getMassProductionById(id)
+
+      // Set main form data
+      setFormData({
+        ...data,
+        product_designation: data.product_designation ? data.product_designation.map((pd) => pd._id || pd) : [],
+      })
+
+      // Set selected product designations
+      setSelectedProductDesignations(data.product_designation ? data.product_designation.map((pd) => pd._id || pd) : [])
+
+      // Fetch and set related data if available
+      // Check for both spellings since the API might use either one
+      if (data.feasibility || data.feasability) {
+        try {
+          // Try both property names
+          const feasibilityId = extractId(data.feasibility || data.feasability)
+          if (feasibilityId) {
+            console.log("Fetching feasibility with ID:", feasibilityId)
+            const response = await getFeasibilityById(feasibilityId)
+
+            // Debug the response structure
+            console.log("Feasibility API response:", response)
+
+            // Handle different response structures
+            let feasibilityData = null
+            if (response && response.data) {
+              if (response.data.data) {
+                feasibilityData = response.data.data
+              } else {
+                feasibilityData = response.data
+              }
+            }
+
+            if (feasibilityData) {
+              console.log("Extracted feasibility data:", feasibilityData)
+              setFeasibilityData(mapDataToFormState(feasibilityData, feasibilityFields))
+
+              // Check for checkin data in different possible locations
+              if (feasibilityData.checkin) {
+                setFeasibilityCheckinData(feasibilityData.checkin)
+              }
+            } else {
+              console.warn("Could not extract feasibility data from response")
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch feasibility data:", error)
+        }
+      }
+
+      if (data.kick_off) {
+        try {
+          const kickOffId = extractId(data.kick_off)
+          if (kickOffId) {
+            const kickOffResponse = await getKickOffById(kickOffId)
+            if (kickOffResponse) {
+              setKickOffData(mapDataToFormState(kickOffResponse, kickOffFields))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch kick-off data:", error)
+        }
+      }
+
+      if (data.design) {
+        try {
+          const designId = extractId(data.design)
+          if (designId) {
+            const designResponse = await getDesignById(designId)
+            if (designResponse) {
+              setDesignData(mapDataToFormState(designResponse, designFields))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch design data:", error)
+        }
+      }
+
+      if (data.facilities) {
+        try {
+          const facilitiesId = extractId(data.facilities)
+          if (facilitiesId) {
+            const facilitiesResponse = await getFacilitiesById(facilitiesId)
+            if (facilitiesResponse) {
+              setFacilitiesData(mapDataToFormState(facilitiesResponse, facilitiesFields))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch facilities data:", error)
+        }
+      }
+
+      if (data.p_p_tuning) {
+        try {
+          const ppTuningId = extractId(data.p_p_tuning)
+          if (ppTuningId) {
+            const ppTuningResponse = await getP_P_TuningById(ppTuningId)
+            if (ppTuningResponse) {
+              setPPTuningData(mapDataToFormState(ppTuningResponse, ppTuningFields))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch P/P Tuning data:", error)
+        }
+      }
+
+      if (data.process_qualif) {
+        try {
+          const processQualifId = extractId(data.process_qualif)
+          if (processQualifId) {
+            const processQualifResponse = await getProcessQualificationById(processQualifId)
+            if (processQualifResponse) {
+              setProcessQualifData(mapDataToFormState(processQualifResponse, processQualifFields))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch process qualification data:", error)
+        }
+      }
+
+      if (data.qualification_confirmation) {
+        try {
+          const qualificationConfirmationId = extractId(data.qualification_confirmation)
+          if (qualificationConfirmationId) {
+            const qualificationConfirmationResponse =
+              await getQualificationConfirmationById(qualificationConfirmationId)
+            if (qualificationConfirmationResponse) {
+              setQualificationConfirmationData(
+                mapDataToFormState(qualificationConfirmationResponse, qualificationConfirmationFields),
+              )
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch qualification confirmation data:", error)
+        }
+      }
+
+      if (data.ok_for_lunch) {
+        try {
+          const okForLunchId = extractId(data.ok_for_lunch)
+          if (okForLunchId) {
+            const okForLunchResponse = await getOkForLunchById(okForLunchId)
+            if (okForLunchResponse) {
+              setOkForLunchData({
+                check: okForLunchResponse.check || false,
+                date: okForLunchResponse.date || new Date().toISOString().split("T")[0],
+                upload: null,
+              })
+
+              if (okForLunchResponse.checkin) {
+                setOkForLunchCheckinData(okForLunchResponse.checkin)
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch ok for lunch data:", error)
+        }
+      }
+
+      if (data.validation_for_offer) {
+        try {
+          const validationForOfferId = extractId(data.validation_for_offer)
+          if (validationForOfferId) {
+            const validationForOfferResponse = await getValidationForOfferById(validationForOfferId)
+            if (validationForOfferResponse) {
+              setValidationForOfferData({
+                name: validationForOfferResponse.name || "",
+                check: validationForOfferResponse.check || false,
+                date: validationForOfferResponse.date || new Date().toISOString().split("T")[0],
+                upload: null,
+              })
+
+              if (validationForOfferResponse.checkin) {
+                setValidationForOfferCheckinData(validationForOfferResponse.checkin)
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch validation for offer data:", error)
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch mass production:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load mass production data. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const mapDataToFormState = (data, fields) => {
+    if (!data) return {}
+
+    console.log("Mapping data to form state:", data)
+    console.log("Fields:", fields)
+
+    const result = {}
+
+    fields.forEach((field) => {
+      if (data[field]) {
+        result[field] = data[field]
+      } else {
+        result[field] = {
+          value: false,
+          task: { check: false, responsible: "", planned: "", done: "", comments: "", filePath: null },
+        }
+      }
+    })
+
+    return result
+  }
+
+  const fetchCustomers = async () => {
+    try {
+      const data = await getAllCustomers()
+      setCustomers(data || [])
+    } catch (error) {
+      console.error("Failed to fetch customers:", error)
+    }
+  }
+
+  const fetchProductDesignations = async () => {
+    try {
+      const data = await getAllpd()
+      setProductDesignations(data || [])
+    } catch (error) {
+      console.error("Failed to fetch product designations:", error)
+    }
+  }
 
   // Handle input changes for main form
   const handleInputChange = (e) => {
@@ -337,10 +558,8 @@ const MassPdCreate = () => {
 
   const handleValidationForOfferChange = (field, value) => {
     setValidationForOfferData((prev) => ({ ...prev, [field]: value }))
-
-    // Log the updated state for debugging
-    console.log(`Updated validation for offer ${field}:`, value)
   }
+
   // Handle file upload for validation for offer
   const handleValidationForOfferFileChange = (e) => {
     setValidationForOfferData((prev) => ({ ...prev, upload: e.target.files[0] }))
@@ -350,8 +569,6 @@ const MassPdCreate = () => {
   const handleValidationForOfferCheckinChange = (field, checked) => {
     setValidationForOfferCheckinData((prev) => {
       const updatedData = { ...prev, [field]: checked }
-      console.log(`Updated ValidationForOffer checkin ${field}:`, checked)
-      console.log("Updated ValidationForOffer checkin data:", updatedData)
       return updatedData
     })
   }
@@ -498,10 +715,21 @@ const MassPdCreate = () => {
     }))
   }
 
+  // Helper function to process file paths for update
+  const processFilePathsForUpdate = (data) => {
+    const processed = { ...data }
+    Object.keys(processed).forEach((field) => {
+      if (processed[field]?.task?.filePath instanceof File) {
+        processed[field].task.filePath = processed[field].task.filePath.name
+      }
+    })
+    return processed
+  }
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
+    setSubmitting(true)
 
     try {
       // Validate product designations before submission
@@ -511,22 +739,7 @@ const MassPdCreate = () => {
           description: "Please select at least one product designation.",
           variant: "destructive",
         })
-        setLoading(false)
-        return
-      }
-
-      // Verify that all selected product designations exist in the productDesignations array
-      const validProductDesignationIds = productDesignations.map((pd) => pd._id)
-      const invalidSelections = selectedProductDesignations.filter((id) => !validProductDesignationIds.includes(id))
-
-      if (invalidSelections.length > 0) {
-        console.error("Invalid product designations detected:", invalidSelections)
-        toast({
-          title: "Error",
-          description: `${invalidSelections.length} invalid product designation(s) detected. Please refresh and try again.`,
-          variant: "destructive",
-        })
-        setLoading(false)
+        setSubmitting(false)
         return
       }
 
@@ -536,200 +749,209 @@ const MassPdCreate = () => {
         product_designation: selectedProductDesignations,
       }
 
-      // Create feasibility record with embedded checkin data
-      const feasibilityResponse = await createFeasibility({
-        ...feasibilityData,
-        checkin: feasibilityCheckinData, // Pass the checkin data directly
-      })
+      // Update related records if they exist
+      const updatedRelatedData = {}
 
-      console.log("✅ Feasibility created successfully:", feasibilityResponse)
-
-      // Extract the feasibility ID correctly from the nested response structure
-      let feasibilityId = null
-
-      // Check the nested response structure based on the console output
-      if (feasibilityResponse && feasibilityResponse.data) {
-        if (feasibilityResponse.data.data && feasibilityResponse.data.data.feasibility) {
-          // Extract from the nested structure where feasibility is in data.data.feasibility
-          if (feasibilityResponse.data.data.feasibility._id) {
-            feasibilityId = feasibilityResponse.data.data.feasibility._id
-          } else if (feasibilityResponse.data.data.feasibility.id) {
-            feasibilityId = feasibilityResponse.data.data.feasibility.id
+      // Update feasibility if it exists
+      if (formData.feasibility || formData.feasability) {
+        try {
+          const feasibilityId = extractId(formData.feasibility || formData.feasability)
+          if (feasibilityId) {
+            const processedFeasibilityData = {
+              ...feasibilityData,
+              checkin: feasibilityCheckinData,
+            }
+            const feasibilityResponse = await updateFeasibility(feasibilityId, processedFeasibilityData)
+            if (
+              feasibilityResponse &&
+              (feasibilityResponse._id || (feasibilityResponse.data && feasibilityResponse.data._id))
+            ) {
+              // Use the correct property name that the server expects
+              updatedRelatedData.feasibility = feasibilityResponse._id || feasibilityResponse.data._id
+            }
           }
-        } else if (feasibilityResponse.data._id) {
-          // Fallback to direct data._id if available
-          feasibilityId = feasibilityResponse.data._id
-        } else if (feasibilityResponse.data.id) {
-          // Fallback to direct data.id if available
-          feasibilityId = feasibilityResponse.data.id
-        } else if (feasibilityResponse.data.feasibility) {
-          // Check if feasibility is directly in data
-          if (feasibilityResponse.data.feasibility._id) {
-            feasibilityId = feasibilityResponse.data.feasibility._id
-          } else if (feasibilityResponse.data.feasibility.id) {
-            feasibilityId = feasibilityResponse.data.feasibility.id
+        } catch (error) {
+          console.error("Failed to update feasibility:", error)
+        }
+      }
+
+      // Update kick_off if it exists
+      if (formData.kick_off) {
+        try {
+          const kickOffId = extractId(formData.kick_off)
+          if (kickOffId) {
+            const processedKickOffData = processFilePathsForUpdate(kickOffData)
+            const kickOffResponse = await updateKickOff(kickOffId, processedKickOffData)
+            if (kickOffResponse && kickOffResponse._id) {
+              updatedRelatedData.kick_off = kickOffResponse._id
+            }
           }
+        } catch (error) {
+          console.error("Failed to update kick-off:", error)
         }
       }
 
-      console.log("✅ Extracted feasibility ID:", feasibilityId)
-
-      // Add additional debugging to see the exact structure
-      if (!feasibilityId) {
-        console.error(
-          "Failed to extract feasibility ID from response. Response structure:",
-          JSON.stringify(feasibilityResponse.data, null, 2),
-        )
-
-        // Try one more approach - look for any _id in the response that might be the feasibility ID
-        if (feasibilityResponse.data && feasibilityResponse.data.data && feasibilityResponse.data.data.feasibility) {
-          console.log("Attempting to extract ID from feasibility object:", feasibilityResponse.data.data.feasibility)
-          feasibilityId =
-            feasibilityResponse.data.data.feasibility._id ||
-            feasibilityResponse.data.data.feasibility.id ||
-            feasibilityResponse.data.data.feasibility
-          console.log("Final attempt at ID extraction:", feasibilityId)
-        }
-
-        if (!feasibilityId) {
-          toast({
-            title: "Error",
-            description: "Failed to extract feasibility ID. Please check the console for details.",
-            variant: "destructive",
-          })
-          setLoading(false)
-          return
+      // Update design if it exists
+      if (formData.design) {
+        try {
+          const designId = extractId(formData.design)
+          if (designId) {
+            const processedDesignData = processFilePathsForUpdate(designData)
+            const designResponse = await updateDesign(designId, processedDesignData)
+            if (designResponse && designResponse._id) {
+              updatedRelatedData.design = designResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update design:", error)
         }
       }
 
-      // Process kickOffData to handle file paths
-      const processedKickOffData = { ...kickOffData }
-      Object.keys(processedKickOffData).forEach((field) => {
-        if (processedKickOffData[field].task.filePath instanceof File) {
-          processedKickOffData[field].task.filePath = processedKickOffData[field].task.filePath.name
+      // Update facilities if it exists
+      if (formData.facilities) {
+        try {
+          const facilitiesId = extractId(formData.facilities)
+          if (facilitiesId) {
+            const processedFacilitiesData = processFilePathsForUpdate(facilitiesData)
+            const facilitiesResponse = await updateFacilities(facilitiesId, processedFacilitiesData)
+            if (facilitiesResponse && facilitiesResponse._id) {
+              updatedRelatedData.facilities = facilitiesResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update facilities:", error)
         }
-      })
-
-      // Create kick-off record
-      const kickOffResponse = await createKickOff(processedKickOffData)
-
-      // Process designData to handle file paths
-      const processedDesignData = { ...designData }
-      Object.keys(processedDesignData).forEach((field) => {
-        if (processedDesignData[field].task.filePath instanceof File) {
-          processedDesignData[field].task.filePath = processedDesignData[field].task.filePath.name
-        }
-      })
-
-      // Create design record
-      const designResponse = await createDesign(processedDesignData)
-
-      // Process facilitiesData to handle file paths
-      const processedFacilitiesData = { ...facilitiesData }
-      Object.keys(processedFacilitiesData).forEach((field) => {
-        if (processedFacilitiesData[field].task.filePath instanceof File) {
-          processedFacilitiesData[field].task.filePath = processedFacilitiesData[field].task.filePath.name
-        }
-      })
-
-      // Create facilities record
-      const facilitiesResponse = await createfacilities(processedFacilitiesData)
-
-      // Process ppTuningData to handle file paths
-      const processedPPTuningData = { ...ppTuningData }
-      Object.keys(processedPPTuningData).forEach((field) => {
-        if (processedPPTuningData[field].task.filePath instanceof File) {
-          processedPPTuningData[field].task.filePath = processedPPTuningData[field].task.filePath.name
-        }
-      })
-
-      // Create P_P_Tuning record
-      const ppTuningResponse = await createP_P_Tuning(processedPPTuningData)
-
-      // Process processQualifData to handle file paths
-      const processedProcessQualifData = { ...processQualifData }
-      Object.keys(processedProcessQualifData).forEach((field) => {
-        if (processedProcessQualifData[field].task.filePath instanceof File) {
-          processedProcessQualifData[field].task.filePath = processedProcessQualifData[field].task.filePath.name
-        }
-      })
-
-      // Create process qualification record
-      const processQualifResponse = await createQualificationProcess(processedProcessQualifData)
-
-      // Process qualificationConfirmationData to handle file paths
-      const processedQualificationConfirmationData = { ...qualificationConfirmationData }
-      Object.keys(processedQualificationConfirmationData).forEach((field) => {
-        if (processedQualificationConfirmationData[field].task.filePath instanceof File) {
-          processedQualificationConfirmationData[field].task.filePath =
-            processedQualificationConfirmationData[field].task.filePath.name
-        }
-      })
-
-      // Create qualification confirmation record
-      const qualificationConfirmationResponse = await createQualificationConfirmation(
-        processedQualificationConfirmationData,
-      )
-
-      // Create ok for lunch record with embedded checkin data
-      // Make sure the structure matches exactly how feasibility checkin is working
-      const okForLunchFormData = {
-        ...okForLunchData,
-        checkin: okForLunchCheckinData, // Pass the checkin data directly
       }
 
-      console.log("✅ OkForLunch data to be sent:", JSON.stringify(okForLunchFormData, null, 2))
-      const okForLunchResponse = await createOkForLunch(okForLunchFormData)
-      console.log("✅ OkForLunch created successfully:", okForLunchResponse)
-
-      // Create validation for offer record with embedded checkin data
-      // Make sure the structure matches exactly how feasibility checkin is working
-      const validationForOfferFormData = {
-        ...validationForOfferData,
-        checkin: validationForOfferCheckinData, // Pass the checkin data directly
+      // Update p_p_tuning if it exists
+      if (formData.p_p_tuning) {
+        try {
+          const ppTuningId = extractId(formData.p_p_tuning)
+          if (ppTuningId) {
+            const processedPPTuningData = processFilePathsForUpdate(ppTuningData)
+            const ppTuningResponse = await updateP_P_Tuning(ppTuningId, processedPPTuningData)
+            if (ppTuningResponse && ppTuningResponse._id) {
+              updatedRelatedData.p_p_tuning = ppTuningResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update P/P Tuning:", error)
+        }
       }
 
-      console.log("✅ ValidationForOffer data to be sent:", JSON.stringify(validationForOfferFormData, null, 2))
-      const validationForOfferResponse = await createValidationForOffer(validationForOfferFormData)
-      console.log("✅ ValidationForOffer created successfully:", validationForOfferResponse)
+      // Update process_qualif if it exists
+      if (formData.process_qualif) {
+        try {
+          const processQualifId = extractId(formData.process_qualif)
+          if (processQualifId) {
+            const processedProcessQualifData = processFilePathsForUpdate(processQualifData)
+            const processQualifResponse = await updateProcessQualification(processQualifId, processedProcessQualifData)
+            if (processQualifResponse && processQualifResponse._id) {
+              updatedRelatedData.process_qualif = processQualifResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update process qualification:", error)
+        }
+      }
 
-      // Create the mass production record with references to created records
-      const massProductionData = {
+      // Update qualification_confirmation if it exists
+      if (formData.qualification_confirmation) {
+        try {
+          const qualificationConfirmationId = extractId(formData.qualification_confirmation)
+          if (qualificationConfirmationId) {
+            const processedQualificationConfirmationData = processFilePathsForUpdate(qualificationConfirmationData)
+            const qualificationConfirmationResponse = await updateQualificationConfirmation(
+              qualificationConfirmationId,
+              processedQualificationConfirmationData,
+            )
+            if (qualificationConfirmationResponse && qualificationConfirmationResponse._id) {
+              updatedRelatedData.qualification_confirmation = qualificationConfirmationResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update qualification confirmation:", error)
+        }
+      }
+
+      // Update ok_for_lunch if it exists
+      if (formData.ok_for_lunch) {
+        try {
+          const okForLunchId = extractId(formData.ok_for_lunch)
+          if (okForLunchId) {
+            const processedOkForLunchData = {
+              ...okForLunchData,
+              checkin: okForLunchCheckinData,
+            }
+            if (okForLunchData.upload instanceof File) {
+              processedOkForLunchData.upload = okForLunchData.upload.name
+            }
+            const okForLunchResponse = await updateOkForLunch(okForLunchId, processedOkForLunchData)
+            if (okForLunchResponse && okForLunchResponse._id) {
+              updatedRelatedData.ok_for_lunch = okForLunchResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update ok for lunch:", error)
+        }
+      }
+
+      // Update validation_for_offer if it exists
+      if (formData.validation_for_offer) {
+        try {
+          const validationForOfferId = extractId(formData.validation_for_offer)
+          if (validationForOfferId) {
+            const processedValidationForOfferData = {
+              ...validationForOfferData,
+              checkin: validationForOfferCheckinData,
+            }
+            if (validationForOfferData.upload instanceof File) {
+              processedValidationForOfferData.upload = validationForOfferData.upload.name
+            }
+            const validationForOfferResponse = await updateValidationForOffer(
+              validationForOfferId,
+              processedValidationForOfferData,
+            )
+            if (validationForOfferResponse && validationForOfferResponse._id) {
+              updatedRelatedData.validation_for_offer = validationForOfferResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update validation for offer:", error)
+        }
+      }
+
+      // Update the mass production record with all changes
+      const massProductionResponse = await updateMassProduction(id, {
         ...updatedFormData,
-        feasibility: feasibilityId, // FIXED: Changed from feasability to feasibility
-        kick_off: kickOffResponse.data._id,
-        design: designResponse.data._id,
-        facilities: facilitiesResponse.data._id,
-        p_p_tuning: ppTuningResponse.data._id,
-        process_qualif: processQualifResponse.data._id,
-        qualification_confirmation: qualificationConfirmationResponse.data._id,
-        ok_for_lunch: okForLunchResponse.data._id,
-        validation_for_offer: validationForOfferResponse.data._id,
-      }
-
-      console.log("✅ Mass Production data to be sent:", massProductionData)
-
-      // Create the mass production record
-      const massProductionResponse = await createMassProduction(massProductionData)
-      console.log("✅ Mass Production created successfully:", massProductionResponse)
+        ...updatedRelatedData,
+      })
 
       toast({
         title: "Success",
-        description: "Mass production record created successfully!",
+        description: "Mass production record updated successfully!",
       })
 
       // Redirect to the mass production list page
-      navigate("/masspd/create")
+      navigate("/masspd")
     } catch (error) {
-      console.error("Failed to create mass production record:", error)
+      console.error("Failed to update mass production record:", error)
       toast({
         title: "Error",
-        description: "Failed to create mass production record. Please try again.",
+        description: "Failed to update mass production record. Please try again.",
         variant: "destructive",
       })
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-16 h-16 border-4 rounded-full border-t-primary animate-spin"></div>
+      </div>
+    )
   }
 
   return (
@@ -740,7 +962,7 @@ const MassPdCreate = () => {
             <Button variant="outline" onClick={() => navigate("/masspd")} className="mr-4">
               <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
             </Button>
-            <h1 className="text-3xl font-bold">Create Mass Production</h1>
+            <h1 className="text-3xl font-bold">Edit Mass Production</h1>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -757,7 +979,7 @@ const MassPdCreate = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Basic Information</CardTitle>
-                    <CardDescription>Enter the basic information for the mass production record.</CardDescription>
+                    <CardDescription>Edit the basic information for the mass production record.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -765,7 +987,7 @@ const MassPdCreate = () => {
                         <Label htmlFor="id">
                           ID <span className="text-red-500">*</span>
                         </Label>
-                        <Input id="id" name="id" value={formData.id} onChange={handleInputChange} required />
+                        <Input id="id" name="id" value={formData.id} onChange={handleInputChange} required readOnly />
                       </div>
 
                       <div className="space-y-2">
@@ -925,7 +1147,7 @@ const MassPdCreate = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Project Details</CardTitle>
-                    <CardDescription>Enter the project details for the mass production record.</CardDescription>
+                    <CardDescription>Edit the project details for the mass production record.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -1152,7 +1374,7 @@ const MassPdCreate = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Key Dates</CardTitle>
-                    <CardDescription>Enter the key dates for the mass production record.</CardDescription>
+                    <CardDescription>Edit the key dates for the mass production record.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -1276,7 +1498,7 @@ const MassPdCreate = () => {
                                     <div className="flex items-center space-x-2">
                                       <Checkbox
                                         id={field}
-                                        checked={feasibilityData[field].value}
+                                        checked={feasibilityData[field]?.value || false}
                                         onCheckedChange={(checked) =>
                                           handleAccordionCheckboxChange(setFeasibilityData, field, checked)
                                         }
@@ -1292,7 +1514,7 @@ const MassPdCreate = () => {
                                         <Label htmlFor={`${field}-description`}>Description</Label>
                                         <Textarea
                                           id={`${field}-description`}
-                                          value={feasibilityData[field].details.description}
+                                          value={feasibilityData[field]?.details?.description || ""}
                                           onChange={(e) => handleDetailsChange(field, "description", e.target.value)}
                                         />
                                       </div>
@@ -1301,7 +1523,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-cost`}
                                           type="number"
-                                          value={feasibilityData[field].details.cost}
+                                          value={feasibilityData[field]?.details?.cost || 0}
                                           onChange={(e) => handleDetailsChange(field, "cost", e.target.value)}
                                         />
                                       </div>
@@ -1310,7 +1532,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-sales-price`}
                                           type="number"
-                                          value={feasibilityData[field].details.sales_price}
+                                          value={feasibilityData[field]?.details?.sales_price || 0}
                                           onChange={(e) => handleDetailsChange(field, "sales_price", e.target.value)}
                                         />
                                       </div>
@@ -1318,7 +1540,7 @@ const MassPdCreate = () => {
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
                                         <Textarea
                                           id={`${field}-comments`}
-                                          value={feasibilityData[field].details.comments}
+                                          value={feasibilityData[field]?.details?.comments || ""}
                                           onChange={(e) => handleDetailsChange(field, "comments", e.target.value)}
                                         />
                                       </div>
@@ -1365,7 +1587,7 @@ const MassPdCreate = () => {
                                     <div className="flex items-center space-x-2">
                                       <Checkbox
                                         id={field}
-                                        checked={kickOffData[field].value}
+                                        checked={kickOffData[field]?.value || false}
                                         onCheckedChange={(checked) =>
                                           handleAccordionCheckboxChange(setKickOffData, field, checked)
                                         }
@@ -1382,7 +1604,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-responsible`}
                                           type="text"
-                                          value={kickOffData[field].task.responsible}
+                                          value={kickOffData[field]?.task?.responsible || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setKickOffData, field, "responsible", e.target.value)
                                           }
@@ -1393,7 +1615,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-planned`}
                                           type="date"
-                                          value={kickOffData[field].task.planned}
+                                          value={kickOffData[field]?.task?.planned || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setKickOffData, field, "planned", e.target.value)
                                           }
@@ -1404,7 +1626,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-done`}
                                           type="date"
-                                          value={kickOffData[field].task.done}
+                                          value={kickOffData[field]?.task?.done || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setKickOffData, field, "done", e.target.value)
                                           }
@@ -1414,7 +1636,7 @@ const MassPdCreate = () => {
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
                                         <Textarea
                                           id={`${field}-comments`}
-                                          value={kickOffData[field].task.comments}
+                                          value={kickOffData[field]?.task?.comments || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setKickOffData, field, "comments", e.target.value)
                                           }
@@ -1427,7 +1649,7 @@ const MassPdCreate = () => {
                                           type="file"
                                           onChange={(e) => handleKickOffFileChange(field, e.target.files[0])}
                                         />
-                                        {kickOffData[field].task.filePath && (
+                                        {kickOffData[field]?.task?.filePath && (
                                           <p className="mt-1 text-sm text-muted-foreground">
                                             {typeof kickOffData[field].task.filePath === "string"
                                               ? kickOffData[field].task.filePath
@@ -1438,7 +1660,7 @@ const MassPdCreate = () => {
                                       <div className="flex items-center space-x-2">
                                         <Checkbox
                                           id={`${field}-check`}
-                                          checked={kickOffData[field].task.check}
+                                          checked={kickOffData[field]?.task?.check || false}
                                           onCheckedChange={(checked) =>
                                             handleTaskChange(setKickOffData, field, "check", checked)
                                           }
@@ -1468,7 +1690,7 @@ const MassPdCreate = () => {
                                     <div className="flex items-center space-x-2">
                                       <Checkbox
                                         id={field}
-                                        checked={designData[field].value}
+                                        checked={designData[field]?.value || false}
                                         onCheckedChange={(checked) =>
                                           handleAccordionCheckboxChange(setDesignData, field, checked)
                                         }
@@ -1488,7 +1710,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-responsible`}
                                           type="text"
-                                          value={designData[field].task.responsible}
+                                          value={designData[field]?.task?.responsible || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setDesignData, field, "responsible", e.target.value)
                                           }
@@ -1499,7 +1721,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-planned`}
                                           type="date"
-                                          value={designData[field].task.planned}
+                                          value={designData[field]?.task?.planned || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setDesignData, field, "planned", e.target.value)
                                           }
@@ -1510,7 +1732,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-done`}
                                           type="date"
-                                          value={designData[field].task.done}
+                                          value={designData[field]?.task?.done || ""}
                                           onChange={(e) => handleDesignDateChange(field, "done", e.target.value)}
                                         />
                                       </div>
@@ -1518,7 +1740,7 @@ const MassPdCreate = () => {
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
                                         <Textarea
                                           id={`${field}-comments`}
-                                          value={designData[field].task.comments}
+                                          value={designData[field]?.task?.comments || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setDesignData, field, "comments", e.target.value)
                                           }
@@ -1531,7 +1753,7 @@ const MassPdCreate = () => {
                                           type="file"
                                           onChange={(e) => handleDesignFileChange(field, e.target.files[0])}
                                         />
-                                        {designData[field].task.filePath && (
+                                        {designData[field]?.task?.filePath && (
                                           <p className="mt-1 text-sm text-muted-foreground">
                                             {typeof designData[field].task.filePath === "string"
                                               ? designData[field].task.filePath
@@ -1542,7 +1764,7 @@ const MassPdCreate = () => {
                                       <div className="flex items-center space-x-2">
                                         <Checkbox
                                           id={`${field}-check`}
-                                          checked={designData[field].task.check}
+                                          checked={designData[field]?.task?.check || false}
                                           onCheckedChange={(checked) =>
                                             handleTaskChange(setDesignData, field, "check", checked)
                                           }
@@ -1572,7 +1794,7 @@ const MassPdCreate = () => {
                                     <div className="flex items-center space-x-2">
                                       <Checkbox
                                         id={field}
-                                        checked={facilitiesData[field].value}
+                                        checked={facilitiesData[field]?.value || false}
                                         onCheckedChange={(checked) =>
                                           handleAccordionCheckboxChange(setFacilitiesData, field, checked)
                                         }
@@ -1589,7 +1811,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-responsible`}
                                           type="text"
-                                          value={facilitiesData[field].task.responsible}
+                                          value={facilitiesData[field]?.task?.responsible || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setFacilitiesData, field, "responsible", e.target.value)
                                           }
@@ -1600,7 +1822,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-planned`}
                                           type="date"
-                                          value={facilitiesData[field].task.planned}
+                                          value={facilitiesData[field]?.task?.planned || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setFacilitiesData, field, "planned", e.target.value)
                                           }
@@ -1611,7 +1833,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-done`}
                                           type="date"
-                                          value={facilitiesData[field].task.done}
+                                          value={facilitiesData[field]?.task?.done || ""}
                                           onChange={(e) => handleFacilitiesDateChange(field, "done", e.target.value)}
                                         />
                                       </div>
@@ -1619,7 +1841,7 @@ const MassPdCreate = () => {
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
                                         <Textarea
                                           id={`${field}-comments`}
-                                          value={facilitiesData[field].task.comments}
+                                          value={facilitiesData[field]?.task?.comments || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setFacilitiesData, field, "comments", e.target.value)
                                           }
@@ -1632,7 +1854,7 @@ const MassPdCreate = () => {
                                           type="file"
                                           onChange={(e) => handleFacilitiesFileChange(field, e.target.files[0])}
                                         />
-                                        {facilitiesData[field].task.filePath && (
+                                        {facilitiesData[field]?.task?.filePath && (
                                           <p className="mt-1 text-sm text-muted-foreground">
                                             {typeof facilitiesData[field].task.filePath === "string"
                                               ? facilitiesData[field].task.filePath
@@ -1643,7 +1865,7 @@ const MassPdCreate = () => {
                                       <div className="flex items-center space-x-2">
                                         <Checkbox
                                           id={`${field}-check`}
-                                          checked={facilitiesData[field].task.check}
+                                          checked={facilitiesData[field]?.task?.check || false}
                                           onCheckedChange={(checked) =>
                                             handleTaskChange(setFacilitiesData, field, "check", checked)
                                           }
@@ -1673,7 +1895,7 @@ const MassPdCreate = () => {
                                     <div className="flex items-center space-x-2">
                                       <Checkbox
                                         id={field}
-                                        checked={ppTuningData[field].value}
+                                        checked={ppTuningData[field]?.value || false}
                                         onCheckedChange={(checked) =>
                                           handleAccordionCheckboxChange(setPPTuningData, field, checked)
                                         }
@@ -1690,7 +1912,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-responsible`}
                                           type="text"
-                                          value={ppTuningData[field].task.responsible}
+                                          value={ppTuningData[field]?.task?.responsible || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setPPTuningData, field, "responsible", e.target.value)
                                           }
@@ -1701,7 +1923,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-planned`}
                                           type="date"
-                                          value={ppTuningData[field].task.planned}
+                                          value={ppTuningData[field]?.task?.planned || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setPPTuningData, field, "planned", e.target.value)
                                           }
@@ -1712,7 +1934,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-done`}
                                           type="date"
-                                          value={ppTuningData[field].task.done}
+                                          value={ppTuningData[field]?.task?.done || ""}
                                           onChange={(e) => handlePPTuningDateChange(field, "done", e.target.value)}
                                         />
                                       </div>
@@ -1720,7 +1942,7 @@ const MassPdCreate = () => {
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
                                         <Textarea
                                           id={`${field}-comments`}
-                                          value={ppTuningData[field].task.comments}
+                                          value={ppTuningData[field]?.task?.comments || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setPPTuningData, field, "comments", e.target.value)
                                           }
@@ -1733,7 +1955,7 @@ const MassPdCreate = () => {
                                           type="file"
                                           onChange={(e) => handlePPTuningFileChange(field, e.target.files[0])}
                                         />
-                                        {ppTuningData[field].task.filePath && (
+                                        {ppTuningData[field]?.task?.filePath && (
                                           <p className="mt-1 text-sm text-muted-foreground">
                                             {typeof ppTuningData[field].task.filePath === "string"
                                               ? ppTuningData[field].task.filePath
@@ -1744,7 +1966,7 @@ const MassPdCreate = () => {
                                       <div className="flex items-center space-x-2">
                                         <Checkbox
                                           id={`${field}-check`}
-                                          checked={ppTuningData[field].task.check}
+                                          checked={ppTuningData[field]?.task?.check || false}
                                           onCheckedChange={(checked) =>
                                             handleTaskChange(setPPTuningData, field, "check", checked)
                                           }
@@ -1774,7 +1996,7 @@ const MassPdCreate = () => {
                                     <div className="flex items-center space-x-2">
                                       <Checkbox
                                         id={field}
-                                        checked={processQualifData[field].value}
+                                        checked={processQualifData[field]?.value || false}
                                         onCheckedChange={(checked) =>
                                           handleAccordionCheckboxChange(setProcessQualifData, field, checked)
                                         }
@@ -1791,7 +2013,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-responsible`}
                                           type="text"
-                                          value={processQualifData[field].task.responsible}
+                                          value={processQualifData[field]?.task?.responsible || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setProcessQualifData, field, "responsible", e.target.value)
                                           }
@@ -1802,7 +2024,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-planned`}
                                           type="date"
-                                          value={processQualifData[field].task.planned}
+                                          value={processQualifData[field]?.task?.planned || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setProcessQualifData, field, "planned", e.target.value)
                                           }
@@ -1813,7 +2035,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-done`}
                                           type="date"
-                                          value={processQualifData[field].task.done}
+                                          value={processQualifData[field]?.task?.done || ""}
                                           onChange={(e) => handleProcessQualifDateChange(field, "done", e.target.value)}
                                         />
                                       </div>
@@ -1821,7 +2043,7 @@ const MassPdCreate = () => {
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
                                         <Textarea
                                           id={`${field}-comments`}
-                                          value={processQualifData[field].task.comments}
+                                          value={processQualifData[field]?.task?.comments || ""}
                                           onChange={(e) =>
                                             handleTaskChange(setProcessQualifData, field, "comments", e.target.value)
                                           }
@@ -1834,7 +2056,7 @@ const MassPdCreate = () => {
                                           type="file"
                                           onChange={(e) => handleProcessQualifFileChange(field, e.target.files[0])}
                                         />
-                                        {processQualifData[field].task.filePath && (
+                                        {processQualifData[field]?.task?.filePath && (
                                           <p className="mt-1 text-sm text-muted-foreground">
                                             {typeof processQualifData[field].task.filePath === "string"
                                               ? processQualifData[field].task.filePath
@@ -1845,7 +2067,7 @@ const MassPdCreate = () => {
                                       <div className="flex items-center space-x-2">
                                         <Checkbox
                                           id={`${field}-check`}
-                                          checked={processQualifData[field].task.check}
+                                          checked={processQualifData[field]?.task?.check || false}
                                           onCheckedChange={(checked) =>
                                             handleTaskChange(setProcessQualifData, field, "check", checked)
                                           }
@@ -1875,7 +2097,7 @@ const MassPdCreate = () => {
                                     <div className="flex items-center space-x-2">
                                       <Checkbox
                                         id={field}
-                                        checked={qualificationConfirmationData[field].value}
+                                        checked={qualificationConfirmationData[field]?.value || false}
                                         onCheckedChange={(checked) =>
                                           handleAccordionCheckboxChange(
                                             setQualificationConfirmationData,
@@ -1896,7 +2118,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-responsible`}
                                           type="text"
-                                          value={qualificationConfirmationData[field].task.responsible}
+                                          value={qualificationConfirmationData[field]?.task?.responsible || ""}
                                           onChange={(e) =>
                                             handleTaskChange(
                                               setQualificationConfirmationData,
@@ -1912,7 +2134,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-planned`}
                                           type="date"
-                                          value={qualificationConfirmationData[field].task.planned}
+                                          value={qualificationConfirmationData[field]?.task?.planned || ""}
                                           onChange={(e) =>
                                             handleTaskChange(
                                               setQualificationConfirmationData,
@@ -1928,7 +2150,7 @@ const MassPdCreate = () => {
                                         <Input
                                           id={`${field}-done`}
                                           type="date"
-                                          value={qualificationConfirmationData[field].task.done}
+                                          value={qualificationConfirmationData[field]?.task?.done || ""}
                                           onChange={(e) =>
                                             handleQualificationConfirmationDateChange(field, "done", e.target.value)
                                           }
@@ -1938,7 +2160,7 @@ const MassPdCreate = () => {
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
                                         <Textarea
                                           id={`${field}-comments`}
-                                          value={qualificationConfirmationData[field].task.comments}
+                                          value={qualificationConfirmationData[field]?.task?.comments || ""}
                                           onChange={(e) =>
                                             handleTaskChange(
                                               setQualificationConfirmationData,
@@ -1958,7 +2180,7 @@ const MassPdCreate = () => {
                                             handleQualificationConfirmationFileChange(field, e.target.files[0])
                                           }
                                         />
-                                        {qualificationConfirmationData[field].task.filePath && (
+                                        {qualificationConfirmationData[field]?.task?.filePath && (
                                           <p className="mt-1 text-sm text-muted-foreground">
                                             {typeof qualificationConfirmationData[field].task.filePath === "string"
                                               ? qualificationConfirmationData[field].task.filePath
@@ -1969,7 +2191,7 @@ const MassPdCreate = () => {
                                       <div className="flex items-center space-x-2">
                                         <Checkbox
                                           id={`${field}-check`}
-                                          checked={qualificationConfirmationData[field].task.check}
+                                          checked={qualificationConfirmationData[field]?.task?.check || false}
                                           onCheckedChange={(checked) =>
                                             handleTaskChange(setQualificationConfirmationData, field, "check", checked)
                                           }
@@ -1987,14 +2209,14 @@ const MassPdCreate = () => {
                     </Tabs>
                   </CardContent>
                   <CardFooter>
-                    <Button type="submit" disabled={loading} className="w-full">
-                      {loading ? (
+                    <Button type="submit" disabled={submitting} className="w-full">
+                      {submitting ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Creating...
+                          Updating...
                         </>
                       ) : (
-                        "Create Mass Production Record"
+                        "Update Mass Production Record"
                       )}
                     </Button>
                   </CardFooter>
@@ -2119,5 +2341,5 @@ const qualificationConfirmationFields = [
   "updating_customer_programme_data_sheet",
 ]
 
-export default MassPdCreate
+export default EditMassProductionForm
 

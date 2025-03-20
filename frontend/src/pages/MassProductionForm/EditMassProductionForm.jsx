@@ -5,6 +5,18 @@ import { useParams, useNavigate } from "react-router-dom"
 import { getMassProductionById, updateMassProduction } from "../../apis/massProductionApi"
 import { getAllCustomers } from "../../apis/customerApi"
 import { getAllpd } from "../../apis/ProductDesignation-api"
+import { getP_P_TuningById, updateP_P_Tuning } from "../../apis/p-p-tuning-api"
+import { getDesignById, updateDesign } from "../../apis/designApi"
+import { getfacilitiesById, updatefacilities } from "../../apis/facilitiesApi"
+import { getFeasibilityById, updateFeasibility } from "../../apis/feasabilityApi"
+import { getKickOffById, updateKickOff } from "../../apis/kickOffApi"
+import { getOkForLunchById, updateOkForLunch } from "../../apis/okForLunch"
+import { getProcessQualificationById, updateProcessQualification } from "../../apis/process_qualifApi"
+import {
+  getQualificationConfirmationById,
+  updateQualificationConfirmation,
+} from "../../apis/qualificationConfirmationApi"
+import { getValidationForOfferById, updateValidationForOffer } from "../../apis/validationForOfferApi"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -209,6 +221,14 @@ const EditMassProductionForm = () => {
     economic_financial_leader: false,
   })
 
+  // Helper function to extract ID from object or string
+  const extractId = (idOrObject) => {
+    if (!idOrObject) return null
+    if (typeof idOrObject === "string") return idOrObject
+    if (typeof idOrObject === "object" && idOrObject._id) return idOrObject._id
+    return null
+  }
+
   // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
@@ -237,68 +257,159 @@ const EditMassProductionForm = () => {
       // Set main form data
       setFormData({
         ...data,
-        product_designation: data.product_designation.map((pd) => pd._id || pd),
+        product_designation: data.product_designation ? data.product_designation.map((pd) => pd._id || pd) : [],
       })
 
       // Set selected product designations
-      setSelectedProductDesignations(data.product_designation.map((pd) => pd._id || pd))
+      setSelectedProductDesignations(data.product_designation ? data.product_designation.map((pd) => pd._id || pd) : [])
 
-      // Set related data if available
+      // Fetch and set related data if available
       if (data.feasability) {
-        setFeasibilityData(mapDataToFormState(data.feasability, feasibilityFields))
-        if (data.feasability.checkin) {
-          setFeasibilityCheckinData(data.feasability.checkin)
+        try {
+          const feasabilityId = extractId(data.feasability)
+          if (feasabilityId) {
+            const feasibilityResponse = await getFeasibilityById(feasabilityId)
+            if (feasibilityResponse) {
+              setFeasibilityData(mapDataToFormState(feasibilityResponse, feasibilityFields))
+              if (feasibilityResponse.checkin) {
+                setFeasibilityCheckinData(feasibilityResponse.checkin)
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch feasibility data:", error)
         }
       }
 
       if (data.kick_off) {
-        setKickOffData(mapDataToFormState(data.kick_off, kickOffFields))
+        try {
+          const kickOffId = extractId(data.kick_off)
+          if (kickOffId) {
+            const kickOffResponse = await getKickOffById(kickOffId)
+            if (kickOffResponse) {
+              setKickOffData(mapDataToFormState(kickOffResponse, kickOffFields))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch kick-off data:", error)
+        }
       }
 
       if (data.design) {
-        setDesignData(mapDataToFormState(data.design, designFields))
+        try {
+          const designId = extractId(data.design)
+          if (designId) {
+            const designResponse = await getDesignById(designId)
+            if (designResponse) {
+              setDesignData(mapDataToFormState(designResponse, designFields))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch design data:", error)
+        }
       }
 
       if (data.facilities) {
-        setFacilitiesData(mapDataToFormState(data.facilities, facilitiesFields))
+        try {
+          const facilitiesId = extractId(data.facilities)
+          if (facilitiesId) {
+            const facilitiesResponse = await getfacilitiesById(facilitiesId)
+            if (facilitiesResponse) {
+              setFacilitiesData(mapDataToFormState(facilitiesResponse, facilitiesFields))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch facilities data:", error)
+        }
       }
 
       if (data.p_p_tuning) {
-        setPPTuningData(mapDataToFormState(data.p_p_tuning, ppTuningFields))
+        try {
+          const ppTuningId = extractId(data.p_p_tuning)
+          if (ppTuningId) {
+            const ppTuningResponse = await getP_P_TuningById(ppTuningId)
+            if (ppTuningResponse) {
+              setPPTuningData(mapDataToFormState(ppTuningResponse, ppTuningFields))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch P/P Tuning data:", error)
+        }
       }
 
       if (data.process_qualif) {
-        setProcessQualifData(mapDataToFormState(data.process_qualif, processQualifFields))
+        try {
+          const processQualifId = extractId(data.process_qualif)
+          if (processQualifId) {
+            const processQualifResponse = await getProcessQualificationById(processQualifId)
+            if (processQualifResponse) {
+              setProcessQualifData(mapDataToFormState(processQualifResponse, processQualifFields))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch process qualification data:", error)
+        }
       }
 
       if (data.qualification_confirmation) {
-        setQualificationConfirmationData(
-          mapDataToFormState(data.qualification_confirmation, qualificationConfirmationFields),
-        )
+        try {
+          const qualificationConfirmationId = extractId(data.qualification_confirmation)
+          if (qualificationConfirmationId) {
+            const qualificationConfirmationResponse =
+              await getQualificationConfirmationById(qualificationConfirmationId)
+            if (qualificationConfirmationResponse) {
+              setQualificationConfirmationData(
+                mapDataToFormState(qualificationConfirmationResponse, qualificationConfirmationFields),
+              )
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch qualification confirmation data:", error)
+        }
       }
 
       if (data.ok_for_lunch) {
-        setOkForLunchData({
-          check: data.ok_for_lunch.check || false,
-          date: data.ok_for_lunch.date || new Date().toISOString().split("T")[0],
-          upload: null,
-        })
+        try {
+          const okForLunchId = extractId(data.ok_for_lunch)
+          if (okForLunchId) {
+            const okForLunchResponse = await getOkForLunchById(okForLunchId)
+            if (okForLunchResponse) {
+              setOkForLunchData({
+                check: okForLunchResponse.check || false,
+                date: okForLunchResponse.date || new Date().toISOString().split("T")[0],
+                upload: null,
+              })
 
-        if (data.ok_for_lunch.checkin) {
-          setOkForLunchCheckinData(data.ok_for_lunch.checkin)
+              if (okForLunchResponse.checkin) {
+                setOkForLunchCheckinData(okForLunchResponse.checkin)
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch ok for lunch data:", error)
         }
       }
 
       if (data.validation_for_offer) {
-        setValidationForOfferData({
-          name: data.validation_for_offer.name || "",
-          check: data.validation_for_offer.check || false,
-          date: data.validation_for_offer.date || new Date().toISOString().split("T")[0],
-          upload: null,
-        })
+        try {
+          const validationForOfferId = extractId(data.validation_for_offer)
+          if (validationForOfferId) {
+            const validationForOfferResponse = await getValidationForOfferById(validationForOfferId)
+            if (validationForOfferResponse) {
+              setValidationForOfferData({
+                name: validationForOfferResponse.name || "",
+                check: validationForOfferResponse.check || false,
+                date: validationForOfferResponse.date || new Date().toISOString().split("T")[0],
+                upload: null,
+              })
 
-        if (data.validation_for_offer.checkin) {
-          setValidationForOfferCheckinData(data.validation_for_offer.checkin)
+              if (validationForOfferResponse.checkin) {
+                setValidationForOfferCheckinData(validationForOfferResponse.checkin)
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch validation for offer data:", error)
         }
       }
     } catch (error) {
@@ -312,6 +423,8 @@ const EditMassProductionForm = () => {
   }
 
   const mapDataToFormState = (data, fields) => {
+    if (!data) return {}
+
     const result = {}
 
     fields.forEach((field) => {
@@ -331,7 +444,7 @@ const EditMassProductionForm = () => {
   const fetchCustomers = async () => {
     try {
       const data = await getAllCustomers()
-      setCustomers(data)
+      setCustomers(data || [])
     } catch (error) {
       console.error("Failed to fetch customers:", error)
     }
@@ -340,7 +453,7 @@ const EditMassProductionForm = () => {
   const fetchProductDesignations = async () => {
     try {
       const data = await getAllpd()
-      setProductDesignations(data)
+      setProductDesignations(data || [])
     } catch (error) {
       console.error("Failed to fetch product designations:", error)
     }
@@ -577,6 +690,17 @@ const EditMassProductionForm = () => {
     }))
   }
 
+  // Helper function to process file paths for update
+  const processFilePathsForUpdate = (data) => {
+    const processed = { ...data }
+    Object.keys(processed).forEach((field) => {
+      if (processed[field]?.task?.filePath instanceof File) {
+        processed[field].task.filePath = processed[field].task.filePath.name
+      }
+    })
+    return processed
+  }
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -605,90 +729,167 @@ const EditMassProductionForm = () => {
 
       // Update feasibility if it exists
       if (formData.feasability) {
-        const feasibilityResponse = await updateRelatedRecord("feasibility", formData.feasability, {
-          ...feasibilityData,
-          checkin: feasibilityCheckinData,
-        })
-        updatedRelatedData.feasability = feasibilityResponse._id
+        try {
+          const feasabilityId = extractId(formData.feasability)
+          if (feasabilityId) {
+            const processedFeasibilityData = {
+              ...feasibilityData,
+              checkin: feasibilityCheckinData,
+            }
+            const feasibilityResponse = await updateFeasibility(feasabilityId, processedFeasibilityData)
+            if (feasibilityResponse && feasibilityResponse._id) {
+              updatedRelatedData.feasability = feasibilityResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update feasibility:", error)
+        }
       }
 
       // Update kick_off if it exists
       if (formData.kick_off) {
-        const kickOffResponse = await updateRelatedRecord(
-          "kick_off",
-          formData.kick_off,
-          processFilePathsForUpdate(kickOffData),
-        )
-        updatedRelatedData.kick_off = kickOffResponse._id
+        try {
+          const kickOffId = extractId(formData.kick_off)
+          if (kickOffId) {
+            const processedKickOffData = processFilePathsForUpdate(kickOffData)
+            const kickOffResponse = await updateKickOff(kickOffId, processedKickOffData)
+            if (kickOffResponse && kickOffResponse._id) {
+              updatedRelatedData.kick_off = kickOffResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update kick-off:", error)
+        }
       }
 
       // Update design if it exists
       if (formData.design) {
-        const designResponse = await updateRelatedRecord(
-          "design",
-          formData.design,
-          processFilePathsForUpdate(designData),
-        )
-        updatedRelatedData.design = designResponse._id
+        try {
+          const designId = extractId(formData.design)
+          if (designId) {
+            const processedDesignData = processFilePathsForUpdate(designData)
+            const designResponse = await updateDesign(designId, processedDesignData)
+            if (designResponse && designResponse._id) {
+              updatedRelatedData.design = designResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update design:", error)
+        }
       }
 
       // Update facilities if it exists
       if (formData.facilities) {
-        const facilitiesResponse = await updateRelatedRecord(
-          "facilities",
-          formData.facilities,
-          processFilePathsForUpdate(facilitiesData),
-        )
-        updatedRelatedData.facilities = facilitiesResponse._id
+        try {
+          const facilitiesId = extractId(formData.facilities)
+          if (facilitiesId) {
+            const processedFacilitiesData = processFilePathsForUpdate(facilitiesData)
+            const facilitiesResponse = await updatefacilities(facilitiesId, processedFacilitiesData)
+            if (facilitiesResponse && facilitiesResponse._id) {
+              updatedRelatedData.facilities = facilitiesResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update facilities:", error)
+        }
       }
 
       // Update p_p_tuning if it exists
       if (formData.p_p_tuning) {
-        const ppTuningResponse = await updateRelatedRecord(
-          "p_p_tuning",
-          formData.p_p_tuning,
-          processFilePathsForUpdate(ppTuningData),
-        )
-        updatedRelatedData.p_p_tuning = ppTuningResponse._id
+        try {
+          const ppTuningId = extractId(formData.p_p_tuning)
+          if (ppTuningId) {
+            const processedPPTuningData = processFilePathsForUpdate(ppTuningData)
+            const ppTuningResponse = await updateP_P_Tuning(ppTuningId, processedPPTuningData)
+            if (ppTuningResponse && ppTuningResponse._id) {
+              updatedRelatedData.p_p_tuning = ppTuningResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update P/P Tuning:", error)
+        }
       }
 
       // Update process_qualif if it exists
       if (formData.process_qualif) {
-        const processQualifResponse = await updateRelatedRecord(
-          "process_qualif",
-          formData.process_qualif,
-          processFilePathsForUpdate(processQualifData),
-        )
-        updatedRelatedData.process_qualif = processQualifResponse._id
+        try {
+          const processQualifId = extractId(formData.process_qualif)
+          if (processQualifId) {
+            const processedProcessQualifData = processFilePathsForUpdate(processQualifData)
+            const processQualifResponse = await updateProcessQualification(processQualifId, processedProcessQualifData)
+            if (processQualifResponse && processQualifResponse._id) {
+              updatedRelatedData.process_qualif = processQualifResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update process qualification:", error)
+        }
       }
 
       // Update qualification_confirmation if it exists
       if (formData.qualification_confirmation) {
-        const qualificationConfirmationResponse = await updateRelatedRecord(
-          "qualification_confirmation",
-          formData.qualification_confirmation,
-          processFilePathsForUpdate(qualificationConfirmationData),
-        )
-        updatedRelatedData.qualification_confirmation = qualificationConfirmationResponse._id
+        try {
+          const qualificationConfirmationId = extractId(formData.qualification_confirmation)
+          if (qualificationConfirmationId) {
+            const processedQualificationConfirmationData = processFilePathsForUpdate(qualificationConfirmationData)
+            const qualificationConfirmationResponse = await updateQualificationConfirmation(
+              qualificationConfirmationId,
+              processedQualificationConfirmationData,
+            )
+            if (qualificationConfirmationResponse && qualificationConfirmationResponse._id) {
+              updatedRelatedData.qualification_confirmation = qualificationConfirmationResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update qualification confirmation:", error)
+        }
       }
 
       // Update ok_for_lunch if it exists
       if (formData.ok_for_lunch) {
-        const okForLunchResponse = await updateRelatedRecord("ok_for_lunch", formData.ok_for_lunch, {
-          ...okForLunchData,
-          checkin: okForLunchCheckinData,
-        })
-        updatedRelatedData.ok_for_lunch = okForLunchResponse._id
+        try {
+          const okForLunchId = extractId(formData.ok_for_lunch)
+          if (okForLunchId) {
+            const processedOkForLunchData = {
+              ...okForLunchData,
+              checkin: okForLunchCheckinData,
+            }
+            if (okForLunchData.upload instanceof File) {
+              processedOkForLunchData.upload = okForLunchData.upload.name
+            }
+            const okForLunchResponse = await updateOkForLunch(okForLunchId, processedOkForLunchData)
+            if (okForLunchResponse && okForLunchResponse._id) {
+              updatedRelatedData.ok_for_lunch = okForLunchResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update ok for lunch:", error)
+        }
       }
 
       // Update validation_for_offer if it exists
       if (formData.validation_for_offer) {
-        const validationForOfferResponse = await updateRelatedRecord(
-          "validation_for_offer",
-          formData.validation_for_offer,
-          { ...validationForOfferData, checkin: validationForOfferCheckinData },
-        )
-        updatedRelatedData.validation_for_offer = validationForOfferResponse._id
+        try {
+          const validationForOfferId = extractId(formData.validation_for_offer)
+          if (validationForOfferId) {
+            const processedValidationForOfferData = {
+              ...validationForOfferData,
+              checkin: validationForOfferCheckinData,
+            }
+            if (validationForOfferData.upload instanceof File) {
+              processedValidationForOfferData.upload = validationForOfferData.upload.name
+            }
+            const validationForOfferResponse = await updateValidationForOffer(
+              validationForOfferId,
+              processedValidationForOfferData,
+            )
+            if (validationForOfferResponse && validationForOfferResponse._id) {
+              updatedRelatedData.validation_for_offer = validationForOfferResponse._id
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update validation for offer:", error)
+        }
       }
 
       // Update the mass production record with all changes
@@ -714,24 +915,6 @@ const EditMassProductionForm = () => {
     } finally {
       setSubmitting(false)
     }
-  }
-
-  // Helper function to update related records
-  const updateRelatedRecord = async (type, id, data) => {
-    // This is a placeholder - in a real implementation, you would call the appropriate update API
-    // For now, we'll just return the data with the ID
-    return { ...data, _id: id }
-  }
-
-  // Helper function to process file paths for update
-  const processFilePathsForUpdate = (data) => {
-    const processed = { ...data }
-    Object.keys(processed).forEach((field) => {
-      if (processed[field].task && processed[field].task.filePath instanceof File) {
-        processed[field].task.filePath = processed[field].task.filePath.name
-      }
-    })
-    return processed
   }
 
   if (loading) {
