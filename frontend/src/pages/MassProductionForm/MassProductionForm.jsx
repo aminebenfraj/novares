@@ -7,7 +7,7 @@ import { getAllCustomers } from "../../apis/customerApi"
 import { getAllpd } from "../../apis/ProductDesignation-api"
 import { getP_P_TuningById, updateP_P_Tuning } from "../../apis/p-p-tuning-api"
 import { getDesignById, updateDesign } from "../../apis/designApi"
-import { getFacilitiesById, updateFacilities } from "../../apis/facilitiesApi"
+import { getfacilitiesById, updatefacilities } from "../../apis/facilitiesApi"
 import { getFeasibilityById, updateFeasibility } from "../../apis/feasabilityApi"
 import { getKickOffById, updateKickOff } from "../../apis/kickOffApi"
 import { getOkForLunchById, updateOkForLunch } from "../../apis/okForLunch"
@@ -813,7 +813,7 @@ const EditMassProductionForm = () => {
           const facilitiesId = extractId(formData.facilities)
           if (facilitiesId) {
             const processedFacilitiesData = processFilePathsForUpdate(facilitiesData)
-            const facilitiesResponse = await updateFacilities(facilitiesId, processedFacilitiesData)
+            const facilitiesResponse = await updatefacilities(facilitiesId, processedFacilitiesData)
             if (facilitiesResponse && facilitiesResponse._id) {
               updatedRelatedData.facilities = facilitiesResponse._id
             }
