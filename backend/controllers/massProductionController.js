@@ -18,7 +18,7 @@ exports.createMassProduction = async (req, res) => {
       technical_skill,
       initial_request,
       request_original,
-      feasability,
+      feasibility,
       validation_for_offer,
       customer_offer,
       customer_order,
@@ -101,7 +101,7 @@ exports.createMassProduction = async (req, res) => {
       technical_skill,
       initial_request,
       request_original,
-      feasability,
+      feasibility,
       validation_for_offer,
       customer_offer,
       customer_order,
@@ -168,7 +168,7 @@ exports.getAllMassProductions = async (req, res) => {
     const massProductions = await MassProduction.find(filter)
       .populate("customer", "username email")
       .populate("product_designation", "part_name reference")
-      .populate("feasability")
+      .populate("feasibility")
       .populate("validation_for_offer", null, "validationForOffer") // ✅ FIX: Specify model name
       .populate("ok_for_lunch")
       .populate("kick_off")
@@ -194,7 +194,7 @@ exports.getMassProductionById = async (req, res) => {
     const massProduction = await MassProduction.findById(req.params.id)
       .populate("customer", "username email")
       .populate("product_designation", "part_name reference")
-      .populate("feasability")
+      .populate("feasibility")
       .populate("validation_for_offer", null, "validationForOffer") // ✅ FIX: Specify model name
       .populate("ok_for_lunch")
       .populate("kick_off")

@@ -13,7 +13,7 @@ const massProductionSchema = new Schema(
     technical_skill: { type: String, enum: ["sc", "tc"] },
     initial_request: { type: Date, required: true },
     request_original: { type: String, enum: ["internal", "customer"] },
-    feasability: { type: Schema.Types.ObjectId, ref: "Feasability" },
+    feasibility: { type: Schema.Types.ObjectId, ref: "Feasibility" },
     validation_for_offer: { type: Schema.Types.ObjectId, ref: "ValidationForOffer" },
     customer_offer: { type: String, enum: ["F", "E"] },
     customer_order: { type: String, enum: ["F", "E"] },

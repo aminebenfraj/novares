@@ -539,14 +539,13 @@ const MassPdCreate = () => {
       // Create feasibility record with embedded checkin data
       const feasibilityResponse = await createFeasibility({
         ...feasibilityData,
-        checkin: feasibilityCheckinData, // Pass the checkin data directly
+        checkin: feasibilityCheckinData,
       })
 
       console.log("✅ Feasibility created successfully:", feasibilityResponse)
 
       // Extract the feasibility ID correctly from the nested response structure
       let feasibilityId = null
-
       // Check the nested response structure based on the console output
       if (feasibilityResponse && feasibilityResponse.data) {
         if (feasibilityResponse.data.data && feasibilityResponse.data.data.feasibility) {
