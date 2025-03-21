@@ -1,4 +1,4 @@
-const TableStatus = require("../models/TableStatus")
+const TableStatus = require("../../models/pedido/TableStatus")
 
 // Get all table statuses
 exports.getAllTableStatuses = async (req, res) => {
