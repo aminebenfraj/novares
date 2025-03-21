@@ -24,7 +24,7 @@ const facilitiesRoutes = require('./routes/facilitiesRoutes');
 const p_p_tuningRoutes = require("./routes/p_p_tuningRoutes");
 const qualificationConfirmationRoutes = require("./routes/qualificationConfirmationRoutes");
 const processQualifRoutes = require("./routes/processQualifRoutes");
-const pedidoRoutes = require("./routes/pedidoRoutes");
+const pedidoRoutes = require("./routes/pedidoRoutes/pedidoRoutes");
 const documentationRoutes = require("./routes/readinessRoutes/documentationRoutes");
 const logisticsRoutes = require("./routes/readinessRoutes/logisticsRoutes");
 const maintenanceRoutes = require("./routes/readinessRoutes/maintenanceRoutes");
@@ -39,6 +39,9 @@ const trainingRoutes = require("./routes/readinessRoutes/trainingRoutes");
 const validationRoutes = require("./routes/readinessRoutes/validationRoutes");
 const machineMaterialRoutes = require("./routes/gestionStockRoutes/machineMaterialRoutes");
 const readinessRoutes = require("./routes/readinessRoutes/readinessRoutes");
+const solicitanteRoutes = require("./routes/pedidoRoutes/solicitanteRoutes");
+const tipoRoutes = require("./routes/pedidoRoutes/tipoRoutes");
+const tableStatusRoutes = require("./routes/pedidoRoutes/tableStatusRoutes")
 
 
 const app = express()
@@ -93,8 +96,9 @@ app.use("/api/ToolingStatus", toolingStatusRoutes);
 app.use("/api/Training", trainingRoutes);
 app.use("/api/Validation", validationRoutes);
 app.use("/api/Readiness", readinessRoutes);
-
-
+app.use("/api/solicitantes", solicitanteRoutes)
+app.use("/api/tipos", tipoRoutes)
+app.use("/api/tableStatus", tableStatusRoutes)
 
 
 

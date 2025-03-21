@@ -1,5 +1,5 @@
 const express = require("express");
-const { getAllPedidos, getPedidoById, createPedido, updatePedido, deletePedido, getFilterOptions, searchPedidos } = require("../controllers/pedidoController");
+const { getAllPedidos, getPedidoById, createPedido, updatePedido, deletePedido, getFilterOptions, searchPedidos } = require("../../controllers/pedidoController/pedidoController");
 const router = express.Router();
 
 // 📌 Define routes
