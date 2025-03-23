@@ -20,24 +20,7 @@ import { ScrollArea } from "../../components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import {
-  Search,
-  Plus,
-  MoreVertical,
-  FileText,
-  Trash2,
-  Edit3,
-  Filter,
-  RefreshCw,
-  Package,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  SlidersHorizontal,
-} from "lucide-react"
+import { Search, Plus, MoreVertical, FileText, Trash2, Edit3, Filter, RefreshCw, Package, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, X, SlidersHorizontal } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover"
 import MainLayout from "@/components/MainLayout"
 
@@ -282,6 +265,23 @@ function PedidoList() {
     }).format(amount)
   }
 
+  // Helper function to safely extract property values from objects
+  const getPropertyValue = (obj, property) => {
+    if (!obj) return "N/A"
+    
+    // If the object is already a string, return it
+    if (typeof obj === 'string') return obj
+    
+    // If it's an object with a name property, return the name
+    if (typeof obj === 'object' && obj !== null) {
+      if (obj.name) return obj.name
+      if (obj.reference) return obj.reference
+      if (obj._id) return obj._id
+    }
+    
+    return "N/A"
+  }
+
   if (isLoading && pedidos.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -451,11 +451,11 @@ function PedidoList() {
                             const StatusIcon = statusDetails.icon
                             return (
                               <TableRow key={pedido._id} className="group">
-                                <TableCell>{pedido.tipo}</TableCell>
-                                <TableCell className="font-medium">{pedido.referencia}</TableCell>
-                                <TableCell>{pedido.solicitante}</TableCell>
-                                <TableCell>{pedido.fabricante}</TableCell>
-                                <TableCell>{pedido.proveedor}</TableCell>
+                                <TableCell>{getPropertyValue(pedido.tipo)}</TableCell>
+                                <TableCell className="font-medium">{getPropertyValue(pedido.referencia)}</TableCell>
+                                <TableCell>{getPropertyValue(pedido.solicitante)}</TableCell>
+                                <TableCell>{pedido.fabricante || "N/A"}</TableCell>
+                                <TableCell>{getPropertyValue(pedido.proveedor)}</TableCell>
                                 <TableCell>{pedido.cantidad}</TableCell>
                                 <TableCell>{formatCurrency(pedido.precioUnidad)}</TableCell>
                                 <TableCell>{formatCurrency(pedido.importePedido)}</TableCell>
@@ -570,4 +570,3 @@ function PedidoList() {
 }
 
 export default PedidoList
-

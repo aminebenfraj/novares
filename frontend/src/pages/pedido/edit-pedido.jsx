@@ -3,6 +3,10 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { getPedidoById, updatePedido } from "../../apis/pedido/pedidoApi"
+import { getAllTipos } from "../../apis/pedido/tipoApi"
+import { getAllSolicitantes } from "../../apis/pedido/solicitanteApi"
+import { getAllTableStatuses } from "../../apis/pedido/tableStatusApi"
+import { getAllMaterials, getMaterialById } from "../../apis/gestionStockApi/materialApi"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -13,9 +17,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
-import { CalendarIcon, Save, ArrowLeft, Loader2 } from "lucide-react"
+import { CalendarIcon, Save, ArrowLeft, Loader2, Search } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Badge } from "@/components/ui/badge"
 import MainLayout from "@/components/MainLayout"
 
 function EditPedido() {
@@ -24,6 +29,17 @@ function EditPedido() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isValidId, setIsValidId] = useState(false)
+
+  // Reference data
+  const [tipos, setTipos] = useState([])
+  const [solicitantes, setSolicitantes] = useState([])
+  const [tableStatuses, setTableStatuses] = useState([])
+  const [materials, setMaterials] = useState([])
+  const [filteredMaterials, setFilteredMaterials] = useState([])
+  const [materialSearch, setMaterialSearch] = useState("")
+  const [machinesWithMaterial, setMachinesWithMaterial] = useState([])
+
   const [pedido, setPedido] = useState({
     tipo: "",
     descripcionInterna: "",
@@ -41,39 +57,113 @@ function EditPedido() {
     introducidaSAP: null,
     aceptado: null,
     direccion: "",
+    table_status: "",
     recepcionado: "",
     ano: new Date().getFullYear(),
   })
 
+  // Validate ID before fetching data
   useEffect(() => {
-    fetchPedido()
-  }, [id])
-
-  const fetchPedido = async () => {
-    try {
-      setIsLoading(true)
-      const data = await getPedidoById(id)
-
-      // Convert date strings to Date objects
-      const formattedData = {
-        ...data,
-        fechaSolicitud: data.fechaSolicitud ? new Date(data.fechaSolicitud) : null,
-        introducidaSAP: data.introducidaSAP ? new Date(data.introducidaSAP) : null,
-        aceptado: data.aceptado ? new Date(data.aceptado) : null,
-      }
-
-      setPedido(formattedData)
-    } catch (error) {
-      console.error("Error fetching pedido:", error)
+    // Check if ID is valid (not undefined, null, or empty)
+    if (id && id !== "undefined" && id !== "null" && id.trim() !== "") {
+      setIsValidId(true)
+    } else {
+      setIsValidId(false)
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to load pedido data. Please try again.",
+        title: "Invalid Order ID",
+        description: "The order ID is invalid or missing.",
       })
-    } finally {
-      setIsLoading(false)
+      // Redirect back to the orders list
+      navigate("/pedido")
     }
-  }
+  }, [id, navigate, toast])
+
+  // Fetch reference data and pedido on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!isValidId) return // Don't fetch if ID is invalid
+
+      setIsLoading(true)
+      try {
+        // First fetch all reference data
+        const [tiposData, solicitantesData, tableStatusesData, materialsData] = await Promise.all([
+          getAllTipos(),
+          getAllSolicitantes(),
+          getAllTableStatuses(),
+          getAllMaterials(),
+        ])
+
+        setTipos(tiposData)
+        setSolicitantes(solicitantesData)
+        setTableStatuses(tableStatusesData)
+        setMaterials(materialsData.data || [])
+        setFilteredMaterials(materialsData.data || [])
+
+        // Then fetch the pedido data
+        try {
+          const pedidoData = await getPedidoById(id)
+
+          // Format dates
+          const formattedPedido = {
+            ...pedidoData,
+            fechaSolicitud: pedidoData.fechaSolicitud ? new Date(pedidoData.fechaSolicitud) : new Date(),
+            introducidaSAP: pedidoData.introducidaSAP ? new Date(pedidoData.introducidaSAP) : null,
+            aceptado: pedidoData.aceptado ? new Date(pedidoData.aceptado) : null,
+            // Extract IDs from populated fields
+            tipo: pedidoData.tipo?._id || "",
+            referencia: pedidoData.referencia?._id || "",
+            solicitante: pedidoData.solicitante?._id || "",
+            proveedor: pedidoData.proveedor?._id || "",
+            table_status: pedidoData.table_status?._id || "",
+          }
+
+          setPedido(formattedPedido)
+
+          // If material is selected, fetch machines with this material
+          if (formattedPedido.referencia) {
+            fetchMachinesWithMaterial(formattedPedido.referencia)
+          }
+        } catch (pedidoError) {
+          console.error("Error fetching pedido:", pedidoError)
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load order data. Please try again.",
+          })
+          // Redirect back to the orders list
+          navigate("/pedido")
+          return
+        }
+      } catch (error) {
+        console.error("Error fetching reference data:", error)
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load reference data. Please try again.",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [id, isValidId, navigate, toast])
+
+  // Filter materials when search term changes
+  useEffect(() => {
+    if (materialSearch.trim() === "") {
+      setFilteredMaterials(materials)
+    } else {
+      const filtered = materials.filter(
+        (material) =>
+          material.reference?.toLowerCase().includes(materialSearch.toLowerCase()) ||
+          material.description?.toLowerCase().includes(materialSearch.toLowerCase()) ||
+          material.manufacturer?.toLowerCase().includes(materialSearch.toLowerCase()),
+      )
+      setFilteredMaterials(filtered)
+    }
+  }, [materialSearch, materials])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -89,6 +179,52 @@ function EditPedido() {
 
   const handleSelectChange = (name, value) => {
     setPedido((prev) => ({ ...prev, [name]: value }))
+
+    // If material (referencia) is selected, fetch its details
+    if (name === "referencia" && value) {
+      fetchMaterialDetails(value)
+    }
+  }
+
+  const fetchMaterialDetails = async (materialId) => {
+    try {
+      const material = await getMaterialById(materialId)
+      if (material) {
+        // Update pedido with material details
+        setPedido((prev) => ({
+          ...prev,
+          fabricante: material.manufacturer || "",
+          descripcionProveedor: material.description || "",
+          proveedor: material.supplier?._id || "",
+          precioUnidad: material.price || 0,
+        }))
+
+        // Fetch machines that have this material
+        fetchMachinesWithMaterial(materialId)
+      }
+    } catch (error) {
+      console.error("Error fetching material details:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load material details. Please try again.",
+      })
+    }
+  }
+
+  const fetchMachinesWithMaterial = async (materialId) => {
+    // This is a placeholder - implement the actual API call to get machines with this material
+    try {
+      // Example API call - replace with your actual implementation
+      // const machines = await getMachinesWithMaterial(materialId)
+      // setMachinesWithMaterial(machines)
+
+      // For now, we'll just set an empty array
+      setMachinesWithMaterial([])
+    } catch (error) {
+      console.error("Error fetching machines with material:", error)
+      setMachinesWithMaterial([])
+    }
   }
 
   const handleDateChange = (name, date) => {
@@ -100,19 +236,36 @@ function EditPedido() {
     setPedido((prev) => ({ ...prev, importePedido: importe }))
   }
 
+  // Calculate total amount when quantity or unit price changes
   useEffect(() => {
     calculateImporte()
   }, [pedido.cantidad, pedido.precioUnidad])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!isValidId) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Order ID",
+        description: "Cannot update order with invalid ID.",
+      })
+      return
+    }
+
     setIsSaving(true)
 
     try {
+      // Validate required fields
+      if (!pedido.tipo) throw new Error("Type is required")
+      if (!pedido.referencia) throw new Error("Material reference is required")
+      if (!pedido.solicitante) throw new Error("Requester is required")
+      if (!pedido.cantidad || pedido.cantidad <= 0) throw new Error("Quantity must be greater than 0")
+
       await updatePedido(id, pedido)
       toast({
         title: "Success",
-        description: "Pedido updated successfully",
+        description: "Order updated successfully",
       })
       navigate("/pedido")
     } catch (error) {
@@ -120,7 +273,7 @@ function EditPedido() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update pedido. Please try again.",
+        description: error.message || "Failed to update order. Please try again.",
       })
     } finally {
       setIsSaving(false)
@@ -129,9 +282,11 @@ function EditPedido() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      </div>
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      </MainLayout>
     )
   }
 
@@ -145,7 +300,10 @@ function EditPedido() {
             </Button>
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Edit Order</h1>
-              <p className="text-muted-foreground">Editing order reference: {pedido.referencia}</p>
+              <p className="text-muted-foreground">
+                Editing order reference:{" "}
+                {pedido.referencia ? materials.find((m) => m._id === pedido.referencia)?.reference : "N/A"}
+              </p>
             </div>
           </div>
           <div className="flex gap-4">
@@ -181,27 +339,41 @@ function EditPedido() {
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="tipo">Type</Label>
-                          <Input id="tipo" name="tipo" value={pedido.tipo} onChange={handleInputChange} required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="referencia">Reference</Label>
-                          <Input
-                            id="referencia"
-                            name="referencia"
-                            value={pedido.referencia}
-                            onChange={handleInputChange}
+                          <Select
+                            value={pedido.tipo}
+                            onValueChange={(value) => handleSelectChange("tipo", value)}
                             required
-                          />
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {tipos.map((tipo) => (
+                                <SelectItem key={tipo._id} value={tipo._id}>
+                                  {tipo.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="solicitante">Requester</Label>
-                          <Input
-                            id="solicitante"
-                            name="solicitante"
+                          <Select
                             value={pedido.solicitante}
-                            onChange={handleInputChange}
+                            onValueChange={(value) => handleSelectChange("solicitante", value)}
                             required
-                          />
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a requester" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {solicitantes.map((solicitante) => (
+                                <SelectItem key={solicitante._id} value={solicitante._id}>
+                                  {solicitante.name} {solicitante.email ? `(${solicitante.email})` : ""}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="ano">Year</Label>
@@ -213,6 +385,19 @@ function EditPedido() {
                             onChange={handleInputChange}
                             required
                           />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="pedir">Order Status</Label>
+                          <Select value={pedido.pedir} onValueChange={(value) => handleSelectChange("pedir", value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select order status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="si">Yes</SelectItem>
+                              <SelectItem value="no">No</SelectItem>
+                              <SelectItem value="pendiente">Pending</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </CardContent>
@@ -226,6 +411,71 @@ function EditPedido() {
                       <CardDescription>Enter the details about the product being ordered</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="referencia">Material (Reference) *</Label>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Search className="w-4 h-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search materials..."
+                            value={materialSearch}
+                            onChange={(e) => setMaterialSearch(e.target.value)}
+                          />
+                        </div>
+                        <Select
+                          value={pedido.referencia}
+                          onValueChange={(value) => handleSelectChange("referencia", value)}
+                          required
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a material" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {filteredMaterials.map((material) => (
+                              <SelectItem key={material._id} value={material._id}>
+                                {material.reference} - {material.description}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {pedido.referencia && (
+                        <div className="p-4 mt-2 border rounded-md bg-muted/50">
+                          <h4 className="mb-2 font-medium">Material Details</h4>
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Manufacturer</Label>
+                              <p className="font-medium">{pedido.fabricante || "N/A"}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Provider</Label>
+                              <p className="font-medium">
+                                {pedido.proveedor
+                                  ? materials.find((m) => m.supplier?._id === pedido.proveedor)?.supplier?.name || "N/A"
+                                  : "N/A"}
+                              </p>
+                            </div>
+                            <div className="col-span-2">
+                              <Label className="text-sm text-muted-foreground">Description</Label>
+                              <p className="font-medium">{pedido.descripcionProveedor || "N/A"}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {machinesWithMaterial.length > 0 && (
+                        <div className="p-4 mt-2 border rounded-md bg-muted/50">
+                          <h4 className="mb-2 font-medium">Machines with this Material</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {machinesWithMaterial.map((machine) => (
+                              <Badge key={machine._id} variant="secondary">
+                                {machine.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="fabricante">Manufacturer</Label>
@@ -234,14 +484,16 @@ function EditPedido() {
                             name="fabricante"
                             value={pedido.fabricante}
                             onChange={handleInputChange}
+                            readOnly={!!pedido.referencia}
+                            className={pedido.referencia ? "bg-muted" : ""}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="proveedor">Provider</Label>
+                          <Label htmlFor="direccion">Address</Label>
                           <Input
-                            id="proveedor"
-                            name="proveedor"
-                            value={pedido.proveedor}
+                            id="direccion"
+                            name="direccion"
+                            value={pedido.direccion}
                             onChange={handleInputChange}
                           />
                         </div>
@@ -264,6 +516,8 @@ function EditPedido() {
                           value={pedido.descripcionProveedor}
                           onChange={handleInputChange}
                           rows={3}
+                          readOnly={!!pedido.referencia}
+                          className={pedido.referencia ? "bg-muted" : ""}
                         />
                       </div>
                     </CardContent>
@@ -299,6 +553,8 @@ function EditPedido() {
                             value={pedido.precioUnidad}
                             onChange={handleInputChange}
                             required
+                            readOnly={!!pedido.referencia}
+                            className={pedido.referencia ? "bg-muted" : ""}
                           />
                         </div>
                         <div className="space-y-2">
@@ -356,28 +612,23 @@ function EditPedido() {
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                          <Label htmlFor="pedir">Order</Label>
-                          <Select value={pedido.pedir} onValueChange={(value) => handleSelectChange("pedir", value)}>
+                          <Label htmlFor="table_status">Table Status</Label>
+                          <Select
+                            value={pedido.table_status}
+                            onValueChange={(value) => handleSelectChange("table_status", value)}
+                          >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select order status" />
+                              <SelectValue placeholder="Select a status" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="si">Yes</SelectItem>
-                              <SelectItem value="no">No</SelectItem>
+                              {tableStatuses.map((status) => (
+                                <SelectItem key={status._id} value={status._id}>
+                                  {status.name}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="direccion">Address</Label>
-                          <Input
-                            id="direccion"
-                            name="direccion"
-                            value={pedido.direccion}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="introducidaSAP">SAP Entry Date</Label>
                           <Popover>
@@ -420,21 +671,22 @@ function EditPedido() {
                             </PopoverContent>
                           </Popover>
                         </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="recepcionado">Received</Label>
-                        <Select
-                          value={pedido.recepcionado}
-                          onValueChange={(value) => handleSelectChange("recepcionado", value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select reception status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Si">Yes</SelectItem>
-                            <SelectItem value="No">No</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="space-y-2">
+                          <Label htmlFor="recepcionado">Received</Label>
+                          <Select
+                            value={pedido.recepcionado}
+                            onValueChange={(value) => handleSelectChange("recepcionado", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select reception status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Si">Yes</SelectItem>
+                              <SelectItem value="No">No</SelectItem>
+                              <SelectItem value="Parcial">Partial</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -442,8 +694,6 @@ function EditPedido() {
               </div>
             </ScrollArea>
           </Tabs>
-
-          {/* Buttons moved to the top of the form */}
         </form>
       </div>
     </MainLayout>

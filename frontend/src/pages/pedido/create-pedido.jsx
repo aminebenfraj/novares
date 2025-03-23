@@ -1,6 +1,8 @@
+"use client"
+
 import { useState, useEffect } from "react"
-import { useParams, useNavigate } from "react-router-dom"
-import { getPedidoById, updatePedido } from "../../apis/pedido/pedidoApi"
+import { useNavigate } from "react-router-dom"
+import { createPedido } from "../../apis/pedido/pedidoApi"
 import { getAllTipos } from "../../apis/pedido/tipoApi"
 import { getAllSolicitantes } from "../../apis/pedido/solicitanteApi"
 import { getAllTableStatuses } from "../../apis/pedido/tableStatusApi"
@@ -15,19 +17,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
-import { CalendarIcon, Save, ArrowLeft, Loader2, Search } from 'lucide-react'
+import { CalendarIcon, Save, ArrowLeft, Loader2, Search } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import MainLayout from "@/components/MainLayout"
 
-function EditPedido() {
-  const { id } = useParams()
+function CreatePedido() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  
+
   // Reference data
   const [tipos, setTipos] = useState([])
   const [solicitantes, setSolicitantes] = useState([])
@@ -36,7 +37,8 @@ function EditPedido() {
   const [filteredMaterials, setFilteredMaterials] = useState([])
   const [materialSearch, setMaterialSearch] = useState("")
   const [machinesWithMaterial, setMachinesWithMaterial] = useState([])
-  
+
+  // Initialize with default values for a new pedido
   const [pedido, setPedido] = useState({
     tipo: "",
     descripcionInterna: "",
@@ -44,84 +46,78 @@ function EditPedido() {
     referencia: "",
     descripcionProveedor: "",
     solicitante: "",
-    cantidad: 0,
+    cantidad: 1,
     precioUnidad: 0,
     importePedido: 0,
     fechaSolicitud: new Date(),
     proveedor: "",
     comentario: "",
-    pedir: "",
+    pedir: "pendiente",
     introducidaSAP: null,
     aceptado: null,
     direccion: "",
     table_status: "",
-    recepcionado: "",
+    recepcionado: "No",
     ano: new Date().getFullYear(),
   })
 
-  // Fetch reference data and pedido on component mount
+  // Fetch reference data on component mount
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchReferenceData = async () => {
       setIsLoading(true)
       try {
-        const [tiposData, solicitantesData, tableStatusesData, materialsData, pedidoData] = await Promise.all([
+        // Fetch all reference data in parallel
+        const [tiposData, solicitantesData, tableStatusesData, materialsData] = await Promise.all([
           getAllTipos(),
           getAllSolicitantes(),
           getAllTableStatuses(),
           getAllMaterials(),
-          getPedidoById(id)
         ])
-        
+
         setTipos(tiposData)
         setSolicitantes(solicitantesData)
         setTableStatuses(tableStatusesData)
         setMaterials(materialsData.data || [])
         setFilteredMaterials(materialsData.data || [])
-        
-        // Format dates
-        const formattedPedido = {
-          ...pedidoData,
-          fechaSolicitud: pedidoData.fechaSolicitud ? new Date(pedidoData.fechaSolicitud) : null,
-          introducidaSAP: pedidoData.introducidaSAP ? new Date(pedidoData.introducidaSAP) : null,
-          aceptado: pedidoData.aceptado ? new Date(pedidoData.aceptado) : null,
-          // Extract IDs from populated fields
-          tipo: pedidoData.tipo?._id || "",
-          referencia: pedidoData.referencia?._id || "",
-          solicitante: pedidoData.solicitante?._id || "",
-          proveedor: pedidoData.proveedor?._id || "",
-          table_status: pedidoData.table_status?._id || "",
-        }
-        
-        setPedido(formattedPedido)
-        
-        // If material is selected, fetch machines with this material
-        if (formattedPedido.referencia) {
-          fetchMachinesWithMaterial(formattedPedido.referencia)
+
+        // Set default values if available
+        if (tableStatusesData.length > 0) {
+          // Find a default status like "Pending" or use the first one
+          const defaultStatus =
+            tableStatusesData.find(
+              (s) => s.name.toLowerCase().includes("pending") || s.name.toLowerCase().includes("pendiente"),
+            ) || tableStatusesData[0]
+
+          setPedido((prev) => ({
+            ...prev,
+            table_status: defaultStatus._id,
+          }))
         }
       } catch (error) {
-        console.error("Error fetching data:", error)
+        console.error("Error fetching reference data:", error)
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load data. Please try again.",
+          description: "Failed to load reference data. Please try again.",
         })
       } finally {
         setIsLoading(false)
       }
     }
-    
-    fetchData()
-  }, [id])
+
+    fetchReferenceData()
+  }, [toast])
 
   // Filter materials when search term changes
   useEffect(() => {
     if (materialSearch.trim() === "") {
       setFilteredMaterials(materials)
     } else {
-      const filtered = materials.filter(material => 
-        material.reference?.toLowerCase().includes(materialSearch.toLowerCase()) ||
-        material.description?.toLowerCase().includes(materialSearch.toLowerCase()) ||
-        material.manufacturer?.toLowerCase().includes(materialSearch.toLowerCase())
+      const filtered = materials.filter(
+        (material) =>
+          material.reference?.toLowerCase().includes(materialSearch.toLowerCase()) ||
+          material.description?.toLowerCase().includes(materialSearch.toLowerCase()) ||
+          material.manufacturer?.toLowerCase().includes(materialSearch.toLowerCase()),
       )
       setFilteredMaterials(filtered)
     }
@@ -141,7 +137,7 @@ function EditPedido() {
 
   const handleSelectChange = (name, value) => {
     setPedido((prev) => ({ ...prev, [name]: value }))
-    
+
     // If material (referencia) is selected, fetch its details
     if (name === "referencia" && value) {
       fetchMaterialDetails(value)
@@ -153,14 +149,14 @@ function EditPedido() {
       const material = await getMaterialById(materialId)
       if (material) {
         // Update pedido with material details
-        setPedido(prev => ({
+        setPedido((prev) => ({
           ...prev,
           fabricante: material.manufacturer || "",
           descripcionProveedor: material.description || "",
           proveedor: material.supplier?._id || "",
-          precioUnidad: material.price || 0
+          precioUnidad: material.price || 0,
         }))
-        
+
         // Fetch machines that have this material
         fetchMachinesWithMaterial(materialId)
       }
@@ -180,7 +176,7 @@ function EditPedido() {
       // Example API call - replace with your actual implementation
       // const machines = await getMachinesWithMaterial(materialId)
       // setMachinesWithMaterial(machines)
-      
+
       // For now, we'll just set an empty array
       setMachinesWithMaterial([])
     } catch (error) {
@@ -208,18 +204,33 @@ function EditPedido() {
     setIsSaving(true)
 
     try {
-      await updatePedido(id, pedido)
+      // Validate required fields
+      if (!pedido.tipo) {
+        throw new Error("Type is required")
+      }
+      if (!pedido.referencia) {
+        throw new Error("Material reference is required")
+      }
+      if (!pedido.solicitante) {
+        throw new Error("Requester is required")
+      }
+      if (!pedido.cantidad || pedido.cantidad <= 0) {
+        throw new Error("Quantity must be greater than 0")
+      }
+
+      // Create new pedido
+      await createPedido(pedido)
       toast({
         title: "Success",
-        description: "Pedido updated successfully",
+        description: "New order created successfully",
       })
       navigate("/pedido")
     } catch (error) {
-      console.error("Error saving pedido:", error)
+      console.error("Error creating pedido:", error)
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update pedido. Please try again.",
+        description: error.message || "Failed to create order. Please try again.",
       })
     } finally {
       setIsSaving(false)
@@ -245,8 +256,8 @@ function EditPedido() {
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Edit Order</h1>
-              <p className="text-muted-foreground">Editing order reference: {pedido.referencia ? materials.find(m => m._id === pedido.referencia)?.reference : 'N/A'}</p>
+              <h1 className="text-3xl font-bold tracking-tight">Create New Order</h1>
+              <p className="text-muted-foreground">Create a new order in the system</p>
             </div>
           </div>
           <div className="flex gap-4">
@@ -256,7 +267,7 @@ function EditPedido() {
             <Button type="submit" disabled={isSaving} onClick={handleSubmit} className="px-6">
               {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               <Save className="w-4 h-4 mr-2" />
-              Save Changes
+              Create Order
             </Button>
           </div>
         </div>
@@ -281,8 +292,12 @@ function EditPedido() {
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                          <Label htmlFor="tipo">Type</Label>
-                          <Select value={pedido.tipo} onValueChange={(value) => handleSelectChange("tipo", value)} required>
+                          <Label htmlFor="tipo">Type *</Label>
+                          <Select
+                            value={pedido.tipo}
+                            onValueChange={(value) => handleSelectChange("tipo", value)}
+                            required
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="Select a type" />
                             </SelectTrigger>
@@ -296,15 +311,19 @@ function EditPedido() {
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="solicitante">Requester</Label>
-                          <Select value={pedido.solicitante} onValueChange={(value) => handleSelectChange("solicitante", value)} required>
+                          <Label htmlFor="solicitante">Requester *</Label>
+                          <Select
+                            value={pedido.solicitante}
+                            onValueChange={(value) => handleSelectChange("solicitante", value)}
+                            required
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="Select a requester" />
                             </SelectTrigger>
                             <SelectContent>
                               {solicitantes.map((solicitante) => (
                                 <SelectItem key={solicitante._id} value={solicitante._id}>
-                                  {solicitante.name} {solicitante.email ? `(${solicitante.email})` : ''}
+                                  {solicitante.name} {solicitante.email ? `(${solicitante.email})` : ""}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -350,13 +369,17 @@ function EditPedido() {
                         <Label htmlFor="referencia">Material (Reference) *</Label>
                         <div className="flex items-center gap-2 mb-2">
                           <Search className="w-4 h-4 text-muted-foreground" />
-                          <Input 
-                            placeholder="Search materials..." 
+                          <Input
+                            placeholder="Search materials..."
                             value={materialSearch}
                             onChange={(e) => setMaterialSearch(e.target.value)}
                           />
                         </div>
-                        <Select value={pedido.referencia} onValueChange={(value) => handleSelectChange("referencia", value)} required>
+                        <Select
+                          value={pedido.referencia}
+                          onValueChange={(value) => handleSelectChange("referencia", value)}
+                          required
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select a material" />
                           </SelectTrigger>
@@ -369,7 +392,7 @@ function EditPedido() {
                           </SelectContent>
                         </Select>
                       </div>
-                      
+
                       {pedido.referencia && (
                         <div className="p-4 mt-2 border rounded-md bg-muted/50">
                           <h4 className="mb-2 font-medium">Material Details</h4>
@@ -381,8 +404,8 @@ function EditPedido() {
                             <div>
                               <Label className="text-sm text-muted-foreground">Provider</Label>
                               <p className="font-medium">
-                                {pedido.proveedor ? 
-                                  materials.find(m => m.supplier?._id === pedido.proveedor)?.supplier?.name || "N/A" 
+                                {pedido.proveedor
+                                  ? materials.find((m) => m.supplier?._id === pedido.proveedor)?.supplier?.name || "N/A"
                                   : "N/A"}
                               </p>
                             </div>
@@ -393,7 +416,7 @@ function EditPedido() {
                           </div>
                         </div>
                       )}
-                      
+
                       {machinesWithMaterial.length > 0 && (
                         <div className="p-4 mt-2 border rounded-md bg-muted/50">
                           <h4 className="mb-2 font-medium">Machines with this Material</h4>
@@ -406,7 +429,7 @@ function EditPedido() {
                           </div>
                         </div>
                       )}
-                      
+
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="fabricante">Manufacturer</Label>
@@ -464,7 +487,7 @@ function EditPedido() {
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <div className="space-y-2">
-                          <Label htmlFor="cantidad">Quantity</Label>
+                          <Label htmlFor="cantidad">Quantity *</Label>
                           <Input
                             id="cantidad"
                             name="cantidad"
@@ -472,6 +495,7 @@ function EditPedido() {
                             value={pedido.cantidad}
                             onChange={handleInputChange}
                             required
+                            min="1"
                           />
                         </div>
                         <div className="space-y-2">
@@ -544,8 +568,8 @@ function EditPedido() {
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="table_status">Table Status</Label>
-                          <Select 
-                            value={pedido.table_status} 
+                          <Select
+                            value={pedido.table_status}
                             onValueChange={(value) => handleSelectChange("table_status", value)}
                           >
                             <SelectTrigger>
@@ -557,6 +581,22 @@ function EditPedido() {
                                   {status.name}
                                 </SelectItem>
                               ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="recepcionado">Received</Label>
+                          <Select
+                            value={pedido.recepcionado}
+                            onValueChange={(value) => handleSelectChange("recepcionado", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select reception status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Si">Yes</SelectItem>
+                              <SelectItem value="No">No</SelectItem>
+                              <SelectItem value="Parcial">Partial</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -602,22 +642,6 @@ function EditPedido() {
                             </PopoverContent>
                           </Popover>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="recepcionado">Received</Label>
-                          <Select
-                            value={pedido.recepcionado}
-                            onValueChange={(value) => handleSelectChange("recepcionado", value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select reception status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Si">Yes</SelectItem>
-                              <SelectItem value="No">No</SelectItem>
-                              <SelectItem value="Parcial">Partial</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -631,4 +655,5 @@ function EditPedido() {
   )
 }
 
-export default EditPedido
+export default CreatePedido
+

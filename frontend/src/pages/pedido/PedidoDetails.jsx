@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { getPedidoById } from "../../apis/pedido/pedidoApi" 
+import { getPedidoById } from "../../apis/pedido/pedidoApi"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
 import { Badge } from "../../components/ui/badge"
-import { ArrowLeft, Edit, Trash2, Clock, Package, CheckCircle, AlertCircle } from "lucide-react"
+import { ArrowLeft, Edit, Trash2, Clock, Package, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import MainLayout from "../../components/MainLayout"
 
@@ -16,25 +16,56 @@ export default function PedidoDetails() {
   const { toast } = useToast()
   const [pedido, setPedido] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isValidId, setIsValidId] = useState(false)
+
+  // Validate ID before fetching data
+  useEffect(() => {
+    // Check if ID is valid (not undefined, null, or empty)
+    if (id && id !== "undefined" && id !== "null" && id.trim() !== "") {
+      setIsValidId(true)
+    } else {
+      setIsValidId(false)
+      toast({
+        variant: "destructive",
+        title: "Invalid Order ID",
+        description: "The order ID is invalid or missing.",
+      })
+      // Redirect back to the orders list
+      navigate("/pedido")
+    }
+  }, [id, navigate, toast])
 
   useEffect(() => {
-    if (id) {
+    if (isValidId) {
       fetchPedido(id)
     }
-  }, [id])
+  }, [id, isValidId])
 
   const fetchPedido = async (pedidoId) => {
     try {
       setIsLoading(true)
       const data = await getPedidoById(pedidoId)
-      setPedido(data)
+
+      // Process the data to ensure we're not displaying objects directly
+      const processedData = {
+        ...data,
+        tipo: typeof data.tipo === "object" ? data.tipo.name || "N/A" : data.tipo || "N/A",
+        referencia: typeof data.referencia === "object" ? data.referencia.reference || "N/A" : data.referencia || "N/A",
+        solicitante: typeof data.solicitante === "object" ? data.solicitante.name || "N/A" : data.solicitante || "N/A",
+        proveedor: typeof data.proveedor === "object" ? data.proveedor.name || "N/A" : data.proveedor || "N/A",
+        table_status:
+          typeof data.table_status === "object" ? data.table_status.name || "N/A" : data.table_status || "N/A",
+      }
+
+      setPedido(processedData)
     } catch (error) {
       console.error("Error fetching pedido:", error)
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load pedido details. Please try again.",
+        description: "Failed to load order details. Please try again.",
       })
+      navigate("/pedido")
     } finally {
       setIsLoading(false)
     }
@@ -77,7 +108,7 @@ export default function PedidoDetails() {
     return (
       <MainLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="w-32 h-32 border-b-2 border-gray-900 rounded-full animate-spin"></div>
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
       </MainLayout>
     )
