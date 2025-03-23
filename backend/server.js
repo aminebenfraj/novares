@@ -42,6 +42,7 @@ const readinessRoutes = require("./routes/readinessRoutes/readinessRoutes");
 const solicitanteRoutes = require("./routes/pedidoRoutes/solicitanteRoutes");
 const tipoRoutes = require("./routes/pedidoRoutes/tipoRoutes");
 const tableStatusRoutes = require("./routes/pedidoRoutes/tableStatusRoutes")
+const pedidosRoutes = require("./routes/pedidoRoutes/pedidoRoutes")
 
 
 const app = express()
@@ -99,6 +100,7 @@ app.use("/api/Readiness", readinessRoutes);
 app.use("/api/solicitantes", solicitanteRoutes)
 app.use("/api/tipos", tipoRoutes)
 app.use("/api/tableStatus", tableStatusRoutes)
+app.use("/api/pedido", pedidosRoutes )
 
 
 

@@ -114,6 +114,8 @@ exports.createPedido = async (req, res) => {
 }
 
 // Get all pedidos with pagination, filtering, and search
+// Get all pedidos with pagination, filtering, and search
+// Get all pedidos with pagination, filtering, and search
 exports.getAllPedidos = async (req, res) => {
   try {
     let {
@@ -143,6 +145,104 @@ exports.getAllPedidos = async (req, res) => {
 
     // Build query filters
     const filter = {}
+
+    // IMPORTANT: Process reference fields BEFORE building any other part of the query
+    // Handle proveedor (supplier) parameter
+    if (proveedor) {
+      if (mongoose.Types.ObjectId.isValid(proveedor)) {
+        filter.proveedor = proveedor;
+      } else {
+        // If it's not a valid ObjectId, try to find by name
+        const supplierByName = await Supplier.findOne({ 
+          name: { $regex: new RegExp(proveedor, 'i') } 
+        });
+        
+        if (supplierByName) {
+          filter.proveedor = supplierByName._id;
+        } else {
+          // If no supplier found with this name, return empty results
+          return res.json({
+            total: 0,
+            page,
+            limit,
+            totalPages: 0,
+            data: [],
+          });
+        }
+      }
+    }
+
+    // Handle tipo parameter
+    if (tipo) {
+      if (mongoose.Types.ObjectId.isValid(tipo)) {
+        filter.tipo = tipo;
+      } else {
+        const tipoByName = await Tipo.findOne({ 
+          name: { $regex: new RegExp(tipo, 'i') } 
+        });
+        
+        if (tipoByName) {
+          filter.tipo = tipoByName._id;
+        } else {
+          return res.json({
+            total: 0,
+            page,
+            limit,
+            totalPages: 0,
+            data: [],
+          });
+        }
+      }
+    }
+
+    // Handle solicitante parameter
+    if (solicitante) {
+      if (mongoose.Types.ObjectId.isValid(solicitante)) {
+        filter.solicitante = solicitante;
+      } else {
+        const solicitanteByName = await Solicitante.findOne({
+          $or: [
+            { name: { $regex: new RegExp(solicitante, 'i') } },
+            { email: { $regex: new RegExp(solicitante, 'i') } }
+          ]
+        });
+        
+        if (solicitanteByName) {
+          filter.solicitante = solicitanteByName._id;
+        } else {
+          return res.json({
+            total: 0,
+            page,
+            limit,
+            totalPages: 0,
+            data: [],
+          });
+        }
+      }
+    }
+
+    // Handle table_status parameter
+    if (table_status) {
+      if (mongoose.Types.ObjectId.isValid(table_status)) {
+        filter.table_status = table_status;
+      } else {
+        const statusByName = await TableStatus.findOne({ 
+          name: { $regex: new RegExp(table_status, 'i') } 
+        });
+        
+        if (statusByName) {
+          filter.table_status = statusByName._id;
+        } else {
+          return res.json({
+            total: 0,
+            page,
+            limit,
+            totalPages: 0,
+            data: [],
+          });
+        }
+      }
+    }
 
     // Text search if provided
     if (search && search.trim() !== "") {
@@ -250,11 +350,8 @@ exports.getAllPedidos = async (req, res) => {
       }
     } else {
       // If no text search but specific field filters are provided, use them
-      if (tipo) filter.tipo = tipo
+      // Note: We already handled reference fields above, so we only need to add non-reference fields
       if (fabricante) filter.fabricante = fabricante
-      if (proveedor) filter.proveedor = proveedor
-      if (solicitante) filter.solicitante = solicitante
-      if (table_status) filter.table_status = table_status
     }
 
     // These filters are always applied regardless of search
@@ -324,7 +421,6 @@ exports.getAllPedidos = async (req, res) => {
     res.status(500).json({ message: "Error fetching pedidos", error: error.message })
   }
 }
-
 // Get a single pedido by ID
 exports.getPedidoById = async (req, res) => {
   try {
