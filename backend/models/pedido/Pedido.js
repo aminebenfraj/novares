@@ -4,7 +4,7 @@ const PedidoSchema = new mongoose.Schema({
   tipo: { type: mongoose.Schema.Types.ObjectId, ref: "Tipo", required: true },
   descripcionInterna: String,
   fabricante: { type: String, index: true },
-  referencia: { type: mongoose.Schema.Types.ObjectId, ref: "Material", required: true },// Auto-filled from Material description
+  referencia: { type: mongoose.Schema.Types.ObjectId, ref: "Material", required: true ,  default: null  },// Auto-filled from Material description
   descripcionProveedor: { type: String }, // Auto-filled from Material description
   solicitante: { type: mongoose.Schema.Types.ObjectId, ref: "Solicitante", required: true },
   cantidad: Number,

@@ -722,6 +722,12 @@ exports.bulkUpdatePedidos = async (req, res) => {
       }
     }
 
+    // In the bulkUpdatePedidos function
+    if (updates.proveedor === "") {
+      updates.proveedor = null;
+    }
+
+    // Then continue with your existing validation
     if (updates.proveedor) {
       const proveedor = await Supplier.findById(updates.proveedor)
       if (!proveedor) {
@@ -916,4 +922,3 @@ exports.getPedidoByQRCode = async (req, res) => {
     res.status(500).json({ message: "Error fetching pedido", error: error.message })
   }
 }
-
