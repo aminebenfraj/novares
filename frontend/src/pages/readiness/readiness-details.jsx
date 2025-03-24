@@ -32,9 +32,34 @@ import {
   Mail,
   User,
   FileText,
+  AlertCircle,
+  Info,
+  CheckSquare,
+  XSquare,
+  ChevronRight,
+  BarChart3,
+  PieChart,
+  Layers,
+  Shield,
+  Package,
+  Truck,
+  FileTextIcon as FileText2,
+  PenToolIcon as Tool,
+  Wrench,
+  Factory,
+  Users,
+  GraduationCap,
+  Cog,
+  CheckIcon,
+  XIcon,
+  HelpCircle,
+  MessageSquare,
 } from "lucide-react"
 import MainLayout from "@/components/MainLayout"
 import { fieldDefinitions } from "../../components/readiness/readinessUtils"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 // Animation variants
 const fadeIn = {
@@ -47,6 +72,142 @@ const slideUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 }
 
+// Debug data component
+const DebugData = ({ title, data }) => {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <div className="mt-2 overflow-hidden border border-gray-300 border-dashed rounded-md">
+      <div
+        className="flex items-center justify-between p-2 bg-gray-100 cursor-pointer"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className="text-sm font-medium">{title}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation()
+            setIsOpen(!isOpen)
+          }}
+        >
+          {isOpen ? "Hide" : "Show"}
+        </Button>
+      </div>
+      {isOpen && (
+        <div className="p-2 bg-gray-50">
+          <pre className="overflow-auto text-xs max-h-60">{JSON.stringify(data, null, 2)}</pre>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Validation details component
+const ValidationDetails = ({ details }) => {
+  if (!details || Object.keys(details).length === 0) {
+    return <div className="text-xs italic text-gray-500">No validation details available</div>
+  }
+
+  return (
+    <div className="mt-2 space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="col-span-2">
+          <h4 className="mb-1 text-xs font-semibold">Validation Status</h4>
+          <div className="flex flex-wrap gap-1">
+            {details.validation_check ? (
+              <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
+                Validated
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-gray-600 border-gray-300">
+                Not Validated
+              </Badge>
+            )}
+
+            {details.ok_nok && (
+              <Badge
+                variant="outline"
+                className={
+                  details.ok_nok === "OK"
+                    ? "text-green-600 border-green-600 bg-green-50"
+                    : "text-red-600 border-red-600 bg-red-50"
+                }
+              >
+                {details.ok_nok}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <h4 className="mb-1 text-xs font-semibold">Validation Types</h4>
+          <div className="space-y-1">
+            <div className="flex items-center text-xs">
+              <div className={`w-3 h-3 rounded-sm mr-1 ${details.tko ? "bg-green-500" : "bg-gray-200"}`}></div>
+              <span>TKO</span>
+            </div>
+            <div className="flex items-center text-xs">
+              <div className={`w-3 h-3 rounded-sm mr-1 ${details.ot ? "bg-green-500" : "bg-gray-200"}`}></div>
+              <span>OT</span>
+            </div>
+            <div className="flex items-center text-xs">
+              <div className={`w-3 h-3 rounded-sm mr-1 ${details.ot_op ? "bg-green-500" : "bg-gray-200"}`}></div>
+              <span>OT OP</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="mb-1 text-xs font-semibold">Additional Checks</h4>
+          <div className="space-y-1">
+            <div className="flex items-center text-xs">
+              <div className={`w-3 h-3 rounded-sm mr-1 ${details.is ? "bg-green-500" : "bg-gray-200"}`}></div>
+              <span>IS</span>
+            </div>
+            <div className="flex items-center text-xs">
+              <div className={`w-3 h-3 rounded-sm mr-1 ${details.sop ? "bg-green-500" : "bg-gray-200"}`}></div>
+              <span>SOP</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {(details.who || details.when) && (
+        <div className="pt-2 border-t border-gray-100">
+          {details.who && (
+            <div className="flex items-center mb-1 text-xs">
+              <User className="w-3 h-3 mr-1 text-gray-500" />
+              <span className="mr-1 font-semibold">Validated by:</span>
+              <span className="text-gray-700">{details.who}</span>
+            </div>
+          )}
+
+          {details.when && (
+            <div className="flex items-center text-xs">
+              <Calendar className="w-3 h-3 mr-1 text-gray-500" />
+              <span className="mr-1 font-semibold">Date:</span>
+              <span className="text-gray-700">{details.when}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {details.comment && (
+        <div className="pt-2 border-t border-gray-100">
+          <div className="flex items-start text-xs">
+            <MessageSquare className="w-3 h-3 mr-1 mt-0.5 text-gray-500" />
+            <div>
+              <span className="font-semibold">Comment:</span>
+              <p className="mt-1 text-gray-700 whitespace-pre-wrap">{details.comment}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const ReadinessDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -55,14 +216,83 @@ const ReadinessDetails = () => {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("general")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [error, setError] = useState(null)
+  const [sectionCompletions, setSectionCompletions] = useState({})
+  const [dataIssues, setDataIssues] = useState([])
+  const [showDebugInfo, setShowDebugInfo] = useState(false)
 
   // Fetch readiness details
   useEffect(() => {
     const fetchReadinessDetails = async () => {
       try {
         setLoading(true)
+        setError(null)
+        setDataIssues([])
+
+        console.log(`Fetching readiness details for ID: ${id}`)
         const response = await getReadinessById(id)
-        setReadiness(response.data)
+        console.log("Raw API response:", response)
+
+        // Check if response exists
+        if (!response) {
+          console.error("API returned empty response")
+          setError("API returned empty response")
+          return
+        }
+
+        // Handle different response structures
+        let data = null
+        if (response.data) {
+          console.log("Response has data property:", response.data)
+          data = response.data
+        } else {
+          console.log("Response is the data:", response)
+          data = response
+        }
+
+        // Validate data structure
+        const issues = validateReadinessData(data)
+        setDataIssues(issues)
+
+        console.log("Setting readiness data:", data)
+        setReadiness(data)
+
+        // Calculate section completions
+        const completions = {}
+        const sections = [
+          { name: "Documentation", data: data.Documentation, icon: <FileText2 className="w-5 h-5" /> },
+          { name: "Logistics", data: data.Logistics, icon: <Truck className="w-5 h-5" /> },
+          { name: "Maintenance", data: data.Maintenance, icon: <Wrench className="w-5 h-5" /> },
+          { name: "Packaging", data: data.Packaging, icon: <Package className="w-5 h-5" /> },
+          { name: "ProcessStatusIndustrials", data: data.ProcessStatusIndustrials, icon: <Cog className="w-5 h-5" /> },
+          { name: "ProductProcess", data: data.ProductProcess, icon: <Layers className="w-5 h-5" /> },
+          { name: "RunAtRateProduction", data: data.RunAtRateProduction, icon: <Factory className="w-5 h-5" /> },
+          { name: "Safety", data: data.Safety, icon: <Shield className="w-5 h-5" /> },
+          { name: "Supp", data: data.Supp, icon: <Users className="w-5 h-5" /> },
+          { name: "ToolingStatus", data: data.ToolingStatus, icon: <Tool className="w-5 h-5" /> },
+          { name: "Training", data: data.Training, icon: <GraduationCap className="w-5 h-5" /> },
+        ]
+
+        sections.forEach((section) => {
+          if (section.data) {
+            try {
+              const completion = calculateSectionCompletion(section.data, fieldDefinitions[section.name] || {})
+              completions[section.name] = {
+                completion,
+                icon: section.icon,
+              }
+            } catch (err) {
+              console.error(`Error calculating completion for ${section.name}:`, err)
+              completions[section.name] = {
+                completion: 0,
+                icon: section.icon,
+                error: err.message,
+              }
+            }
+          }
+        })
+
+        setSectionCompletions(completions)
       } catch (error) {
         console.error("Error fetching readiness details:", error)
 
@@ -73,10 +303,15 @@ const ReadinessDetails = () => {
           if (error.response.data?.error?.includes("strictPopulate")) {
             errorMessage = "Database schema mismatch. Please contact your administrator."
           } else {
-            errorMessage = "Server error. Please try again later."
+            errorMessage = `Server error: ${error.response.data?.error || error.message}`
           }
+        } else if (error.response?.status === 404) {
+          errorMessage = "Readiness entry not found."
+        } else if (error.message) {
+          errorMessage = `Error: ${error.message}`
         }
 
+        setError(errorMessage)
         toast({
           title: "Error",
           description: errorMessage,
@@ -158,20 +393,94 @@ const ReadinessDetails = () => {
     }).format(date)
   }
 
-  // Calculate completion percentage for a section
-  const calculateSectionCompletion = (sectionData, sectionFields) => {
-    if (!sectionData) return 0
+  // Validate readiness data structure
+  const validateReadinessData = (data) => {
+    const issues = []
 
-    const totalFields = Object.keys(sectionFields).length
-    let completedFields = 0
-
-    Object.keys(sectionFields).forEach((field) => {
-      if (sectionData[field] && sectionData[field].value === true) {
-        completedFields++
+    // Check required fields
+    const requiredFields = ["id", "project_name", "status", "assignedEmail"]
+    requiredFields.forEach((field) => {
+      if (!data[field]) {
+        issues.push(`Missing required field: ${field}`)
       }
     })
 
-    return Math.round((completedFields / totalFields) * 100)
+    // Check section references
+    const sections = [
+      "Documentation",
+      "Logistics",
+      "Maintenance",
+      "Packaging",
+      "ProcessStatusIndustrials",
+      "ProductProcess",
+      "RunAtRateProduction",
+      "Safety",
+      "Supp",
+      "ToolingStatus",
+      "Training",
+    ]
+
+    sections.forEach((section) => {
+      if (!data[section]) {
+        issues.push(`Missing section: ${section}`)
+      } else if (typeof data[section] !== "object") {
+        issues.push(`Invalid section data type for: ${section}`)
+      }
+    })
+
+    // Check if field definitions exist for each section
+    sections.forEach((section) => {
+      if (!fieldDefinitions[section]) {
+        issues.push(`Missing field definitions for section: ${section}`)
+      }
+    })
+
+    return issues
+  }
+
+  // Calculate section completion
+  const calculateSectionCompletion = (sectionData, sectionFields) => {
+    if (!sectionData) return 0
+    if (!sectionFields || Object.keys(sectionFields).length === 0) {
+      console.warn(`No field definitions found for section`)
+      return 0
+    }
+
+    console.log(`Calculating completion for section:`, sectionData)
+
+    const totalFields = Object.keys(sectionFields).length
+    let completedFields = 0
+    const fieldErrors = []
+
+    Object.keys(sectionFields).forEach((field) => {
+      try {
+        const fieldData = sectionData[field]
+
+        // Check various ways a field might be marked as completed
+        const isCompleted =
+          (fieldData && fieldData.value === true) ||
+          (typeof fieldData === "boolean" && fieldData === true) ||
+          (fieldData && typeof fieldData === "object" && (fieldData.approved === true || fieldData.done === true))
+
+        if (isCompleted) {
+          completedFields++
+          console.log(`Field ${field} is completed`)
+        } else {
+          console.log(`Field ${field} is NOT completed:`, fieldData)
+        }
+      } catch (err) {
+        console.error(`Error processing field ${field}:`, err)
+        fieldErrors.push(`${field}: ${err.message}`)
+      }
+    })
+
+    if (fieldErrors.length > 0) {
+      console.warn("Field processing errors:", fieldErrors)
+    }
+
+    const completion = Math.round((completedFields / totalFields) * 100)
+    console.log(`Section completion: ${completion}% (${completedFields}/${totalFields})`)
+    return completion
   }
 
   // Calculate overall completion
@@ -205,6 +514,13 @@ const ReadinessDetails = () => {
     return validSections > 0 ? Math.round(totalCompletion / validSections) : 0
   }
 
+  // Get progress color based on completion percentage
+  const getProgressColor = (completion) => {
+    if (completion < 30) return "bg-red-500"
+    if (completion < 70) return "bg-amber-500"
+    return "bg-green-500"
+  }
+
   // Render validation section
   const renderValidationSection = (sectionData, sectionFields, sectionTitle) => {
     if (!sectionData) {
@@ -215,66 +531,158 @@ const ReadinessDetails = () => {
       )
     }
 
-    const completion = calculateSectionCompletion(sectionData, sectionFields)
+    if (!sectionFields || Object.keys(sectionFields).length === 0) {
+      return (
+        <div className="py-8 text-center">
+          <Alert variant="destructive">
+            <AlertCircle className="w-4 h-4" />
+            <AlertTitle>Configuration Error</AlertTitle>
+            <AlertDescription>No field definitions found for {sectionTitle}</AlertDescription>
+          </Alert>
+        </div>
+      )
+    }
+
+    console.log(`Rendering ${sectionTitle} section:`, sectionData)
+    console.log(`Fields definition for ${sectionTitle}:`, sectionFields)
+
+    let completion
+    try {
+      completion = calculateSectionCompletion(sectionData, sectionFields)
+    } catch (err) {
+      console.error(`Error calculating completion for ${sectionTitle}:`, err)
+      completion = 0
+    }
+
+    const progressColor = getProgressColor(completion)
 
     return (
       <div className="space-y-6">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Completion</span>
+        {showDebugInfo && <DebugData title={`${sectionTitle} Data`} data={sectionData} />}
+
+        <div className="p-4 rounded-lg bg-gray-50">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Completion Status</span>
             <span className="text-sm font-medium">{completion}%</span>
           </div>
-          <Progress value={completion} className="h-2" />
+          <Progress value={completion} className={`h-2 ${progressColor}`} />
+
+          <div className="flex justify-between mt-4 text-sm text-gray-500">
+            <div className="flex items-center">
+              <div className="w-3 h-3 mr-1 bg-green-500 rounded-full"></div>
+              <span>Completed</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 mr-1 bg-gray-300 rounded-full"></div>
+              <span>Pending</span>
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Object.keys(sectionFields).map((field) => {
-            const fieldData = sectionData[field] || {}
-            const isCompleted = fieldData.value === true
+            try {
+              const fieldData = sectionData[field] || {}
 
-            return (
-              <Card key={field} className={`border ${isCompleted ? "border-green-200" : "border-gray-200"}`}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center text-sm font-medium">
-                    {isCompleted ? (
-                      <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
-                    ) : (
-                      <XCircle className="w-4 h-4 mr-2 text-gray-400" />
-                    )}
-                    {sectionFields[field]}
-                  </CardTitle>
-                </CardHeader>
-                {fieldData.details && (
-                  <CardContent className="pt-0 text-xs">
-                    {fieldData.details.validation_check && (
-                      <div className="mt-1">
-                        <span className="font-semibold">Status:</span>{" "}
-                        {fieldData.details.ok_nok === "OK" ? (
-                          <span className="text-green-600">OK</span>
+              // Handle different data structures for determining if a field is completed
+              let isCompleted = false
+              let validationDetails = null
+
+              if (sectionTitle.toLowerCase() === "supp") {
+                // Special handling for Supp fields which might have a different structure
+                isCompleted =
+                  (fieldData && fieldData.value === true) || (typeof fieldData === "boolean" && fieldData === true)
+
+                // Get validation details from the details field
+                validationDetails = fieldData.details || null
+              } else {
+                // Standard handling for other sections
+                isCompleted =
+                  (fieldData && fieldData.value === true) ||
+                  (typeof fieldData === "boolean" && fieldData === true) ||
+                  (fieldData &&
+                    typeof fieldData === "object" &&
+                    (fieldData.approved === true || fieldData.done === true))
+
+                // For other sections, validation details might be directly in the field data
+                validationDetails = fieldData.details || null
+              }
+
+              // Check if we have validation details
+              const hasValidationDetails = validationDetails && Object.keys(validationDetails).length > 0
+
+              return (
+                <Collapsible
+                  key={field}
+                  className={`border rounded-lg transition-all duration-300 hover:shadow-md ${
+                    isCompleted ? "border-green-200 bg-green-50" : "border-gray-200"
+                  }`}
+                >
+                  <div className="p-4">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full text-left">
+                      <div className="flex items-center">
+                        {isCompleted ? (
+                          <CheckCircle2 className="flex-shrink-0 w-4 h-4 mr-2 text-green-500" />
                         ) : (
-                          <span className="text-red-600">NOK</span>
+                          <XCircle className="flex-shrink-0 w-4 h-4 mr-2 text-gray-400" />
                         )}
+                        <span className="text-sm font-medium">{sectionFields[field]}</span>
                       </div>
-                    )}
-                    {fieldData.details.who && (
-                      <div className="mt-1">
-                        <span className="font-semibold">Validated by:</span> {fieldData.details.who}
-                      </div>
-                    )}
-                    {fieldData.details.when && (
-                      <div className="mt-1">
-                        <span className="font-semibold">Date:</span> {fieldData.details.when}
-                      </div>
-                    )}
-                    {fieldData.details.comment && (
-                      <div className="mt-1">
-                        <span className="font-semibold">Comment:</span> {fieldData.details.comment}
-                      </div>
-                    )}
-                  </CardContent>
-                )}
-              </Card>
-            )
+                      <ChevronRight className="w-4 h-4 text-gray-400 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                    </CollapsibleTrigger>
+
+                    <div className="flex items-center mt-2 text-xs text-gray-500">
+                      <span className="mr-1 font-medium">Status:</span>
+                      {isCompleted ? (
+                        <span className="flex items-center text-green-600">
+                          <CheckIcon className="w-3 h-3 mr-1" /> Completed
+                        </span>
+                      ) : (
+                        <span className="flex items-center text-gray-500">
+                          <XIcon className="w-3 h-3 mr-1" /> Pending
+                        </span>
+                      )}
+
+                      {hasValidationDetails && (
+                        <Badge variant="outline" className="ml-2 text-blue-600 border-blue-200 bg-blue-50">
+                          Validation Details
+                        </Badge>
+                      )}
+                    </div>
+
+                    <CollapsibleContent className="pt-3 mt-3 border-t border-gray-100">
+                      {showDebugInfo && (
+                        <div className="p-2 mb-3 text-xs bg-gray-100 rounded">
+                          <pre className="overflow-auto max-h-20">{JSON.stringify(fieldData, null, 2)}</pre>
+                        </div>
+                      )}
+
+                      {hasValidationDetails ? (
+                        <ValidationDetails details={validationDetails} />
+                      ) : (
+                        <div className="flex items-center text-xs text-gray-500">
+                          <HelpCircle className="w-3 h-3 mr-1" />
+                          <span>No validation details available for this field</span>
+                        </div>
+                      )}
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              )
+            } catch (err) {
+              console.error(`Error rendering field ${field}:`, err)
+              return (
+                <Card key={field} className="border-red-200 bg-red-50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center text-sm font-medium">
+                      <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
+                      {sectionFields[field] || field}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 text-xs text-red-600">Error rendering field: {err.message}</CardContent>
+                </Card>
+              )
+            }
           })}
         </div>
       </div>
@@ -285,9 +693,34 @@ const ReadinessDetails = () => {
     return (
       <MainLayout>
         <div className="container py-6 mx-auto">
-          <div className="flex items-center justify-center py-24">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <span className="ml-2 text-lg">Loading readiness details...</span>
+          <div className="flex flex-col items-center justify-center py-24">
+            <Loader2 className="w-12 h-12 mb-4 animate-spin text-primary" />
+            <span className="text-lg">Loading readiness details...</span>
+            <p className="mt-2 text-sm text-gray-500">This may take a moment</p>
+          </div>
+        </div>
+      </MainLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="container py-6 mx-auto">
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="w-4 h-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <FileText className="w-12 h-12 mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-medium">Could not load readiness entry</h3>
+            <p className="mt-1 mb-4 text-muted-foreground">There was a problem loading this readiness entry</p>
+            <Button onClick={() => navigate("/readiness")}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Readiness List
+            </Button>
           </div>
         </div>
       </MainLayout>
@@ -315,10 +748,12 @@ const ReadinessDetails = () => {
   }
 
   const overallCompletion = calculateOverallCompletion()
+  const progressColor = getProgressColor(overallCompletion)
 
   return (
     <MainLayout>
       <motion.div className="container py-6 mx-auto" initial="hidden" animate="visible" variants={fadeIn}>
+        {/* Header Section */}
         <div className="flex flex-col mb-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center">
             <Button variant="ghost" onClick={() => navigate("/readiness")} className="mr-4">
@@ -345,89 +780,257 @@ const ReadinessDetails = () => {
           </div>
         </div>
 
+        {dataIssues.length > 0 && (
+          <Alert variant="warning" className="mb-6 bg-amber-50 border-amber-200">
+            <AlertCircle className="w-4 h-4 text-amber-600" />
+            <AlertTitle className="text-amber-800">Data Validation Issues</AlertTitle>
+            <AlertDescription>
+              <ul className="pl-5 mt-2 text-sm list-disc">
+                {dataIssues.map((issue, index) => (
+                  <li key={index} className="text-amber-700">
+                    {issue}
+                  </li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="flex justify-end mb-4">
+          <Button variant="outline" size="sm" onClick={() => setShowDebugInfo(!showDebugInfo)} className="text-xs">
+            {showDebugInfo ? "Hide Debug Info" : "Show Debug Info"}
+          </Button>
+        </div>
+
+        {/* Overview Cards */}
+        <div className="grid gap-6 mb-6 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-2 bg-gray-50">
+              <CardTitle className="flex items-center text-sm">
+                <Mail className="w-4 h-4 mr-2 text-blue-500" />
+                Assigned To
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-3">
+              <p className="font-medium">{readiness.assignedEmail || "N/A"}</p>
+              <p className="mt-1 text-xs text-gray-500">{readiness.assignedRole || "No role specified"}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-2 bg-gray-50">
+              <CardTitle className="flex items-center text-sm">
+                <Calendar className="w-4 h-4 mr-2 text-green-500" />
+                Created
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-3">
+              <p className="font-medium">{formatDate(readiness.createdAt)}</p>
+              <p className="mt-1 text-xs text-gray-500">Creation date</p>
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-2 bg-gray-50">
+              <CardTitle className="flex items-center text-sm">
+                <Clock className="w-4 h-4 mr-2 text-amber-500" />
+                Last Updated
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-3">
+              <p className="font-medium">{formatDate(readiness.updatedAt)}</p>
+              <p className="mt-1 text-xs text-gray-500">Last modification</p>
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-2 bg-gray-50">
+              <CardTitle className="flex items-center text-sm">
+                <BarChart3 className="w-4 h-4 mr-2 text-purple-500" />
+                Overall Completion
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-medium">{overallCompletion}%</span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="w-4 h-4 text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Average completion across all sections</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Progress value={overallCompletion} className={`h-2 ${progressColor}`} />
+            </CardContent>
+          </Card>
+        </div>
+
+        {showDebugInfo && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <AlertCircle className="w-5 h-5 mr-2" />
+                Debug Information
+              </CardTitle>
+              <CardDescription>Raw data for troubleshooting</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="general">
+                <TabsList>
+                  <TabsTrigger value="general">General</TabsTrigger>
+                  <TabsTrigger value="sections">Sections</TabsTrigger>
+                  <TabsTrigger value="completions">Completions</TabsTrigger>
+                </TabsList>
+                <TabsContent value="general">
+                  <DebugData
+                    title="Readiness Data"
+                    data={{
+                      id: readiness.id,
+                      project_name: readiness.project_name,
+                      status: readiness.status,
+                      assignedEmail: readiness.assignedEmail,
+                      createdAt: readiness.createdAt,
+                      updatedAt: readiness.updatedAt,
+                    }}
+                  />
+                </TabsContent>
+                <TabsContent value="sections">
+                  <div className="space-y-2">
+                    {[
+                      "Documentation",
+                      "Logistics",
+                      "Maintenance",
+                      "Packaging",
+                      "ProcessStatusIndustrials",
+                      "ProductProcess",
+                      "RunAtRateProduction",
+                      "Safety",
+                      "Supp",
+                      "ToolingStatus",
+                      "Training",
+                    ].map((section) => (
+                      <div key={section}>
+                        <h3 className="mb-1 text-sm font-medium">{section}</h3>
+                        {readiness[section] ? (
+                          <DebugData title={`${section} Data`} data={readiness[section]} />
+                        ) : (
+                          <div className="p-2 text-sm text-red-600 rounded bg-red-50">No data available</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+                <TabsContent value="completions">
+                  <DebugData title="Section Completions" data={sectionCompletions} />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Section Completion Overview */}
         <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <div className="flex flex-col space-y-1.5">
-                <span className="flex items-center text-sm font-medium text-muted-foreground">
-                  <Mail className="w-4 h-4 mr-2" />
-                  Assigned To
-                </span>
-                <span>{readiness.assignedEmail || "N/A"}</span>
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <span className="flex items-center text-sm font-medium text-muted-foreground">
-                  <User className="w-4 h-4 mr-2" />
-                  Role
-                </span>
-                <span>{readiness.assignedRole || "N/A"}</span>
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <span className="flex items-center text-sm font-medium text-muted-foreground">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Created
-                </span>
-                <span>{formatDate(readiness.createdAt)}</span>
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <span className="flex items-center text-sm font-medium text-muted-foreground">
-                  <Clock className="w-4 h-4 mr-2" />
-                  Last Updated
-                </span>
-                <span>{formatDate(readiness.updatedAt)}</span>
-              </div>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <PieChart className="w-5 h-5 mr-2" />
+              Section Completion Overview
+            </CardTitle>
+            <CardDescription>Progress across all readiness sections</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {Object.entries(sectionCompletions).map(([section, data]) => (
+                <div
+                  key={section}
+                  className={`p-4 border rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer ${
+                    data.completion === 100
+                      ? "border-green-200 bg-green-50"
+                      : data.completion > 0
+                        ? "border-amber-200 bg-amber-50"
+                        : "border-gray-200"
+                  }`}
+                  onClick={() => setActiveTab(section.toLowerCase())}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      {data.icon}
+                      <span className="ml-2 font-medium">{section}</span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                  </div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm">{data.completion}% Complete</span>
+                    {data.completion === 100 ? (
+                      <CheckSquare className="w-4 h-4 text-green-500" />
+                    ) : data.completion > 0 ? (
+                      <Clock className="w-4 h-4 text-amber-500" />
+                    ) : (
+                      <XSquare className="w-4 h-4 text-gray-400" />
+                    )}
+                  </div>
+                  <Progress value={data.completion} className={`h-2 ${getProgressColor(data.completion)}`} />
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Overall Completion</span>
-                <span className="text-sm font-medium">{overallCompletion}%</span>
-              </div>
-              <Progress value={overallCompletion} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Description Card */}
+        {readiness.description && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                Project Description
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700">{readiness.description}</p>
+            </CardContent>
+          </Card>
+        )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="flex flex-wrap mb-6">
-            <TabsTrigger value="general" className="flex-grow">
+        {/* Tabs Section */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
+          <TabsList className="flex flex-wrap mb-6 bg-gray-100">
+            <TabsTrigger value="general" className="flex-grow data-[state=active]:bg-white">
               General
             </TabsTrigger>
-            <TabsTrigger value="documentation" className="flex-grow">
+            <TabsTrigger value="documentation" className="flex-grow data-[state=active]:bg-white">
               Documentation
             </TabsTrigger>
-            <TabsTrigger value="logistics" className="flex-grow">
+            <TabsTrigger value="logistics" className="flex-grow data-[state=active]:bg-white">
               Logistics
             </TabsTrigger>
-            <TabsTrigger value="maintenance" className="flex-grow">
+            <TabsTrigger value="maintenance" className="flex-grow data-[state=active]:bg-white">
               Maintenance
             </TabsTrigger>
-            <TabsTrigger value="packaging" className="flex-grow">
+            <TabsTrigger value="packaging" className="flex-grow data-[state=active]:bg-white">
               Packaging
             </TabsTrigger>
-            <TabsTrigger value="process" className="flex-grow">
+            <TabsTrigger value="processstatus" className="flex-grow data-[state=active]:bg-white">
               Process Status
             </TabsTrigger>
-            <TabsTrigger value="product" className="flex-grow">
+            <TabsTrigger value="productprocess" className="flex-grow data-[state=active]:bg-white">
               Product Process
             </TabsTrigger>
-            <TabsTrigger value="production" className="flex-grow">
+            <TabsTrigger value="production" className="flex-grow data-[state=active]:bg-white">
               Production
             </TabsTrigger>
-            <TabsTrigger value="safety" className="flex-grow">
+            <TabsTrigger value="safety" className="flex-grow data-[state=active]:bg-white">
               Safety
             </TabsTrigger>
-            <TabsTrigger value="supp" className="flex-grow">
+            <TabsTrigger value="supp" className="flex-grow data-[state=active]:bg-white">
               Supp
             </TabsTrigger>
-            <TabsTrigger value="tooling" className="flex-grow">
+            <TabsTrigger value="tooling" className="flex-grow data-[state=active]:bg-white">
               Tooling Status
             </TabsTrigger>
-            <TabsTrigger value="training" className="flex-grow">
+            <TabsTrigger value="training" className="flex-grow data-[state=active]:bg-white">
               Training
             </TabsTrigger>
           </TabsList>
@@ -436,7 +1039,10 @@ const ReadinessDetails = () => {
             <TabsContent value="general">
               <Card>
                 <CardHeader>
-                  <CardTitle>General Information</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <Info className="w-5 h-5 mr-2" />
+                    General Information
+                  </CardTitle>
                   <CardDescription>Basic information about this readiness entry</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -455,7 +1061,10 @@ const ReadinessDetails = () => {
             <TabsContent value="documentation">
               <Card>
                 <CardHeader>
-                  <CardTitle>Documentation</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <FileText2 className="w-5 h-5 mr-2" />
+                    Documentation
+                  </CardTitle>
                   <CardDescription>Documentation requirements for this readiness entry</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -467,7 +1076,10 @@ const ReadinessDetails = () => {
             <TabsContent value="logistics">
               <Card>
                 <CardHeader>
-                  <CardTitle>Logistics</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <Truck className="w-5 h-5 mr-2" />
+                    Logistics
+                  </CardTitle>
                   <CardDescription>Logistics requirements for this readiness entry</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -479,7 +1091,10 @@ const ReadinessDetails = () => {
             <TabsContent value="maintenance">
               <Card>
                 <CardHeader>
-                  <CardTitle>Maintenance</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <Wrench className="w-5 h-5 mr-2" />
+                    Maintenance
+                  </CardTitle>
                   <CardDescription>Maintenance requirements for this readiness entry</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -491,7 +1106,10 @@ const ReadinessDetails = () => {
             <TabsContent value="packaging">
               <Card>
                 <CardHeader>
-                  <CardTitle>Packaging</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <Package className="w-5 h-5 mr-2" />
+                    Packaging
+                  </CardTitle>
                   <CardDescription>Packaging requirements for this readiness entry</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -500,10 +1118,13 @@ const ReadinessDetails = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="process">
+            <TabsContent value="processstatus">
               <Card>
                 <CardHeader>
-                  <CardTitle>Process Status Industrials</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <Cog className="w-5 h-5 mr-2" />
+                    Process Status Industrials
+                  </CardTitle>
                   <CardDescription>Process status requirements for this readiness entry</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -516,10 +1137,13 @@ const ReadinessDetails = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="product">
+            <TabsContent value="productprocess">
               <Card>
                 <CardHeader>
-                  <CardTitle>Product Process</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <Layers className="w-5 h-5 mr-2" />
+                    Product Process
+                  </CardTitle>
                   <CardDescription>Product process requirements for this readiness entry</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -535,7 +1159,10 @@ const ReadinessDetails = () => {
             <TabsContent value="production">
               <Card>
                 <CardHeader>
-                  <CardTitle>Run At Rate Production</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <Factory className="w-5 h-5 mr-2" />
+                    Run At Rate Production
+                  </CardTitle>
                   <CardDescription>Production requirements for this readiness entry</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -551,7 +1178,10 @@ const ReadinessDetails = () => {
             <TabsContent value="safety">
               <Card>
                 <CardHeader>
-                  <CardTitle>Safety</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <Shield className="w-5 h-5 mr-2" />
+                    Safety
+                  </CardTitle>
                   <CardDescription>Safety requirements for this readiness entry</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -563,7 +1193,10 @@ const ReadinessDetails = () => {
             <TabsContent value="supp">
               <Card>
                 <CardHeader>
-                  <CardTitle>Supp</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <Users className="w-5 h-5 mr-2" />
+                    Supp
+                  </CardTitle>
                   <CardDescription>Supp requirements for this readiness entry</CardDescription>
                 </CardHeader>
                 <CardContent>{renderValidationSection(readiness.Supp, fieldDefinitions.Supp, "supp")}</CardContent>
@@ -573,7 +1206,10 @@ const ReadinessDetails = () => {
             <TabsContent value="tooling">
               <Card>
                 <CardHeader>
-                  <CardTitle>Tooling Status</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <Tool className="w-5 h-5 mr-2" />
+                    Tooling Status
+                  </CardTitle>
                   <CardDescription>Tooling requirements for this readiness entry</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -585,7 +1221,10 @@ const ReadinessDetails = () => {
             <TabsContent value="training">
               <Card>
                 <CardHeader>
-                  <CardTitle>Training</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <GraduationCap className="w-5 h-5 mr-2" />
+                    Training
+                  </CardTitle>
                   <CardDescription>Training requirements for this readiness entry</CardDescription>
                 </CardHeader>
                 <CardContent>

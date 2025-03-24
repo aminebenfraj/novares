@@ -22,8 +22,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Loader2, FileText } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Loader2, FileText, AlertCircle } from "lucide-react"
 import MainLayout from "@/components/MainLayout"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 // Animation variants
 const fadeIn = {
@@ -41,15 +42,44 @@ const ReadinessList = () => {
   const [statusFilter, setStatusFilter] = useState("all")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [entryToDelete, setEntryToDelete] = useState(null)
+  const [error, setError] = useState(null)
 
   // Fetch readiness entries
   useEffect(() => {
     const fetchReadinessEntries = async () => {
       try {
         setLoading(true)
+        setError(null)
+
+        console.log("Fetching readiness entries...")
         const response = await getAllReadiness()
-        setReadinessEntries(response.data || [])
-        setFilteredEntries(response.data || [])
+        console.log("Raw API response:", response)
+
+        // Check if response exists and has the expected structure
+        if (!response) {
+          console.error("API returned empty response")
+          setError("API returned empty response")
+          return
+        }
+
+        // Check if response.data exists and is an array
+        if (Array.isArray(response)) {
+          console.log("Setting readiness entries from array response:", response)
+          setReadinessEntries(response)
+          setFilteredEntries(response)
+        } else if (response.data && Array.isArray(response.data)) {
+          console.log("Setting readiness entries from response.data:", response.data)
+          setReadinessEntries(response.data)
+          setFilteredEntries(response.data)
+        } else {
+          console.error("Invalid response format:", response)
+          setError("Received invalid data format from server")
+          toast({
+            title: "Data Error",
+            description: "Received invalid data format from server",
+            variant: "destructive",
+          })
+        }
       } catch (error) {
         console.error("Error fetching readiness entries:", error)
 
@@ -64,6 +94,7 @@ const ReadinessList = () => {
           }
         }
 
+        setError(errorMessage)
         toast({
           title: "Error",
           description: errorMessage,
@@ -91,12 +122,13 @@ const ReadinessList = () => {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(
         (entry) =>
-          entry.project_name.toLowerCase().includes(term) ||
-          entry.id.toLowerCase().includes(term) ||
+          entry.project_name?.toLowerCase().includes(term) ||
+          entry.id?.toLowerCase().includes(term) ||
           (entry.assignedEmail && entry.assignedEmail.toLowerCase().includes(term)),
       )
     }
 
+    console.log("Filtered entries:", filtered)
     setFilteredEntries(filtered)
   }, [searchTerm, statusFilter, readinessEntries])
 
@@ -181,11 +213,19 @@ const ReadinessList = () => {
             <h1 className="text-2xl font-bold">Readiness Management</h1>
             <p className="text-muted-foreground">Manage and track readiness entries</p>
           </div>
-          <Button onClick={() => navigate("/readiness/new")} className="mt-4 md:mt-0">
+          <Button onClick={() => navigate("/readiness/create")} className="mt-4 md:mt-0">
             <Plus className="w-4 h-4 mr-2" />
             New Readiness Entry
           </Button>
         </div>
+
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="w-4 h-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         <Card className="mb-6">
           <CardHeader className="pb-3">
@@ -235,11 +275,28 @@ const ReadinessList = () => {
                     : "Create your first readiness entry to get started"}
                 </p>
                 {!searchTerm && statusFilter === "all" && (
-                  <Button onClick={() => navigate("/readiness/new")}>
+                  <Button onClick={() => navigate("/readiness/create")}>
                     <Plus className="w-4 h-4 mr-2" />
                     New Readiness Entry
                   </Button>
                 )}
+
+                {/* Debug information */}
+                <div className="w-full max-w-2xl p-4 mt-8 text-left border border-dashed rounded-md">
+                  <h4 className="mb-2 font-medium">Debug Information:</h4>
+                  <p className="mb-2 text-sm">Raw entries count: {readinessEntries.length}</p>
+                  <p className="mb-2 text-sm">Filtered entries count: {filteredEntries.length}</p>
+                  <p className="mb-2 text-sm">Search term: "{searchTerm}"</p>
+                  <p className="mb-2 text-sm">Status filter: {statusFilter}</p>
+                  {readinessEntries.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium">First entry sample:</p>
+                      <pre className="p-2 mt-1 overflow-auto text-xs bg-gray-100 rounded max-h-40">
+                        {JSON.stringify(readinessEntries[0], null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -273,11 +330,11 @@ const ReadinessList = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => navigate(`/readiness/${entry._id}`)}>
+                              <DropdownMenuItem onClick={() => navigate(`/readiness/detail/${entry._id}`)}>
                                 <Eye className="w-4 h-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => navigate(`/readiness/${entry._id}/edit`)}>
+                              <DropdownMenuItem onClick={() => navigate(`/readiness/edit/${entry._id}`)}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
