@@ -1,24 +1,49 @@
-// readinessApi.js
-import { apiRequest } from "../api";
+import { apiRequest } from "../api"
 
-const BASE_URL = "api/Readiness";
+// Get all readiness entries with error handling for population issues
+export const getAllReadiness = async () => {
+  try {
+    // First try with the normal populate approach
+    return await apiRequest("GET", "api/readiness")
+  } catch (error) {
+    // If we get a population error, try again with strictPopulate set to false
+    if (error.response?.status === 500 && error.response?.data?.error?.includes("strictPopulate")) {
+      console.warn("Using fallback method for fetching readiness entries")
+      return await apiRequest("GET", "api/readiness?strictPopulate=false")
+    }
+    // If it's another error, rethrow it
+    throw error
+  }
+}
 
-export const getAllReadiness = (params) => {
-  return apiRequest("GET", BASE_URL, null, params);
-};
+// Get a single readiness entry by ID with error handling
+export const getReadinessById = async (id) => {
+  try {
+    // First try with the normal populate approach
+    return await apiRequest("GET", `api/readiness/${id}`)
+  } catch (error) {
+    // If we get a population error, try again with strictPopulate set to false
+    if (error.response?.status === 500 && error.response?.data?.error?.includes("strictPopulate")) {
+      console.warn("Using fallback method for fetching readiness entry")
+      return await apiRequest("GET", `api/readiness/${id}?strictPopulate=false`)
+    }
+    // If it's another error, rethrow it
+    throw error
+  }
+}
 
-export const getReadinessById = (id) => {
-  return apiRequest("GET", `${BASE_URL}/${id}`);
-};
+// Create a new readiness entry
+export const createReadiness = async (data) => {
+  return await apiRequest("POST", "/api/readiness", data)
+}
 
-export const createReadiness = (data) => {
-  return apiRequest("POST", BASE_URL, data);
-};
+// Update a readiness entry
+export const updateReadiness = async (id, data) => {
+  return await apiRequest("PUT", `/api/readiness/${id}`, data)
+}
 
-export const updateReadiness = (id, data) => {
-  return apiRequest("PUT", `${BASE_URL}/${id}`, data);
-};
+// Delete a readiness entry
+export const deleteReadiness = async (id) => {
+  return await apiRequest("DELETE", `/api/readiness/${id}`)
+}
 
-export const deleteReadiness = (id) => {
-  return apiRequest("DELETE", `${BASE_URL}/${id}`);
-};

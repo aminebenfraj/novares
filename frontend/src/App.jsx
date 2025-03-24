@@ -79,7 +79,10 @@ import Materialmachinecreate from '../src/pages/gestionStock/machineMaterials/ma
 import Materialmachinelist from '../src/pages/gestionStock/machineMaterials/material-machine-list';
 import Materialmachineedit from '../src/pages/gestionStock/machineMaterials/material-machine-edit';
 import Materialmachinedetails from '../src/pages/gestionStock/machineMaterials/material-machine-details';
-import  ReadinessForm from '../src/pages/readiness/ReadinessForm';
+import  ReadinessForm from './pages/readiness/readinessForm';
+import  ReadinessDetails from './pages/readiness/readiness-details';
+import  ReadinessEdit from './pages/readiness/readiness-edit';
+import  ReadinessList from './pages/readiness/readiness-list';
 
 
 
@@ -166,6 +169,9 @@ function App() {
         <Route path="/machinematerial/detail/:id" element={< Materialmachinedetails/>} />
         <Route path="/machinematerial/edit/:id" element={< Materialmachineedit/>} />
         <Route path="/readiness/create" element={< ReadinessForm/>} />
+        <Route path="/readiness/detail/:id" element={< ReadinessDetails/>} />
+        <Route path="/readiness/edit/:id" element={< ReadinessEdit/>} />
+        <Route path="/readiness" element={< ReadinessList/>} />
     </Routes>
       </AuthProvider>
   );

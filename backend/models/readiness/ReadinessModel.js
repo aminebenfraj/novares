@@ -16,7 +16,7 @@ const readinessSchema = new Schema(
     ProductProcess: { type: Schema.Types.ObjectId, ref: "ProductProcess" },
     RunAtRateProduction: { type: Schema.Types.ObjectId, ref: "RunAtRateProduction" },
     Safety: { type: Schema.Types.ObjectId, ref: "Safety" },
-    Suppliers: { type: Schema.Types.ObjectId, ref: "Suppliers" },
+    Suppliers: { type: Schema.Types.ObjectId, ref: "Supp" },
     ToolingStatus: { type: Schema.Types.ObjectId, ref: "ToolingStatus" },
     Training: { type: Schema.Types.ObjectId, ref: "Training" },
     

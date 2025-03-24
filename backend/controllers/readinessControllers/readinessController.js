@@ -1,4 +1,4 @@
-const Readiness = require("../../models/readiness/ReadinessModel")
+const Readiness = require("../../models/readiness/readinessModel")
 
 exports.createReadiness = async (req, res) => {
   try {
@@ -45,6 +45,8 @@ exports.createReadiness = async (req, res) => {
 
 exports.getAllReadiness = async (req, res) => {
   try {
+    console.log("Readiness Schema:", Object.keys(Readiness.schema.paths))
+
     const readiness = await Readiness.find()
       .populate("Documentation")
       .populate("Logistics")
@@ -54,16 +56,18 @@ exports.getAllReadiness = async (req, res) => {
       .populate("ProductProcess")
       .populate("RunAtRateProduction")
       .populate("Safety")
-      .populate("Supp") // Updated from Suppliers to Supp
+      .populate("Suppliers") // Use the field name that exists in your schema
       .populate("ToolingStatus")
       .populate("Training")
 
     res.status(200).json(readiness)
   } catch (error) {
+    console.error("Detailed error:", error)
     res.status(500).json({ message: "Error fetching Readiness entries", error: error.message })
   }
 }
 
+// Apply the same change to getReadinessById and updateReadiness methods
 exports.getReadinessById = async (req, res) => {
   try {
     const readiness = await Readiness.findById(req.params.id)
@@ -75,7 +79,7 @@ exports.getReadinessById = async (req, res) => {
       .populate("ProductProcess")
       .populate("RunAtRateProduction")
       .populate("Safety")
-      .populate("Supp") // Updated from Suppliers to Supp
+      .populate("Suppliers") // Use the field name that exists in your schema
       .populate("ToolingStatus")
       .populate("Training")
 
@@ -100,7 +104,7 @@ exports.updateReadiness = async (req, res) => {
       .populate("ProductProcess")
       .populate("RunAtRateProduction")
       .populate("Safety")
-      .populate("Supp") // Updated from Suppliers to Supp
+      .populate("Suppliers") // Use the field name that exists in your schema
       .populate("ToolingStatus")
       .populate("Training")
 
@@ -116,6 +120,7 @@ exports.updateReadiness = async (req, res) => {
     res.status(500).json({ message: "Error updating Readiness entry", error: error.message })
   }
 }
+
 
 exports.deleteReadiness = async (req, res) => {
   try {
