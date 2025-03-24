@@ -871,34 +871,58 @@ exports.exportPedidos = async (req, res) => {
 // Generate QR code for a pedido
 exports.generateQRCode = async (req, res) => {
   try {
-    const { id } = req.params
+    const { id } = req.params;
 
     // Find the pedido
-    const pedido = await Pedido.findById(id)
+    const pedido = await Pedido.findById(id);
     if (!pedido) {
-      return res.status(404).json({ message: "Pedido not found" })
+      return res.status(404).json({ message: "Pedido not found" });
     }
 
-    // Generate a unique QR code if it doesn't exist
-    if (!pedido.qrCode) {
-      // Create a unique code based on ID and timestamp
-      const qrCode = `PED-${pedido._id.toString().slice(-6)}-${Date.now().toString().slice(-6)}`
-
-      // Update the pedido with the QR code
-      pedido.qrCode = qrCode
-      await pedido.save()
+    // If QR code already exists, return it
+    if (pedido.qrCode) {
+      return res.status(200).json({
+        qrCode: pedido.qrCode,
+        pedidoId: pedido._id
+      });
     }
+
+    // Generate a new QR code
+    await pedido.generateQRCode();
 
     res.status(200).json({
       qrCode: pedido.qrCode,
-      pedidoId: pedido._id,
-    })
+      pedidoId: pedido._id
+    });
   } catch (error) {
-    console.error("Error generating QR code:", error)
-    res.status(500).json({ message: "Error generating QR code", error: error.message })
+    console.error("Error generating QR code:", error);
+    res.status(500).json({ message: "Error generating QR code", error: error.message });
   }
-}
+};
 
+// Get pedido by QR code
+exports.getPedidoByQRCode = async (req, res) => {
+  try {
+    const { qrCode } = req.params;
+
+    const pedido = await Pedido.findOne({ qrCode })
+      .populate("tipo", "name")
+      .populate("referencia", "description price reference manufacturer")
+      .populate("solicitante", "name email number")
+      .populate("proveedor", "name contact email phone address")
+      .populate("table_status", "name color")
+      .lean();
+
+    if (!pedido) {
+      return res.status(404).json({ message: "Pedido not found" });
+    }
+
+    res.status(200).json(pedido);
+  } catch (error) {
+    console.error("Error fetching pedido by QR code:", error);
+    res.status(500).json({ message: "Error fetching pedido", error: error.message });
+  }
+};
 // Get pedidos by QR code
 exports.getPedidoByQRCode = async (req, res) => {
   try {
