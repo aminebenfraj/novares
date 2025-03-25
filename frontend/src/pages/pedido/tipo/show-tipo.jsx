@@ -1,48 +1,74 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useNavigate, useParams } from "react-router-dom"
-import { getTipoById } from "../../../apis/pedido/tipoApi.jsx"
+import { useNavigate } from "react-router-dom"
+import { getAllTipos } from "../../../apis/pedido/tipoApi.jsx"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, Edit, Loader2, Package } from "lucide-react"
+import { ArrowLeft, Edit, Loader2, Plus, Package } from "lucide-react"
 import MainLayout from "@/components/MainLayout"
 
 function ShowTipo() {
-  const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+
   const [isLoading, setIsLoading] = useState(true)
-  const [tipo, setTipo] = useState(null)
+  const [tipos, setTipos] = useState([])
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    const fetchTipo = async () => {
+    const fetchTipos = async () => {
       try {
-        const data = await getTipoById(id)
-        setTipo(data)
+        console.log("Fetching all tipos")
+        const data = await getAllTipos()
+
+        if (!data || !Array.isArray(data)) {
+          setError("No types found or invalid data format")
+        } else {
+          console.log("Tipos data:", data)
+          setTipos(data)
+        }
       } catch (error) {
-        console.error("Error fetching type:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load type data",
-        })
-        navigate("/tipo")
+        console.error("Error fetching types:", error)
+        setError(error.message || "Failed to load types data")
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchTipo()
-  }, [id, navigate, toast])
+    fetchTipos()
+  }, [toast])
 
   if (isLoading) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center min-h-screen">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      </MainLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="container py-8 mx-auto">
+          <div className="flex items-center mb-6 space-x-4">
+            <Button variant="outline" size="icon" onClick={() => navigate("/")}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Error</h1>
+              <p className="text-muted-foreground">{error}</p>
+            </div>
+          </div>
+          <Card className="max-w-2xl mx-auto">
+            <CardContent className="pt-6">
+              <p>Unable to load types. Please try again.</p>
+            </CardContent>
+          </Card>
         </div>
       </MainLayout>
     )
@@ -58,46 +84,56 @@ function ShowTipo() {
       >
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="icon" onClick={() => navigate("/tipo")}>
+            <Button variant="outline" size="icon" onClick={() => navigate("/")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Type Details</h1>
-              <p className="text-muted-foreground">View information about this order type</p>
+              <h1 className="text-3xl font-bold tracking-tight">Order Types</h1>
+              <p className="text-muted-foreground">View and manage all order types</p>
             </div>
           </div>
-          <Button onClick={() => navigate(`/tipo/edit/${id}`)}>
-            <Edit className="w-4 h-4 mr-2" />
-            Edit
+          <Button onClick={() => navigate("/tipo/create")}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Type
           </Button>
         </div>
 
-        <Card className="max-w-2xl mx-auto">
+        <Card>
           <CardHeader>
-            <CardTitle>Type Information</CardTitle>
-            <CardDescription>Detailed information about this order type</CardDescription>
+            <CardTitle>All Order Types</CardTitle>
+            <CardDescription>List of all available order types in the system</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 rounded-full bg-primary/10">
-                <Package className="w-6 h-6 text-primary" />
+          <CardContent>
+            {tipos.length === 0 ? (
+              <div className="py-6 text-center">
+                <p className="text-muted-foreground">No order types found. Create your first one!</p>
+                <Button className="mt-4" onClick={() => navigate("/tipo/create")}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Order Type
+                </Button>
               </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Type Name</h3>
-                <p className="text-2xl font-medium">{tipo.name}</p>
+            ) : (
+              <div className="grid gap-4">
+                {tipos.map((tipo) => (
+                  <div
+                    key={tipo._id}
+                    className="flex items-center justify-between p-4 transition-colors border rounded-lg hover:bg-accent/50"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 rounded-full bg-primary/10">
+                        <Package className="w-4 h-4 text-primary" />
+                      </div>
+                      <h3 className="font-medium">{tipo.name}</h3>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => navigate(`/tipo/edit/${tipo._id}`)}>
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
+                  </div>
+                ))}
               </div>
-            </div>
-
-            <div className="p-4 border rounded-md bg-muted/20">
-              <h3 className="mb-2 text-sm font-medium text-muted-foreground">Usage Statistics</h3>
-              <p className="text-muted-foreground">No usage statistics available for this type.</p>
-            </div>
+            )}
           </CardContent>
-          <CardFooter>
-            <Button variant="outline" onClick={() => navigate("/tipo")}>
-              Back to List
-            </Button>
-          </CardFooter>
         </Card>
       </motion.div>
     </MainLayout>
