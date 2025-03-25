@@ -8,9 +8,9 @@ export const getAllTableStatuses = async (sortBy = "order", sortOrder = 1) => {
   try {
     const queryParams = new URLSearchParams({
       sortBy: sortBy,
-      sortOrder: sortOrder.toString()
+      sortOrder: sortOrder.toString(),
     })
-    
+
     return await apiRequest("GET", `${BASE_URL}?${queryParams.toString()}`)
   } catch (error) {
     console.error("Error fetching table statuses:", error)
@@ -42,3 +42,4 @@ export const deleteTableStatus = (id) => {
 export const reorderTableStatuses = (orders) => {
   return apiRequest("POST", `${BASE_URL}/reorder`, { orders })
 }
+

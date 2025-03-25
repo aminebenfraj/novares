@@ -83,6 +83,15 @@ import  ReadinessForm from './pages/readiness/readinessForm';
 import  ReadinessDetails from './pages/readiness/readiness-details';
 import  ReadinessEdit from './pages/readiness/readiness-edit';
 import  ReadinessList from './pages/readiness/readiness-list';
+import  CreateSolicitante from './pages/pedido/solicitante/create-solicitante';
+import  EditSolicitante from './pages/pedido/solicitante/edit-solicitante';
+import  ShowSolicitante from './pages/pedido/solicitante/show-solicitante';
+import  CreateTableStatus from './pages/pedido/status/create-table-status';
+import  EditTableStatus from './pages/pedido/status/edit-table-status';
+import  ShowTableStatus from './pages/pedido/status/show-table-status';
+import  CreateTipo from './pages/pedido/tipo/create-tipo';
+import  EditTipo from './pages/pedido/tipo/edit-tipo';
+import  ShowTipo from './pages/pedido/tipo/show-tipo';
 
 
 
@@ -172,6 +181,15 @@ function App() {
         <Route path="/readiness/detail/:id" element={< ReadinessDetails/>} />
         <Route path="/readiness/edit/:id" element={< ReadinessEdit/>} />
         <Route path="/readiness" element={< ReadinessList/>} />
+        <Route path="/solicitante" element={< ShowSolicitante/>} />
+        <Route path="/solicitante/edit/:id" element={< EditSolicitante/>} />
+        <Route path="/solicitante/create" element={< CreateSolicitante/>} />
+        <Route path="/table-status" element={< ShowTableStatus/>} />
+        <Route path="/tablestatus/edit/:id" element={< EditTableStatus/>} />
+        <Route path="/tablestatus/create" element={< CreateTableStatus/>} />
+        <Route path="/tipo" element={< ShowTipo/>} />
+        <Route path="/tipo/edit/:id" element={< EditTipo/>} />
+        <Route path="/tipo/create" element={< CreateTipo/>} />
     </Routes>
       </AuthProvider>
   );
