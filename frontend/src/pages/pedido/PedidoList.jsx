@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { getAllPedidos, deletePedido, getFilterOptions } from "../../apis/pedido/pedidoApi"
+import { createTableStatus } from "../../apis/pedido/tableStatusApi"
+import { createSolicitante } from "../../apis/pedido/solicitanteApi"
+import { createTipo } from "../../apis/pedido/tipoApi"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -49,12 +52,14 @@ import {
   Briefcase,
   Box,
   ArrowUpDown,
+  Tag,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import MainLayout from "@/components/MainLayout"
 import { motion } from "framer-motion"
+import { Label } from "@/components/ui/label"
 
 function PedidoList() {
   const navigate = useNavigate()
@@ -104,6 +109,13 @@ function PedidoList() {
 
   // Debounce search to avoid too many requests
   const [debouncedSearch, setDebouncedSearch] = useState("")
+
+  const [isTableStatusDialogOpen, setIsTableStatusDialogOpen] = useState(false)
+  const [isSolicitanteDialogOpen, setIsSolicitanteDialogOpen] = useState(false)
+  const [isTipoDialogOpen, setIsTipoDialogOpen] = useState(false)
+  const [newTableStatus, setNewTableStatus] = useState({ name: "", color: "#6E56CF", order: 0 })
+  const [newSolicitante, setNewSolicitante] = useState({ name: "", email: "", number: "" })
+  const [newTipo, setNewTipo] = useState({ name: "" })
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -307,6 +319,130 @@ function PedidoList() {
     return "N/A"
   }
 
+  const handleCreateTableStatus = async () => {
+    try {
+      if (!newTableStatus.name.trim()) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Status name is required",
+        })
+        return
+      }
+
+      await createTableStatus(newTableStatus)
+      toast({
+        title: "Success",
+        description: "Table status created successfully",
+      })
+      setIsTableStatusDialogOpen(false)
+      setNewTableStatus({ name: "", color: "#6E56CF", order: 0 })
+
+      // Refresh filter options
+      const data = await getFilterOptions("tipo")
+      setFilterOptions((prev) => ({ ...prev, tipo: data }))
+    } catch (error) {
+      console.error("Error creating table status:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create table status",
+      })
+    }
+  }
+
+  const handleCreateSolicitante = async () => {
+    try {
+      if (!newSolicitante.name.trim()) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Requester name is required",
+        })
+        return
+      }
+
+      if (!newSolicitante.email.trim()) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Email is required",
+        })
+        return
+      }
+
+      if (!newSolicitante.number.trim()) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Number is required",
+        })
+        return
+      }
+
+      await createSolicitante(newSolicitante)
+      toast({
+        title: "Success",
+        description: "Requester created successfully",
+      })
+      setIsSolicitanteDialogOpen(false)
+      setNewSolicitante({ name: "", email: "", number: "" })
+
+      // Refresh filter options
+      const data = await getFilterOptions("solicitante")
+      setFilterOptions((prev) => ({ ...prev, solicitante: data }))
+    } catch (error) {
+      console.error("Error creating requester:", error)
+
+      // Check for duplicate email error
+      if (error.response && error.response.data && error.response.data.includes("duplicate key")) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Email already exists. Please use a different email.",
+        })
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to create requester",
+        })
+      }
+    }
+  }
+
+  const handleCreateTipo = async () => {
+    try {
+      if (!newTipo.name.trim()) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Type name is required",
+        })
+        return
+      }
+
+      await createTipo(newTipo)
+      toast({
+        title: "Success",
+        description: "Type created successfully",
+      })
+      setIsTipoDialogOpen(false)
+      setNewTipo({ name: "" })
+
+      // Refresh filter options
+      const data = await getFilterOptions("tipo")
+      setFilterOptions((prev) => ({ ...prev, tipo: data }))
+    } catch (error) {
+      console.error("Error creating type:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create type",
+      })
+    }
+  }
+
   if (error && pedidos.length === 0) {
     return (
       <MainLayout>
@@ -363,6 +499,30 @@ function PedidoList() {
                     />
                   </div>
                   <div className="flex items-center w-full gap-2 md:w-auto">
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      onClick={() => setIsTableStatusDialogOpen(true)}
+                    >
+                      <Tag className="w-4 h-4" />
+                      Manage Statuses
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      onClick={() => setIsSolicitanteDialogOpen(true)}
+                    >
+                      <User className="w-4 h-4" />
+                      New Requester
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      onClick={() => setIsTipoDialogOpen(true)}
+                    >
+                      <FileText className="w-4 h-4" />
+                      New Type
+                    </Button>
                     <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="flex items-center gap-2">
@@ -389,7 +549,18 @@ function PedidoList() {
                           <div className="p-4 space-y-4">
                             {/* Type Filter */}
                             <div>
-                              <label className="text-sm font-medium">Type</label>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="text-sm font-medium">Type</label>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => setIsTipoDialogOpen(true)}
+                                  className="h-6 px-2 text-xs"
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  New Type
+                                </Button>
+                              </div>
                               <Select value={filters.tipo} onValueChange={(value) => handleFilterChange("tipo", value)}>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select type" />
@@ -428,7 +599,18 @@ function PedidoList() {
 
                             {/* Requester Filter */}
                             <div>
-                              <label className="text-sm font-medium">Requester</label>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="text-sm font-medium">Requester</label>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => setIsSolicitanteDialogOpen(true)}
+                                  className="h-6 px-2 text-xs"
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  New Requester
+                                </Button>
+                              </div>
                               <Select
                                 value={filters.solicitante}
                                 onValueChange={(value) => handleFilterChange("solicitante", value)}
@@ -823,6 +1005,142 @@ function PedidoList() {
               <Button variant="destructive" onClick={() => selectedPedido && handleDelete(selectedPedido._id)}>
                 Delete
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Table Status Dialog */}
+        <Dialog open={isTableStatusDialogOpen} onOpenChange={setIsTableStatusDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Status</DialogTitle>
+              <DialogDescription>Add a new status for tracking orders.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="statusName">Name</Label>
+                <Input
+                  id="statusName"
+                  value={newTableStatus.name}
+                  onChange={(e) => setNewTableStatus({ ...newTableStatus, name: e.target.value })}
+                  placeholder="Enter status name"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">Must be unique</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="statusColor">Color</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="statusColor"
+                    type="color"
+                    value={newTableStatus.color}
+                    onChange={(e) => setNewTableStatus({ ...newTableStatus, color: e.target.value })}
+                    className="w-16 h-10 p-1"
+                  />
+                  <Input
+                    value={newTableStatus.color}
+                    onChange={(e) => setNewTableStatus({ ...newTableStatus, color: e.target.value })}
+                    placeholder="#RRGGBB"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="statusOrder">Display Order</Label>
+                <Input
+                  id="statusOrder"
+                  type="number"
+                  value={newTableStatus.order || ""}
+                  onChange={(e) =>
+                    setNewTableStatus({ ...newTableStatus, order: Number.parseInt(e.target.value) || 0 })
+                  }
+                  placeholder="Enter display order (e.g., 1, 2, 3)"
+                />
+                <p className="text-xs text-muted-foreground">Lower numbers appear first</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsTableStatusDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateTableStatus}>Create</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Solicitante Dialog */}
+        <Dialog open={isSolicitanteDialogOpen} onOpenChange={setIsSolicitanteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Requester</DialogTitle>
+              <DialogDescription>Add a new requester for orders.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="requesterName">Name</Label>
+                <Input
+                  id="requesterName"
+                  value={newSolicitante.name}
+                  onChange={(e) => setNewSolicitante({ ...newSolicitante, name: e.target.value })}
+                  placeholder="Enter requester name"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="requesterEmail">Email</Label>
+                <Input
+                  id="requesterEmail"
+                  type="email"
+                  value={newSolicitante.email}
+                  onChange={(e) => setNewSolicitante({ ...newSolicitante, email: e.target.value })}
+                  placeholder="Enter email address"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">Must be unique</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="requesterNumber">Number</Label>
+                <Input
+                  id="requesterNumber"
+                  value={newSolicitante.number}
+                  onChange={(e) => setNewSolicitante({ ...newSolicitante, number: e.target.value })}
+                  placeholder="Enter contact number"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsSolicitanteDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateSolicitante}>Create</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Tipo Dialog */}
+        <Dialog open={isTipoDialogOpen} onOpenChange={setIsTipoDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Type</DialogTitle>
+              <DialogDescription>Add a new type for orders.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="typeName">Name</Label>
+                <Input
+                  id="typeName"
+                  value={newTipo.name}
+                  onChange={(e) => setNewTipo({ ...newTipo, name: e.target.value })}
+                  placeholder="Enter type name"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsTipoDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateTipo}>Create</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
