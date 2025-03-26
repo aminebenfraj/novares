@@ -224,8 +224,17 @@ const EditMassProductionForm = () => {
   // Helper function to extract ID from object or string
   const extractId = (idOrObject) => {
     if (!idOrObject) return null
+
+    // If it's a string, return it directly
     if (typeof idOrObject === "string") return idOrObject
-    if (typeof idOrObject === "object" && idOrObject._id) return idOrObject._id
+
+    // If it's an object with _id property
+    if (typeof idOrObject === "object") {
+      if (idOrObject._id) return idOrObject._id
+      if (idOrObject.id) return idOrObject.id
+    }
+
+    console.warn("Could not extract ID from:", idOrObject)
     return null
   }
 
@@ -252,27 +261,82 @@ const EditMassProductionForm = () => {
 
   const fetchMassProduction = async () => {
     try {
+      setLoading(true)
+      console.log("Fetching mass production with ID:", id)
       const data = await getMassProductionById(id)
+      console.log("Mass Production Data:", data)
+
+      if (!data) {
+        throw new Error("Mass production data not found")
+      }
+
+      // Format date fields properly
+      const formattedData = {
+        ...data,
+        initial_request: data.initial_request ? new Date(data.initial_request).toISOString().split("T")[0] : "",
+        ppap_submission_date: data.ppap_submission_date
+          ? new Date(data.ppap_submission_date).toISOString().split("T")[0]
+          : "",
+        closure: data.closure ? new Date(data.closure).toISOString().split("T")[0] : "",
+        next_review: data.next_review ? new Date(data.next_review).toISOString().split("T")[0] : "",
+        mlo: data.mlo ? new Date(data.mlo).toISOString().split("T")[0] : "",
+        tko: data.tko ? new Date(data.tko).toISOString().split("T")[0] : "",
+        cv: data.cv ? new Date(data.cv).toISOString().split("T")[0] : "",
+        pt1: data.pt1 ? new Date(data.pt1).toISOString().split("T")[0] : "",
+        pt2: data.pt2 ? new Date(data.pt2).toISOString().split("T")[0] : "",
+        sop: data.sop ? new Date(data.sop).toISOString().split("T")[0] : "",
+        product_designation: data.product_designation ? data.product_designation.map((pd) => pd._id || pd) : [],
+      }
 
       // Set main form data
-      setFormData({
-        ...data,
-        product_designation: data.product_designation ? data.product_designation.map((pd) => pd._id || pd) : [],
-      })
+      setFormData(formattedData)
 
       // Set selected product designations
-      setSelectedProductDesignations(data.product_designation ? data.product_designation.map((pd) => pd._id || pd) : [])
+      setSelectedProductDesignations(formattedData.product_designation)
 
       // Fetch and set related data if available
-      if (data.feasability) {
+      if (data.feasability || data.feasibility) {
         try {
-          const feasabilityId = extractId(data.feasability)
+          const feasabilityId = extractId(data.feasability || data.feasibility)
           if (feasabilityId) {
+            console.log("Fetching feasibility with ID:", feasabilityId)
             const feasibilityResponse = await getFeasibilityById(feasabilityId)
-            if (feasibilityResponse) {
-              setFeasibilityData(mapDataToFormState(feasibilityResponse, feasibilityFields))
-              if (feasibilityResponse.checkin) {
-                setFeasibilityCheckinData(feasibilityResponse.checkin)
+            console.log("Feasibility Response:", feasibilityResponse)
+
+            // Handle different API response structures
+            const feasibilityData = feasibilityResponse.data || feasibilityResponse
+
+            if (feasibilityData) {
+              console.log("Processing feasibility data:", feasibilityData)
+
+              // Map feasibility fields to form state
+              const mappedFeasibilityData = {}
+              feasibilityFields.forEach((field) => {
+                if (feasibilityData[field]) {
+                  mappedFeasibilityData[field] = {
+                    value: feasibilityData[field].value || false,
+                    details: feasibilityData[field].details || {
+                      description: "",
+                      cost: 0,
+                      sales_price: 0,
+                      comments: "",
+                    },
+                  }
+                } else {
+                  mappedFeasibilityData[field] = {
+                    value: false,
+                    details: { description: "", cost: 0, sales_price: 0, comments: "" },
+                  }
+                }
+              })
+
+              console.log("Mapped feasibility data:", mappedFeasibilityData)
+              setFeasibilityData(mappedFeasibilityData)
+
+              // Set checkin data if available
+              if (feasibilityData.checkin) {
+                console.log("Setting feasibility checkin data:", feasibilityData.checkin)
+                setFeasibilityCheckinData(feasibilityData.checkin)
               }
             }
           }
@@ -286,6 +350,7 @@ const EditMassProductionForm = () => {
           const kickOffId = extractId(data.kick_off)
           if (kickOffId) {
             const kickOffResponse = await getKickOffById(kickOffId)
+            console.log("Kick-Off Data:", kickOffResponse)
             if (kickOffResponse) {
               setKickOffData(mapDataToFormState(kickOffResponse, kickOffFields))
             }
@@ -300,6 +365,7 @@ const EditMassProductionForm = () => {
           const designId = extractId(data.design)
           if (designId) {
             const designResponse = await getDesignById(designId)
+            console.log("Design Data:", designResponse)
             if (designResponse) {
               setDesignData(mapDataToFormState(designResponse, designFields))
             }
@@ -314,6 +380,7 @@ const EditMassProductionForm = () => {
           const facilitiesId = extractId(data.facilities)
           if (facilitiesId) {
             const facilitiesResponse = await getfacilitiesById(facilitiesId)
+            console.log("Facilities Data:", facilitiesResponse)
             if (facilitiesResponse) {
               setFacilitiesData(mapDataToFormState(facilitiesResponse, facilitiesFields))
             }
@@ -328,6 +395,7 @@ const EditMassProductionForm = () => {
           const ppTuningId = extractId(data.p_p_tuning)
           if (ppTuningId) {
             const ppTuningResponse = await getP_P_TuningById(ppTuningId)
+            console.log("P/P Tuning Data:", ppTuningResponse)
             if (ppTuningResponse) {
               setPPTuningData(mapDataToFormState(ppTuningResponse, ppTuningFields))
             }
@@ -342,6 +410,7 @@ const EditMassProductionForm = () => {
           const processQualifId = extractId(data.process_qualif)
           if (processQualifId) {
             const processQualifResponse = await getProcessQualificationById(processQualifId)
+            console.log("Process Qualification Data:", processQualifResponse)
             if (processQualifResponse) {
               setProcessQualifData(mapDataToFormState(processQualifResponse, processQualifFields))
             }
@@ -357,6 +426,7 @@ const EditMassProductionForm = () => {
           if (qualificationConfirmationId) {
             const qualificationConfirmationResponse =
               await getQualificationConfirmationById(qualificationConfirmationId)
+            console.log("Qualification Confirmation Data:", qualificationConfirmationResponse)
             if (qualificationConfirmationResponse) {
               setQualificationConfirmationData(
                 mapDataToFormState(qualificationConfirmationResponse, qualificationConfirmationFields),
@@ -373,6 +443,7 @@ const EditMassProductionForm = () => {
           const okForLunchId = extractId(data.ok_for_lunch)
           if (okForLunchId) {
             const okForLunchResponse = await getOkForLunchById(okForLunchId)
+            console.log("OK for Lunch Data:", okForLunchResponse)
             if (okForLunchResponse) {
               setOkForLunchData({
                 check: okForLunchResponse.check || false,
@@ -395,6 +466,7 @@ const EditMassProductionForm = () => {
           const validationForOfferId = extractId(data.validation_for_offer)
           if (validationForOfferId) {
             const validationForOfferResponse = await getValidationForOfferById(validationForOfferId)
+            console.log("Validation for Offer Data:", validationForOfferResponse)
             if (validationForOfferResponse) {
               setValidationForOfferData({
                 name: validationForOfferResponse.name || "",
@@ -425,11 +497,47 @@ const EditMassProductionForm = () => {
   const mapDataToFormState = (data, fields) => {
     if (!data) return {}
 
-    const result = {}
+    // For feasibility data, handle the special structure
+    if (fields === feasibilityFields) {
+      const result = {}
+      fields.forEach((field) => {
+        result[field] = {
+          value: data[field]?.value || false,
+          details: data[field]?.details || {
+            description: "",
+            cost: 0,
+            sales_price: 0,
+            comments: "",
+          },
+        }
+      })
+      return result
+    }
 
+    // For other data types
+    const result = {}
     fields.forEach((field) => {
       if (data[field]) {
-        result[field] = data[field]
+        // Make sure to handle date fields properly
+        if (data[field].task) {
+          const task = { ...data[field].task }
+
+          // Format date fields if they exist
+          if (task.planned) {
+            task.planned = new Date(task.planned).toISOString().split("T")[0]
+          }
+
+          if (task.done) {
+            task.done = new Date(task.done).toISOString().split("T")[0]
+          }
+
+          result[field] = {
+            value: data[field].value || false,
+            task: task,
+          }
+        } else {
+          result[field] = data[field]
+        }
       } else {
         result[field] = {
           value: false,
@@ -443,10 +551,28 @@ const EditMassProductionForm = () => {
 
   const fetchCustomers = async () => {
     try {
+      console.log("Fetching customers...")
       const data = await getAllCustomers()
-      setCustomers(data || [])
+      console.log("Customers data:", data)
+
+      // Handle different API response structures
+      const customersData = Array.isArray(data) ? data : data.data || []
+
+      if (customersData && customersData.length > 0) {
+        console.log("Setting customers:", customersData)
+        setCustomers(customersData)
+      } else {
+        console.warn("No customers found or invalid data format")
+        setCustomers([])
+      }
     } catch (error) {
       console.error("Failed to fetch customers:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load customer data. Please try again.",
+        variant: "destructive",
+      })
+      setCustomers([])
     }
   }
 
@@ -1034,11 +1160,17 @@ const EditMassProductionForm = () => {
                             <SelectValue placeholder="Select customer" />
                           </SelectTrigger>
                           <SelectContent>
-                            {customers.map((customer) => (
-                              <SelectItem key={customer._id} value={customer._id}>
-                                {customer.username}
+                            {customers.length > 0 ? (
+                              customers.map((customer) => (
+                                <SelectItem key={customer._id} value={customer._id}>
+                                  {customer.username || customer.name || customer.email || "Unknown Customer"}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="" disabled>
+                                No customers available
                               </SelectItem>
-                            ))}
+                            )}
                           </SelectContent>
                         </Select>
                       </div>

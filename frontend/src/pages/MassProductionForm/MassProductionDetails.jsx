@@ -1,5 +1,6 @@
 "use client"
 
+import MainLayout from "@/components/MainLayout"
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
@@ -12,62 +13,81 @@ import { getfacilitiesById } from "../../apis/facilitiesApi"
 import { getP_P_TuningById } from "../../apis/p-p-tuning-api"
 import { getValidationForOfferById } from "../../apis/validationForOfferApi"
 import { getQualificationConfirmationById } from "../../apis/qualificationconfirmationApi"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Separator } from "@/components/ui/separator"
-import {
-  Edit,
-  Trash2,
-  ArrowLeft,
-  FileText,
-  Calendar,
-  User,
-  CheckCircle,
-  XCircle,
-  Clock,
-  AlertTriangle,
-  CheckSquare,
-  Clipboard,
-  Package,
-  Factory,
-  Settings,
-  FileCheck,
-  ShieldCheck,
-  Plus,
-  DollarSign,
-  BarChart,
-  FileSpreadsheet,
-  Layers,
-  Tag,
-  Truck,
-  PenToolIcon as Tool,
-  Zap,
-  Box,
-  Award,
-  Briefcase,
-  Check,
-  Lightbulb,
-  Workflow,
-  FileQuestion,
-  Gauge,
-  ListChecks,
-  Milestone,
-} from "lucide-react"
-import { format } from "date-fns"
-import Navbar from "@/components/NavBar"
-import ContactUs from "@/components/ContactUs"
-import { useToast } from "@/hooks/use-toast"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import { format } from "date-fns"
+import { useToast } from "@/hooks/use-toast"
+import ContactUs from "@/components/ContactUs"
 
-const MassProductionDetails = () => {
+import {
+  ArrowLeft,
+  Calendar,
+  CheckCircle,
+  CheckSquare,
+  Clock,
+  Edit,
+  FileCheck,
+  FileText,
+  AlertTriangle,
+  BarChart,
+  ChevronRight,
+  CircleAlert,
+  ClipboardCheck,
+  Factory,
+  HelpCircle,
+  LayoutDashboard,
+  Package,
+  PenLine,
+  Plus,
+  Settings,
+  ShieldCheck,
+  Trash2,
+  User,
+  XCircle,
+} from "lucide-react"
+import { getDesignById } from "../../apis/designApi"
+
+// Animation variants for Framer Motion
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15,
+    },
+  },
+}
+
+const MassProductionDashboard = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -76,34 +96,41 @@ const MassProductionDetails = () => {
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState("overview")
   const [completionPercentage, setCompletionPercentage] = useState(0)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
-  // State for each section's data
-  const [feasibilityData, setFeasibilityData] = useState(null)
-  const [okForLunchData, setOkForLunchData] = useState(null)
-  const [kickOffData, setKickOffData] = useState(null)
-  const [processQualifData, setProcessQualifData] = useState(null)
-  const [facilitiesData, setFacilitiesData] = useState(null)
-  const [ppTuningData, setPPTuningData] = useState(null)
-  const [validationForOfferData, setValidationForOfferData] = useState(null)
-  const [qualificationConfirmationData, setQualificationConfirmationData] = useState(null)
-
-  // Loading states for each section
-  const [sectionLoading, setSectionLoading] = useState({
-    feasibility: false,
-    okForLunch: false,
-    kickOff: false,
-    processQualif: false,
-    facilities: false,
-    ppTuning: false,
-    validationForOffer: false,
-    qualificationConfirmation: false,
+  // State for section data
+  const [sectionData, setSectionData] = useState({
+    feasibility: null,
+    validation: null,
+    okForLaunch: null,
+    kickOff: null,
+    design: null,
+    facilities: null,
+    ppTuning: null,
+    processQualif: null,
+    qualifConfirm: null,
   })
 
+  // State for section loading
+  const [sectionLoading, setSectionLoading] = useState({
+    feasibility: false,
+    validation: false,
+    okForLaunch: false,
+    kickOff: false,
+    design: false,
+    facilities: false,
+    ppTuning: false,
+    processQualif: false,
+    qualifConfirm: false,
+  })
+
+  // Fetch main data on component mount
   useEffect(() => {
     fetchMassProduction()
   }, [id])
 
-  // Add a new useEffect to update the completion percentage when massProduction changes
+  // Calculate completion percentage when data changes
   useEffect(() => {
     if (massProduction) {
       const percentage = calculateCompletionPercentage(massProduction)
@@ -111,70 +138,12 @@ const MassProductionDetails = () => {
     }
   }, [massProduction])
 
-  // Add useEffect to fetch data for the active tab
+  // Fetch section data when tab changes
   useEffect(() => {
-    if (massProduction) {
+    if (massProduction && activeTab !== "overview") {
       fetchSectionData(activeTab)
     }
   }, [activeTab, massProduction])
-
-  const fetchSectionData = async (section) => {
-    if (!massProduction) return
-
-    // Set loading state for the section
-    setSectionLoading((prev) => ({ ...prev, [section]: true }))
-
-    try {
-      switch (section) {
-        case "feasibility":
-          if (!feasibilityData && (massProduction.feasibility || massProduction.feasability)) {
-            await fetchFeasibilityData()
-          }
-          break
-        case "okforlunch":
-          if (!okForLunchData && massProduction.ok_for_lunch) {
-            await fetchOkForLunchData()
-          }
-          break
-        case "kickoff":
-          if (!kickOffData && massProduction.kick_off) {
-            await fetchKickOffData()
-          }
-          break
-        case "processqualif":
-          if (!processQualifData && massProduction.process_qualif) {
-            await fetchProcessQualifData()
-          }
-          break
-        case "facilities":
-          if (!facilitiesData && massProduction.facilities) {
-            await fetchFacilitiesData()
-          }
-          break
-        case "pptuning":
-          if (!ppTuningData && massProduction.p_p_tuning) {
-            await fetchPPTuningData()
-          }
-          break
-        case "validationforoffer":
-          if (!validationForOfferData && massProduction.validation_for_offer) {
-            await fetchValidationForOfferData()
-          }
-          break
-        case "qualificationconfirmation":
-          if (!qualificationConfirmationData && massProduction.qualification_confirmation) {
-            await fetchQualificationConfirmationData()
-          }
-          break
-        default:
-          break
-      }
-    } catch (error) {
-      console.error(`Failed to fetch ${section} data:`, error)
-    } finally {
-      setSectionLoading((prev) => ({ ...prev, [section]: false }))
-    }
-  }
 
   const fetchMassProduction = async () => {
     if (!id) {
@@ -208,6 +177,91 @@ const MassProductionDetails = () => {
     }
   }
 
+  const fetchSectionData = async (section) => {
+    if (!massProduction) return
+
+    // Map tab value to section key
+    const sectionKey = getSectionKeyFromTab(section)
+    if (!sectionKey) return
+
+    // Set loading state for the section
+    setSectionLoading((prev) => ({ ...prev, [sectionKey]: true }))
+
+    try {
+      switch (sectionKey) {
+        case "feasibility":
+          if (!sectionData.feasibility && (massProduction.feasibility || massProduction.feasability)) {
+            await fetchFeasibilityData()
+          }
+          break
+        case "validation":
+          if (!sectionData.validation && massProduction.validation_for_offer) {
+            await fetchValidationData()
+          }
+          break
+        case "okForLaunch":
+          if (!sectionData.okForLaunch && massProduction.ok_for_lunch) {
+            await fetchOkForLaunchData()
+          }
+          break
+        case "kickOff":
+          if (!sectionData.kickOff && massProduction.kick_off) {
+            await fetchKickOffData()
+          }
+          break
+        case "design":
+          if (!sectionData.design && massProduction.design) {
+            await fetchDesignData()
+          }
+          break
+        case "facilities":
+          if (!sectionData.facilities && massProduction.facilities) {
+            await fetchFacilitiesData()
+          }
+          break
+        case "ppTuning":
+          if (!sectionData.ppTuning && massProduction.p_p_tuning) {
+            await fetchPPTuningData()
+          }
+          break
+        case "processQualif":
+          if (!sectionData.processQualif && massProduction.process_qualif) {
+            await fetchProcessQualifData()
+          }
+          break
+        case "qualifConfirm":
+          if (!sectionData.qualifConfirm && massProduction.qualification_confirmation) {
+            await fetchQualifConfirmData()
+          }
+          break
+      }
+    } catch (error) {
+      console.error(`Failed to fetch ${sectionKey} data:`, error)
+      toast({
+        title: "Error",
+        description: `Failed to load ${sectionKey} data. Please try again.`,
+        variant: "destructive",
+      })
+    } finally {
+      setSectionLoading((prev) => ({ ...prev, [sectionKey]: false }))
+    }
+  }
+
+  const getSectionKeyFromTab = (tabValue) => {
+    const mapping = {
+      feasibility: "feasibility",
+      validation: "validation",
+      okforlunch: "okForLaunch",
+      kickoff: "kickOff",
+      design: "design",
+      facilities: "facilities",
+      pptuning: "ppTuning",
+      processqualif: "processQualif",
+      qualifconfirm: "qualifConfirm",
+    }
+    return mapping[tabValue]
+  }
+
   const fetchFeasibilityData = async () => {
     if (!massProduction) return
 
@@ -215,101 +269,103 @@ const MassProductionDetails = () => {
     if (!feasibilityId) return
 
     try {
-      console.log(
-        "Fetching feasibility with ID:",
-        typeof feasibilityId === "object" ? feasibilityId._id : feasibilityId,
-      )
-      const feasibilityResponse = await getFeasibilityById(
-        typeof feasibilityId === "object" ? feasibilityId._id : feasibilityId,
-      )
-      console.log("Fetched feasibility data:", feasibilityResponse)
+      const id = typeof feasibilityId === "object" ? feasibilityId._id : feasibilityId
+      console.log("Fetching feasibility with ID:", id)
+      const response = await getFeasibilityById(id)
+      console.log("Fetched feasibility data:", response)
 
-      if (feasibilityResponse && feasibilityResponse.data) {
-        setFeasibilityData(feasibilityResponse.data)
-      }
+      const data = response.data || response
+      setSectionData((prev) => ({ ...prev, feasibility: data }))
     } catch (error) {
       console.error("Failed to fetch feasibility data:", error)
     }
   }
 
-  // Update the fetchOkForLunchData function to better handle checkin data
-  const fetchOkForLunchData = async () => {
-    if (!massProduction || !massProduction.ok_for_lunch) return
-
-    const okForLunchId =
-      typeof massProduction.ok_for_lunch === "object" ? massProduction.ok_for_lunch._id : massProduction.ok_for_lunch
+  const fetchValidationData = async () => {
+    if (!massProduction || !massProduction.validation_for_offer) return
 
     try {
-      console.log("Fetching OK for lunch with ID:", okForLunchId)
-      const response = await getOkForLunchById(okForLunchId)
-      console.log("Fetched OK for lunch data:", response)
+      const id =
+        typeof massProduction.validation_for_offer === "object"
+          ? massProduction.validation_for_offer._id
+          : massProduction.validation_for_offer
 
-      if (response && response.data) {
-        // Ensure checkin data is properly structured
-        if (response.data.checkin) {
-          console.log("OK for Launch checkin data:", response.data.checkin)
-        }
-        setOkForLunchData(response.data)
-      }
+      console.log("Fetching validation for offer with ID:", id)
+      const response = await getValidationForOfferById(id)
+      console.log("Fetched validation for offer data:", response)
+
+      const data = response.data || response
+      setSectionData((prev) => ({ ...prev, validation: data }))
     } catch (error) {
-      console.error("Failed to fetch OK for lunch data:", error)
+      console.error("Failed to fetch validation data:", error)
+    }
+  }
+
+  const fetchOkForLaunchData = async () => {
+    if (!massProduction || !massProduction.ok_for_lunch) return
+
+    try {
+      const id =
+        typeof massProduction.ok_for_lunch === "object" ? massProduction.ok_for_lunch._id : massProduction.ok_for_lunch
+
+      console.log("Fetching OK for launch with ID:", id)
+      const response = await getOkForLunchById(id)
+      console.log("Fetched OK for launch data:", response)
+
+      const data = response.data || response
+      setSectionData((prev) => ({ ...prev, okForLaunch: data }))
+    } catch (error) {
+      console.error("Failed to fetch OK for launch data:", error)
     }
   }
 
   const fetchKickOffData = async () => {
     if (!massProduction || !massProduction.kick_off) return
 
-    const kickOffId =
-      typeof massProduction.kick_off === "object" ? massProduction.kick_off._id : massProduction.kick_off
-
     try {
-      console.log("Fetching kick-off with ID:", kickOffId)
-      const response = await getKickOffById(kickOffId)
+      const id = typeof massProduction.kick_off === "object" ? massProduction.kick_off._id : massProduction.kick_off
+
+      console.log("Fetching kick-off with ID:", id)
+      const response = await getKickOffById(id)
       console.log("Fetched kick-off data:", response)
 
-      if (response && response.data) {
-        setKickOffData(response.data)
-      }
+      const data = response.data || response
+      setSectionData((prev) => ({ ...prev, kickOff: data }))
     } catch (error) {
       console.error("Failed to fetch kick-off data:", error)
     }
   }
 
-  const fetchProcessQualifData = async () => {
-    if (!massProduction || !massProduction.process_qualif) return
-
-    const processQualifId =
-      typeof massProduction.process_qualif === "object"
-        ? massProduction.process_qualif._id
-        : massProduction.process_qualif
+  const fetchDesignData = async () => {
+    if (!massProduction || !massProduction.design) return
 
     try {
-      console.log("Fetching process qualification with ID:", processQualifId)
-      const response = await getProcessQualificationById(processQualifId)
-      console.log("Fetched process qualification data:", response)
+      const id = typeof massProduction.design === "object" ? massProduction.design._id : massProduction.design
 
-      if (response && response.data) {
-        setProcessQualifData(response.data)
-      }
+      console.log("Fetching design with ID:", id)
+      const response = await getDesignById(id)
+      console.log("Fetched design data:", response)
+
+      const data = response.data || response
+      setSectionData((prev) => ({ ...prev, design: data }))
     } catch (error) {
-      console.error("Failed to fetch process qualification data:", error)
+      console.error("Failed to fetch design data:", error)
     }
   }
 
   const fetchFacilitiesData = async () => {
     if (!massProduction || !massProduction.facilities) return
 
-    const facilitiesId =
-      typeof massProduction.facilities === "object" ? massProduction.facilities._id : massProduction.facilities
-
     try {
-      console.log("Fetching facilities with ID:", facilitiesId)
-      const response = await getfacilitiesById(facilitiesId)
+      const id =
+        typeof massProduction.facilities === "object" ? massProduction.facilities._id : massProduction.facilities
+
+      console.log("Fetching facilities with ID:", id)
+      const response = await getfacilitiesById(id)
       console.log("Fetched facilities data:", response)
 
-      if (response && response.data) {
-        setFacilitiesData(response.data)
-      }
+      const data = response.data || response
+      setSectionData((prev) => ({ ...prev, facilities: data }))
     } catch (error) {
       console.error("Failed to fetch facilities data:", error)
     }
@@ -318,64 +374,56 @@ const MassProductionDetails = () => {
   const fetchPPTuningData = async () => {
     if (!massProduction || !massProduction.p_p_tuning) return
 
-    const ppTuningId =
-      typeof massProduction.p_p_tuning === "object" ? massProduction.p_p_tuning._id : massProduction.p_p_tuning
-
     try {
-      console.log("Fetching P/P tuning with ID:", ppTuningId)
-      const response = await getP_P_TuningById(ppTuningId)
+      const id =
+        typeof massProduction.p_p_tuning === "object" ? massProduction.p_p_tuning._id : massProduction.p_p_tuning
+
+      console.log("Fetching P/P tuning with ID:", id)
+      const response = await getP_P_TuningById(id)
       console.log("Fetched P/P tuning data:", response)
 
-      if (response && response.data) {
-        setPPTuningData(response.data)
-      }
+      const data = response.data || response
+      setSectionData((prev) => ({ ...prev, ppTuning: data }))
     } catch (error) {
       console.error("Failed to fetch P/P tuning data:", error)
     }
   }
 
-  // Update the fetchValidationForOfferData function to better handle checkin data
-  const fetchValidationForOfferData = async () => {
-    if (!massProduction || !massProduction.validation_for_offer) return
-
-    const validationForOfferId =
-      typeof massProduction.validation_for_offer === "object"
-        ? massProduction.validation_for_offer._id
-        : massProduction.validation_for_offer
+  const fetchProcessQualifData = async () => {
+    if (!massProduction || !massProduction.process_qualif) return
 
     try {
-      console.log("Fetching validation for offer with ID:", validationForOfferId)
-      const response = await getValidationForOfferById(validationForOfferId)
-      console.log("Fetched validation for offer data:", response)
+      const id =
+        typeof massProduction.process_qualif === "object"
+          ? massProduction.process_qualif._id
+          : massProduction.process_qualif
 
-      if (response && response.data) {
-        // Ensure checkin data is properly structured
-        if (response.data.checkin) {
-          console.log("Validation for Offer checkin data:", response.data.checkin)
-        }
-        setValidationForOfferData(response.data)
-      }
+      console.log("Fetching process qualification with ID:", id)
+      const response = await getProcessQualificationById(id)
+      console.log("Fetched process qualification data:", response)
+
+      const data = response.data || response
+      setSectionData((prev) => ({ ...prev, processQualif: data }))
     } catch (error) {
-      console.error("Failed to fetch validation for offer data:", error)
+      console.error("Failed to fetch process qualification data:", error)
     }
   }
 
-  const fetchQualificationConfirmationData = async () => {
+  const fetchQualifConfirmData = async () => {
     if (!massProduction || !massProduction.qualification_confirmation) return
 
-    const qualificationConfirmationId =
-      typeof massProduction.qualification_confirmation === "object"
-        ? massProduction.qualification_confirmation._id
-        : massProduction.qualification_confirmation
-
     try {
-      console.log("Fetching qualification confirmation with ID:", qualificationConfirmationId)
-      const response = await getQualificationConfirmationById(qualificationConfirmationId)
+      const id =
+        typeof massProduction.qualification_confirmation === "object"
+          ? massProduction.qualification_confirmation._id
+          : massProduction.qualification_confirmation
+
+      console.log("Fetching qualification confirmation with ID:", id)
+      const response = await getQualificationConfirmationById(id)
       console.log("Fetched qualification confirmation data:", response)
 
-      if (response && response.data) {
-        setQualificationConfirmationData(response.data)
-      }
+      const data = response.data || response
+      setSectionData((prev) => ({ ...prev, qualifConfirm: data }))
     } catch (error) {
       console.error("Failed to fetch qualification confirmation data:", error)
     }
@@ -385,61 +433,107 @@ const MassProductionDetails = () => {
     if (!data) return 0
 
     const stages = [
-      data.feasibility || data.feasability,
-      data.validation_for_offer,
-      data.ok_for_lunch,
-      data.kick_off,
-      data.design,
-      data.facilities,
-      data.p_p_tuning,
-      data.process_qualif,
-      data.qualification_confirmation,
+      { key: "feasibility", data: data.feasibility || data.feasability },
+      { key: "validation", data: data.validation_for_offer },
+      { key: "okForLaunch", data: data.ok_for_lunch },
+      { key: "kickOff", data: data.kick_off },
+      { key: "design", data: data.design },
+      { key: "facilities", data: data.facilities },
+      { key: "ppTuning", data: data.p_p_tuning },
+      { key: "processQualif", data: data.process_qualif },
+      { key: "qualifConfirm", data: data.qualification_confirmation },
     ]
 
-    const completedStages = stages.filter((stage) => {
-      if (!stage) return false
+    // Count total stages and completed stages
+    const totalStages = stages.length
+    const completedStages = stages.filter((stage) => isStageCompleted(stage.data)).length
 
-      // Check if stage has a 'check' property that is true
-      if (stage.check === true) return true
-
-      // Check if stage has a 'value' property that is true
-      if (stage.value === true) return true
-
-      // If stage is an object with nested properties
-      if (typeof stage === "object") {
-        // Check if any property has a 'check' or 'value' that is true
-        return Object.values(stage).some((prop) => {
-          if (typeof prop === "object" && prop !== null) {
-            return prop.check === true || prop.value === true
-          }
-          return false
-        })
-      }
-
-      return false
-    }).length
-
-    const percentage = Math.round((completedStages / stages.length) * 100)
-    return percentage
+    return Math.round((completedStages / totalStages) * 100)
   }
 
-  const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this mass production record?")) {
-      try {
-        await deleteMassProduction(id)
-        toast({
-          title: "Success",
-          description: "Mass production record deleted successfully",
-        })
-        navigate("/masspd")
-      } catch (error) {
-        console.error("Failed to delete mass production:", error)
-        toast({
-          title: "Error",
-          description: "Failed to delete mass production record",
-          variant: "destructive",
-        })
+  const isStageCompleted = (stage) => {
+    if (!stage) return false
+
+    // Check if stage has a 'check' property that is true
+    if (stage.check === true) return true
+
+    // Check if stage has a 'value' property that is true
+    if (stage.value === true) return true
+
+    // If stage is an object with nested properties
+    if (typeof stage === "object") {
+      // For objects with task properties, check if all tasks are completed
+      const tasks = Object.entries(stage).filter(
+        ([key, value]) => typeof value === "object" && value !== null && !key.startsWith("_") && key !== "checkin",
+      )
+
+      if (tasks.length > 0) {
+        // Calculate percentage of completed tasks
+        const completedTasks = tasks.filter(
+          ([_, value]) => value.value === true || value.check === true || (value.task && value.task.check === true),
+        ).length
+
+        // Consider completed if at least 80% of tasks are done
+        return completedTasks / tasks.length >= 0.8
       }
+
+      // Check if any property has a 'check' or 'value' that is true
+      return Object.values(stage).some((prop) => {
+        if (typeof prop === "object" && prop !== null) {
+          return prop.check === true || prop.value === true
+        }
+        return false
+      })
+    }
+
+    return false
+  }
+
+  const getStageStatus = (stage) => {
+    if (!stage) return { status: "missing", label: "Missing", color: "gray", percentage: 0 }
+
+    if (isStageCompleted(stage)) {
+      return { status: "completed", label: "Completed", color: "green", percentage: 100 }
+    }
+
+    // Calculate percentage for in-progress stages
+    const percentage = calculateStagePercentage(stage)
+    return {
+      status: "inProgress",
+      label: "In Progress",
+      color: "amber",
+      percentage: percentage,
+    }
+  }
+
+  const calculateStagePercentage = (stage) => {
+    if (!stage) return 0
+
+    // If it's a simple object with a direct check or value
+    if (stage.check !== undefined || stage.value !== undefined) {
+      return stage.check || stage.value ? 100 : 0
+    }
+
+    // For complex objects with tasks
+    const tasks = Object.entries(stage).filter(
+      ([key, value]) => typeof value === "object" && value !== null && !key.startsWith("_") && key !== "checkin",
+    )
+
+    if (tasks.length === 0) return 0
+
+    const completedTasks = tasks.filter(
+      ([_, value]) => value.value === true || value.check === true || (value.task && value.task.check === true),
+    ).length
+
+    return Math.round((completedTasks / tasks.length) * 100)
+  }
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A"
+    try {
+      return format(new Date(dateString), "MMM d, yyyy")
+    } catch (error) {
+      return "Invalid date"
     }
   }
 
@@ -449,6 +543,28 @@ const MassProductionDetails = () => {
 
   const handleBack = () => {
     navigate("/masspd")
+  }
+
+  const handleDelete = async () => {
+    try {
+      setDeleting(true)
+      await deleteMassProduction(id)
+      toast({
+        title: "Success",
+        description: "Mass production record deleted successfully",
+      })
+      navigate("/masspd")
+    } catch (error) {
+      console.error("Failed to delete mass production:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete mass production record",
+        variant: "destructive",
+      })
+    } finally {
+      setDeleting(false)
+      setShowDeleteDialog(false)
+    }
   }
 
   const getStatusBadge = (status) => {
@@ -466,1298 +582,746 @@ const MassProductionDetails = () => {
     }
   }
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A"
-    try {
-      return format(new Date(dateString), "MMM d, yyyy")
-    } catch (error) {
-      return "Invalid date"
-    }
-  }
-
-  const formatCurrency = (amount) => {
-    if (amount === undefined || amount === null) return "N/A"
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount)
-  }
-
-  const renderTaskStatus = (task) => {
-    if (!task)
-      return (
-        <Badge variant="outline" className="bg-slate-100 text-slate-500">
-          Not Started
-        </Badge>
-      )
-
-    // Handle different task structures
-    if (task.check !== undefined) {
-      return (
-        <Badge variant={task.check ? "success" : "warning"} className="flex items-center shadow-sm">
-          {task.check ? (
-            <>
-              <CheckCircle className="w-3 h-3 mr-1" /> Completed
-            </>
-          ) : (
-            <>
-              <Clock className="w-3 h-3 mr-1" /> In Progress
-            </>
-          )}
-        </Badge>
-      )
-    } else if (task.value !== undefined) {
-      return (
-        <Badge variant={task.value ? "success" : "warning"} className="flex items-center shadow-sm">
-          {task.value ? (
-            <>
-              <CheckCircle className="w-3 h-3 mr-1" /> Completed
-            </>
-          ) : (
-            <>
-              <Clock className="w-3 h-3 mr-1" /> In Progress
-            </>
-          )}
-        </Badge>
-      )
-    } else {
-      // For objects that might have a different structure
-      const isCompleted = Object.values(task).some(
-        (val) => val && typeof val === "object" && (val.check === true || val.value === true),
-      )
-
-      return (
-        <Badge variant={isCompleted ? "success" : "warning"} className="flex items-center shadow-sm">
-          {isCompleted ? (
-            <>
-              <CheckCircle className="w-3 h-3 mr-1" /> Completed
-            </>
-          ) : (
-            <>
-              <Clock className="w-3 h-3 mr-1" /> In Progress
-            </>
-          )}
-        </Badge>
-      )
-    }
-  }
-
-  const renderFileLink = (filePath) => {
-    if (!filePath) return <span className="text-gray-400">No file attached</span>
-
-    const fileUrl =
-      typeof filePath === "string"
-        ? filePath.startsWith("http")
-          ? filePath
-          : `http://localhost:5000/${filePath}`
-        : null
-
-    if (!fileUrl) return <span className="text-gray-400">Invalid file path</span>
-
-    return (
-      <a
-        href={fileUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center text-blue-500 hover:text-blue-700"
-      >
-        <FileText className="w-4 h-4 mr-1" />
-        View File
-      </a>
-    )
-  }
-
-  // Add a helper function to ensure we properly extract checkin data
-  // Add this function before the renderGenericSection function
-
-  const extractCheckinData = (data) => {
-    if (!data) return {}
-
-    // If checkin is directly on the data object
-    if (data.checkin) {
-      return data.checkin
-    }
-
-    // If checkin might be nested in a different property
-    for (const key in data) {
-      if (data[key] && typeof data[key] === "object" && data[key].checkin) {
-        return data[key].checkin
-      }
-    }
-
-    // If checkin fields might be directly on the data object
-    const checkinFields = [
-      "project_manager",
-      "business_manager",
-      "engineering_leader_manager",
-      "quality_leader",
-      "plant_quality_leader",
-      "industrial_engineering",
-      "launch_manager_method",
-      "maintenance",
-      "purchasing",
-      "logistics",
-      "sales",
-      "economic_financial_leader",
-    ]
-
-    const extractedCheckin = {}
-    let hasCheckinFields = false
-
-    checkinFields.forEach((field) => {
-      if (field in data) {
-        extractedCheckin[field] = data[field]
-        hasCheckinFields = true
-      }
-    })
-
-    return hasCheckinFields ? extractedCheckin : {}
-  }
-
-  const renderGenericSection = (data, title, description, createPath, icon) => {
-    if (!data) {
-      return (
-        <div className="p-8 text-center">
-          <p className="text-gray-500">No {title.toLowerCase()} data available</p>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => navigate(`/${createPath}/create?massProductionId=${id}`)}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create {title}
-          </Button>
-        </div>
-      )
-    }
-
-    console.log(`Rendering ${title} data:`, data)
-
-    // Extract checkin data if available
-    const checkinData = extractCheckinData(data)
-    console.log(`${title} checkin data:`, checkinData)
-
-    // Filter out metadata fields
-    const dataFields = Object.entries(data || {}).filter(
-      ([key]) => !["_id", "__v", "createdAt", "updatedAt", "checkin"].includes(key),
-    )
-
-    const progress = calculateCompletionPercentage(data)
-
-    return (
-      <div className="space-y-6">
-        {/* Section Overview */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Card className="border-2 shadow-md">
-            <CardHeader className="pb-2 bg-slate-50">
-              <CardTitle className="text-base font-medium flex items-center text-slate-800">
-                {icon || <BarChart className="w-4 h-4 mr-2 text-blue-500" />}
-                Completion Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="bg-white">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Overall Progress</span>
-                  <span className="font-medium">{progress}%</span>
-                </div>
-                <Progress value={progress} className="h-2" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Financial summary card if applicable */}
-          {dataFields.some(([_, value]) => value?.details?.cost || value?.details?.sales_price) && (
-            <Card className="border-2 shadow-md">
-              <CardHeader className="pb-2 bg-slate-50">
-                <CardTitle className="text-base font-medium flex items-center text-slate-800">
-                  <DollarSign className="w-4 h-4 mr-2 text-green-500" />
-                  Financial Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="bg-white">
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span>Total Cost</span>
-                    <span className="font-medium">
-                      {formatCurrency(
-                        dataFields
-                          .filter(([_, value]) => value?.details?.cost)
-                          .reduce((sum, [_, value]) => sum + Number(value.details.cost), 0),
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Total Sales Price</span>
-                    <span className="font-medium">
-                      {formatCurrency(
-                        dataFields
-                          .filter(([_, value]) => value?.details?.sales_price)
-                          .reduce((sum, [_, value]) => sum + Number(value.details.sales_price), 0),
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="border-2 shadow-md">
-            <CardHeader className="pb-2 bg-slate-50">
-              <CardTitle className="text-base font-medium flex items-center text-slate-800">
-                <CheckSquare className="w-4 h-4 mr-2 text-indigo-500" />
-                Approval Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="bg-white">
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span>Approved Items</span>
-                  <span className="font-medium">
-                    {dataFields.filter(([_, value]) => value?.value === true || value?.check === true).length} /{" "}
-                    {dataFields.length}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Pending Items</span>
-                  <span className="font-medium">
-                    {dataFields.filter(([_, value]) => value?.value !== true && value?.check !== true).length} /{" "}
-                    {dataFields.length}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Checkin Information */}
-        {Object.keys(checkinData).length > 0 && (
-          <Card className="border-2 border-slate-200 shadow-sm">
-            <CardHeader className="bg-slate-50 pb-3">
-              <CardTitle className="text-lg font-medium flex items-center">
-                <CheckSquare className="w-5 h-5 mr-2 text-primary" />
-                Approval Checklist
-              </CardTitle>
-              <CardDescription>Stakeholders who have approved this {title.toLowerCase()}</CardDescription>
-            </CardHeader>
-            <CardContent className="bg-white pt-4">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-                {Object.entries(checkinData).map(([role, isChecked]) => {
-                  // Handle both boolean values and string values that might be "true"/"false"
-                  const checked = isChecked === true || isChecked === "true"
-
-                  // Format the role name for display
-                  const formatRoleName = (role) => {
-                    return role
-                      .replace(/_/g, " ")
-                      .split(" ")
-                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                      .join(" ")
-                  }
-
-                  return (
-                    <div
-                      key={role}
-                      className={`flex items-center space-x-3 p-3 rounded-md ${checked ? "bg-slate-100 border border-primary/20" : "bg-slate-50 border border-slate-200"} shadow-sm`}
-                    >
-                      <Checkbox checked={checked} disabled className={checked ? "bg-primary border-primary" : ""} />
-                      <span className={`${checked ? "font-medium text-slate-900" : "text-slate-500"}`}>
-                        {formatRoleName(role)}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Section Details */}
-        <Card className="border-2 shadow-md">
-          <CardHeader className="bg-slate-50">
-            <CardTitle className="text-slate-800 text-xl">{title} Details</CardTitle>
-            <CardDescription>{description}</CardDescription>
-          </CardHeader>
-          <CardContent className="bg-white">
-            <ScrollArea className="h-[500px] pr-4">
-              <Accordion type="multiple" className="w-full">
-                {dataFields.map(([key, value], index) => {
-                  if (typeof value === "object" && value !== null) {
-                    // Get appropriate icon based on the field name
-                    const getIcon = (fieldName) => {
-                      const iconMap = {
-                        product: <Package className="w-4 h-4 text-blue-500" />,
-                        raw_material: <Layers className="w-4 h-4 text-amber-500" />,
-                        packaging: <Box className="w-4 h-4 text-green-500" />,
-                        purchased_part: <Tag className="w-4 h-4 text-purple-500" />,
-                        injection_cycle_time: <Clock className="w-4 h-4 text-red-500" />,
-                        moulding_labor: <User className="w-4 h-4 text-indigo-500" />,
-                        press_size: <Zap className="w-4 h-4 text-yellow-500" />,
-                        assembly: <Tool className="w-4 h-4 text-cyan-500" />,
-                        logistics: <Truck className="w-4 h-4 text-orange-500" />,
-                        quality: <Award className="w-4 h-4 text-emerald-500" />,
-                        management: <Briefcase className="w-4 h-4 text-violet-500" />,
-                        approval: <Check className="w-4 h-4 text-green-500" />,
-                        concept: <Lightbulb className="w-4 h-4 text-yellow-500" />,
-                        process: <Workflow className="w-4 h-4 text-blue-500" />,
-                        documentation: <FileQuestion className="w-4 h-4 text-purple-500" />,
-                        performance: <Gauge className="w-4 h-4 text-red-500" />,
-                        checklist: <ListChecks className="w-4 h-4 text-indigo-500" />,
-                        milestone: <Milestone className="w-4 h-4 text-cyan-500" />,
-                        default: <FileSpreadsheet className="w-4 h-4 text-gray-500" />,
-                      }
-
-                      // Find matching key in the iconMap
-                      const matchingKey = Object.keys(iconMap).find((k) => fieldName.toLowerCase().includes(k))
-                      return matchingKey ? iconMap[matchingKey] : iconMap.default
-                    }
-
-                    const isApproved = value.value === true || value.check === true
-
-                    return (
-                      <AccordionItem
-                        key={key}
-                        value={`item-${index}`}
-                        className="border border-slate-200 rounded-md mb-2 overflow-hidden"
-                      >
-                        <AccordionTrigger className="hover:no-underline py-4 px-3 bg-slate-50 hover:bg-slate-100 transition-colors">
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center">
-                              {getIcon(key)}
-                              <span className="ml-2 font-medium capitalize text-slate-800">
-                                {key.replace(/_/g, " ")}
-                              </span>
-                            </div>
-                            <Badge variant={isApproved ? "success" : "secondary"} className="ml-2 shadow-sm">
-                              {isApproved ? "Approved" : "Pending"}
-                            </Badge>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="pt-3 pb-4 px-3 bg-white">
-                          {value.details && (
-                            <div className="grid grid-cols-1 gap-4 p-4 rounded-md bg-slate-50 border border-slate-200 shadow-sm md:grid-cols-2">
-                              {value.details.description && (
-                                <div className="space-y-2 md:col-span-2">
-                                  <h4 className="font-medium text-sm">Description</h4>
-                                  <p className="text-sm bg-background p-3 rounded-md">{value.details.description}</p>
-                                </div>
-                              )}
-
-                              {value.details.cost !== undefined && (
-                                <div className="space-y-2">
-                                  <h4 className="font-medium text-sm">Cost</h4>
-                                  <p className="text-sm bg-background p-3 rounded-md flex items-center">
-                                    <DollarSign className="w-4 h-4 mr-1 text-green-500" />
-                                    {formatCurrency(value.details.cost)}
-                                  </p>
-                                </div>
-                              )}
-
-                              {value.details.sales_price !== undefined && (
-                                <div className="space-y-2">
-                                  <h4 className="font-medium text-sm">Sales Price</h4>
-                                  <p className="text-sm bg-background p-3 rounded-md flex items-center">
-                                    <DollarSign className="w-4 h-4 mr-1 text-blue-500" />
-                                    {formatCurrency(value.details.sales_price)}
-                                  </p>
-                                </div>
-                              )}
-
-                              {value.details.comments && (
-                                <div className="space-y-2 md:col-span-2">
-                                  <h4 className="font-medium text-sm">Comments</h4>
-                                  <p className="text-sm bg-background p-3 rounded-md italic">
-                                    {value.details.comments}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {value.task && (
-                            <div className="grid grid-cols-1 gap-4 p-4 rounded-md bg-slate-50 border border-slate-200 shadow-sm md:grid-cols-2">
-                              <div className="space-y-2">
-                                <div className="flex items-center">
-                                  <User className="w-4 h-4 mr-2 text-gray-500" />
-                                  <span className="font-medium">Responsible:</span>
-                                  <span className="ml-2">{value.task.responsible || "Not assigned"}</span>
-                                </div>
-                                <div className="flex items-center">
-                                  <Calendar className="w-4 h-4 mr-2 text-gray-500" />
-                                  <span className="font-medium">Planned:</span>
-                                  <span className="ml-2">
-                                    {value.task.planned ? formatDate(value.task.planned) : "Not scheduled"}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                <div className="flex items-center">
-                                  <CheckCircle className="w-4 h-4 mr-2 text-gray-500" />
-                                  <span className="font-medium">Completed:</span>
-                                  <span className="ml-2">
-                                    {value.task.done ? formatDate(value.task.done) : "Not completed"}
-                                  </span>
-                                </div>
-                                <div className="flex items-center">
-                                  <FileText className="w-4 h-4 mr-2 text-gray-500" />
-                                  <span className="font-medium">File:</span>
-                                  <span className="ml-2">{renderFileLink(value.task.filePath)}</span>
-                                </div>
-                              </div>
-                              {value.task.comments && (
-                                <div className="col-span-1 md:col-span-2">
-                                  <p className="font-medium">Comments:</p>
-                                  <p className="p-2 mt-1 text-sm bg-background rounded">{value.task.comments}</p>
-                                </div>
-                              )}
-                              <div className="col-span-1 md:col-span-2">
-                                <div className="flex items-center">
-                                  <Checkbox checked={value.task.check} disabled className="mr-2" />
-                                  <span>Task marked as {value.task.check ? "completed" : "incomplete"}</span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </AccordionContent>
-                      </AccordionItem>
-                    )
-                  }
-                  return null
-                })}
-              </Accordion>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  const renderFeasibilitySection = () => {
-    if (sectionLoading.feasibility) {
-      return (
-        <div className="flex flex-col items-center justify-center p-12">
-          <div className="w-10 h-10 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
-          <p className="mt-4 text-slate-600 font-medium">Loading data...</p>
-        </div>
-      )
-    }
-
-    return renderGenericSection(
-      feasibilityData || massProduction?.feasibility || massProduction?.feasability,
-      "Feasibility",
-      "Detailed assessment of project feasibility",
-      "feasibility",
-      <BarChart className="w-4 h-4 mr-2 text-blue-500" />,
-    )
-  }
-
-  // Update the renderOkForLunchSection and renderValidationForOfferSection functions
-  // to ensure they properly display the checkin data
-
-  const renderOkForLunchSection = () => {
-    if (sectionLoading.okForLunch) {
-      return (
-        <div className="flex flex-col items-center justify-center p-12">
-          <div className="w-10 h-10 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
-          <p className="mt-4 text-slate-600 font-medium">Loading data...</p>
-        </div>
-      )
-    }
-
-    // Log the data to help with debugging
-    if (okForLunchData) {
-      console.log("Rendering OK for Launch data:", okForLunchData)
-      console.log("OK for Launch checkin data:", extractCheckinData(okForLunchData))
-    }
-
-    return renderGenericSection(
-      okForLunchData || massProduction?.ok_for_lunch,
-      "OK for Launch",
-      "Launch approval and readiness assessment",
-      "okforlunch",
-      <CheckSquare className="w-4 h-4 mr-2 text-green-500" />,
-    )
-  }
-
-  const renderValidationForOfferSection = () => {
-    if (sectionLoading.validationForOffer) {
-      return (
-        <div className="flex flex-col items-center justify-center p-12">
-          <div className="w-10 h-10 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
-          <p className="mt-4 text-slate-600 font-medium">Loading data...</p>
-        </div>
-      )
-    }
-
-    // Log the data to help with debugging
-    if (validationForOfferData) {
-      console.log("Rendering Validation for Offer data:", validationForOfferData)
-      console.log("Validation for Offer checkin data:", extractCheckinData(validationForOfferData))
-    }
-
-    return renderGenericSection(
-      validationForOfferData || massProduction?.validation_for_offer,
-      "Validation For Offer",
-      "Offer validation tasks and progress",
-      "validationforoffer",
-      <FileCheck className="w-4 h-4 mr-2 text-indigo-500" />,
-    )
-  }
-
-  const renderKickOffSection = () => {
-    if (sectionLoading.kickOff) {
-      return (
-        <div className="flex flex-col items-center justify-center p-12">
-          <div className="w-10 h-10 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
-          <p className="mt-4 text-slate-600 font-medium">Loading data...</p>
-        </div>
-      )
-    }
-
-    return renderGenericSection(
-      kickOffData || massProduction?.kick_off,
-      "Kick Off",
-      "Project initiation and kickoff details",
-      "kickoff",
-      <Calendar className="w-4 h-4 mr-2 text-amber-500" />,
-    )
-  }
-
-  const renderProcessQualifSection = () => {
-    if (sectionLoading.processQualif) {
-      return (
-        <div className="flex flex-col items-center justify-center p-12">
-          <div className="w-10 h-10 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
-          <p className="mt-4 text-slate-600 font-medium">Loading data...</p>
-        </div>
-      )
-    }
-
-    return renderGenericSection(
-      processQualifData || massProduction?.process_qualif,
-      "Process Qualification",
-      "Process qualification tasks and progress",
-      "process-qualification",
-      <ShieldCheck className="w-4 h-4 mr-2 text-red-500" />,
-    )
-  }
-
-  const renderFacilitiesSection = () => {
-    if (sectionLoading.facilities) {
-      return (
-        <div className="flex flex-col items-center justify-center p-12">
-          <div className="w-10 h-10 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
-          <p className="mt-4 text-slate-600 font-medium">Loading data...</p>
-        </div>
-      )
-    }
-
-    return renderGenericSection(
-      facilitiesData || massProduction?.facilities,
-      "Facilities",
-      "Facilities tasks and progress",
-      "facilities",
-      <Factory className="w-4 h-4 mr-2 text-orange-500" />,
-    )
-  }
-
-  const renderPPTuningSection = () => {
-    if (sectionLoading.ppTuning) {
-      return (
-        <div className="flex flex-col items-center justify-center p-12">
-          <div className="w-10 h-10 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
-          <p className="mt-4 text-slate-600 font-medium">Loading data...</p>
-        </div>
-      )
-    }
-
-    return renderGenericSection(
-      ppTuningData || massProduction?.p_p_tuning,
-      "P/P Tuning",
-      "Product/Process tuning tasks and progress",
-      "p-p-tuning",
-      <Settings className="w-4 h-4 mr-2 text-cyan-500" />,
-    )
-  }
-
-  const renderQualificationConfirmationSection = () => {
-    if (sectionLoading.qualificationConfirmation) {
-      return (
-        <div className="flex flex-col items-center justify-center p-12">
-          <div className="w-10 h-10 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
-          <p className="mt-4 text-slate-600 font-medium">Loading data...</p>
-        </div>
-      )
-    }
-
-    return renderGenericSection(
-      qualificationConfirmationData || massProduction?.qualification_confirmation,
-      "Qualification Confirmation",
-      "Qualification confirmation tasks and progress",
-      "qualification-confirmation",
-      <CheckCircle className="w-4 h-4 mr-2 text-emerald-500" />,
-    )
-  }
-
-  const renderDesignSection = () => {
-    if (!massProduction?.design) {
-      return (
-        <div className="p-8 text-center">
-          <p className="text-muted-foreground">No design data available</p>
-          <Button variant="outline" className="mt-4" onClick={() => navigate(`/design/create?massProductionId=${id}`)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Design
-          </Button>
-        </div>
-      )
-    }
-
-    return (
-      <Accordion type="single" collapsible className="w-full">
-        {Object.entries(massProduction.design).map(([key, value]) => {
-          if (
-            key !== "_id" &&
-            key !== "__v" &&
-            key !== "createdAt" &&
-            key !== "updatedAt" &&
-            typeof value === "object"
-          ) {
-            return (
-              <AccordionItem key={key} value={key}>
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center justify-between w-full">
-                    <span className="font-medium capitalize">{key.replace(/_/g, " ")}</span>
-                    {value &&
-                      typeof value === "object" &&
-                      (value.value !== undefined ? (
-                        <Badge variant={value.value ? "success" : "secondary"} className="ml-2">
-                          {value.value ? "Completed" : "Pending"}
-                        </Badge>
-                      ) : value.check !== undefined ? (
-                        <Badge variant={value.check ? "success" : "secondary"} className="ml-2">
-                          {value.check ? "Completed" : "Pending"}
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="ml-2">
-                          {Object.values(value).some(
-                            (v) => v && typeof v === "object" && (v.check === true || v.value === true),
-                          )
-                            ? "Completed"
-                            : "Pending"}
-                        </Badge>
-                      ))}
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  {value && typeof value === "object" && value.task && (
-                    <div className="grid grid-cols-1 gap-4 p-4 rounded-md bg-muted/30 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <div className="flex items-center">
-                          <User className="w-4 h-4 mr-2 text-gray-500" />
-                          <span className="font-medium">Responsible:</span>
-                          <span className="ml-2">{value.task.responsible || "Not assigned"}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-2 text-gray-500" />
-                          <span className="font-medium">Planned:</span>
-                          <span className="ml-2">
-                            {value.task.planned ? formatDate(value.task.planned) : "Not scheduled"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center">
-                          <CheckCircle className="w-4 h-4 mr-2 text-gray-500" />
-                          <span className="font-medium">Completed:</span>
-                          <span className="ml-2">
-                            {value.task.done ? formatDate(value.task.done) : "Not completed"}
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <FileText className="w-4 h-4 mr-2 text-gray-500" />
-                          <span className="font-medium">File:</span>
-                          <span className="ml-2">{renderFileLink(value.task.filePath)}</span>
-                        </div>
-                      </div>
-                      {value.task.comments && (
-                        <div className="col-span-1 md:col-span-2">
-                          <p className="font-medium">Comments:</p>
-                          <p className="p-2 mt-1 text-sm bg-background rounded">{value.task.comments}</p>
-                        </div>
-                      )}
-                      <div className="col-span-1 md:col-span-2">
-                        <div className="flex items-center">
-                          <Checkbox checked={value.task.check} disabled className="mr-2" />
-                          <span>Task marked as {value.task.check ? "completed" : "incomplete"}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </AccordionContent>
-              </AccordionItem>
-            )
-          }
-          return null
-        })}
-      </Accordion>
-    )
-  }
-
+  // Render loading skeleton
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="flex flex-col items-center">
-          <div className="w-16 h-16 relative">
-            <div className="absolute inset-0 rounded-full border-4 border-muted"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-t-primary animate-spin"></div>
+      <MainLayout>
+        <div className="min-h-screen bg-background">
+          <div className="container px-4 py-8 mx-auto">
+            <div className="flex items-center mb-6">
+              <Skeleton className="w-24 h-10 mr-4" />
+              <Skeleton className="w-64 h-10" />
+            </div>
+
+            <div className="space-y-6">
+              <Skeleton className="w-full h-64 rounded-lg" />
+              <Skeleton className="w-full rounded-lg h-96" />
+            </div>
           </div>
-          <p className="mt-4 text-lg font-medium text-foreground">Loading mass production details...</p>
         </div>
-      </div>
+      </MainLayout>
     )
   }
 
+  // Render error state
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="p-8 text-center bg-card rounded-lg shadow-lg">
-          <XCircle className="w-16 h-16 mx-auto mb-4 text-destructive" />
-          <h2 className="mb-2 text-2xl font-bold text-foreground">Error</h2>
-          <p className="mb-6 text-muted-foreground">{error}</p>
-          <Button onClick={handleBack} variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
-          </Button>
+      <MainLayout>
+        <div className="min-h-screen bg-background">
+          <div className="container px-4 py-8 mx-auto">
+            <Alert variant="destructive" className="mb-6">
+              <CircleAlert className="w-4 h-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+
+            <Button onClick={handleBack} variant="outline">
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
+            </Button>
+          </div>
         </div>
-      </div>
+      </MainLayout>
     )
   }
 
+  // Render not found state
   if (!massProduction) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="p-8 text-center bg-card rounded-lg shadow-lg">
-          <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-warning" />
-          <h2 className="mb-2 text-2xl font-bold text-foreground">Not Found</h2>
-          <p className="mb-6 text-muted-foreground">The requested mass production record could not be found.</p>
-          <Button onClick={handleBack} variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
-          </Button>
+      <MainLayout>
+        <div className="min-h-screen bg-background">
+          <div className="container px-4 py-8 mx-auto">
+            <Alert className="mb-6">
+              <AlertTriangle className="w-4 h-4" />
+              <AlertTitle>Not Found</AlertTitle>
+              <AlertDescription>The requested mass production record could not be found.</AlertDescription>
+            </Alert>
+
+            <Button onClick={handleBack} variant="outline">
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
+            </Button>
+          </div>
         </div>
-      </div>
+      </MainLayout>
     )
   }
 
   const statusBadge = getStatusBadge(massProduction.status)
 
+  const Milestone = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="lucide lucide-milestone"
+    >
+      <path d="M12 5v14M5 12H3m16 0h-2M5.7 5.7l-1.4-1.4M18.3 5.7l1.4-1.4M5.7 18.3l-1.4 1.4M18.3 18.3l1.4 1.4" />
+    </svg>
+  )
+
+  // Define stage data for the dashboard
+  const stages = [
+    {
+      id: "feasibility",
+      name: "Feasibility",
+      icon: <BarChart className="w-5 h-5 text-blue-500" />,
+      data: massProduction.feasibility || massProduction.feasability,
+      path: "feasibility",
+    },
+    {
+      id: "validation",
+      name: "Validation For Offer",
+      icon: <FileCheck className="w-5 h-5 text-indigo-500" />,
+      data: massProduction.validation_for_offer,
+      path: "validation-for-offer",
+    },
+    {
+      id: "okForLaunch",
+      name: "OK For Launch",
+      icon: <CheckSquare className="w-5 h-5 text-green-500" />,
+      data: massProduction.ok_for_lunch,
+      path: "ok-for-lunch",
+    },
+    {
+      id: "kickOff",
+      name: "Kick Off",
+      icon: <Calendar className="w-5 h-5 text-amber-500" />,
+      data: massProduction.kick_off,
+      path: "kick-off",
+    },
+    {
+      id: "design",
+      name: "Design",
+      icon: <Package className="w-5 h-5 text-purple-500" />,
+      data: massProduction.design,
+      path: "design",
+    },
+    {
+      id: "facilities",
+      name: "Facilities",
+      icon: <Factory className="w-5 h-5 text-orange-500" />,
+      data: massProduction.facilities,
+      path: "facilities",
+    },
+    {
+      id: "ppTuning",
+      name: "P/P Tuning",
+      icon: <Settings className="w-5 h-5 text-cyan-500" />,
+      data: massProduction.p_p_tuning,
+      path: "p-p-tuning",
+    },
+    {
+      id: "processQualif",
+      name: "Process Qualification",
+      icon: <ShieldCheck className="w-5 h-5 text-red-500" />,
+      data: massProduction.process_qualif,
+      path: "process-qualification",
+    },
+    {
+      id: "qualifConfirm",
+      name: "Qualification Confirmation",
+      icon: <ClipboardCheck className="w-5 h-5 text-emerald-500" />,
+      data: massProduction.qualification_confirmation,
+      path: "qualification-confirmation",
+    },
+  ]
+
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="container px-4 py-8 mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-          <div className="flex items-center">
-            <Button variant="outline" onClick={handleBack} className="mr-4">
-              <ArrowLeft className="w-4 h-4 mr-2" /> Back
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Mass Production Details</h1>
-              <p className="text-muted-foreground">View and manage production details</p>
+    <MainLayout>
+      <div className="min-h-screen bg-background">
+        <div className="container px-4 py-8 mx-auto">
+          {/* Header with actions */}
+          <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center">
+              <Button variant="outline" onClick={handleBack} className="mr-4">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Mass Production Dashboard</h1>
+                <p className="text-muted-foreground">Manage and track production progress</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleEdit} variant="outline">
+                <Edit className="w-4 h-4 mr-2" /> Edit
+              </Button>
+              <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="destructive">
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Are you sure you want to delete?</DialogTitle>
+                    <DialogDescription>
+                      This action cannot be undone. This will permanently delete the mass production record and all
+                      associated data.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={deleting}>
+                      Cancel
+                    </Button>
+                    <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+                      {deleting ? "Deleting..." : "Delete"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={handleEdit} variant="outline">
-              <Edit className="w-4 h-4 mr-2" /> Edit
-            </Button>
-            <Button onClick={handleDelete} variant="destructive">
-              <Trash2 className="w-4 h-4 mr-2" /> Delete
-            </Button>
-          </div>
-        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="space-y-6"
-        >
-          {/* Project Overview Card */}
-          <Card className="border-2 shadow-md">
-            <CardHeader className="bg-slate-50">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-slate-800 text-xl font-semibold">{massProduction.project_n}</CardTitle>
-                    <Badge variant={statusBadge.variant} className="flex items-center">
-                      {statusBadge.icon}
-                      {massProduction.status}
-                    </Badge>
-                  </div>
-                  <CardDescription className="mt-1">ID: {massProduction.id}</CardDescription>
-                </div>
-                <div className="flex flex-col items-start md:items-end gap-1">
-                  <div className="flex items-center">
-                    <span className="text-sm text-muted-foreground mr-2">Progress:</span>
-                    <Progress value={completionPercentage} className="w-24 h-2" />
-                    <span className="text-sm font-medium ml-2">{completionPercentage}%</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Last updated: {formatDate(massProduction.updatedAt || new Date())}
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="bg-white">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Customer</h3>
-                    <div className="flex items-center">
-                      <Avatar className="h-8 w-8 mr-2">
-                        <AvatarImage src="/placeholder-user.jpg" alt="Customer" />
-                        <AvatarFallback>{massProduction.customer?.username?.charAt(0) || "C"}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">
-                          {massProduction.customer ? massProduction.customer.username : "N/A"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {massProduction.customer ? massProduction.customer.email : ""}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Assigned To</h3>
-                    <p className="font-medium">{massProduction.assignedRole || "Not assigned"}</p>
-                    <p className="text-xs text-muted-foreground">{massProduction.assignedEmail || ""}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Key Dates</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Initial Request</p>
-                        <p className="font-medium">{formatDate(massProduction.initial_request)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Next Review</p>
-                        <p className="font-medium">{formatDate(massProduction.next_review)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">PPAP Submission</p>
-                        <p className="font-medium">{formatDate(massProduction.ppap_submission_date)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">SOP</p>
-                        <p className="font-medium">{formatDate(massProduction.sop)}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {massProduction.days_until_ppap_submission !== undefined && (
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+            {/* Project Overview Card */}
+            <motion.div variants={itemVariants}>
+              <Card className="overflow-hidden border-2 shadow-md">
+                <CardHeader className="pb-4 bg-slate-50">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">PPAP Timeline</h3>
-                      <div className="flex items-center">
-                        <Badge
-                          variant={massProduction.days_until_ppap_submission > 30 ? "outline" : "warning"}
-                          className="mr-2"
-                        >
-                          {massProduction.days_until_ppap_submission} days remaining
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-xl font-semibold text-slate-800">
+                          {massProduction.project_n}
+                        </CardTitle>
+                        <Badge variant={statusBadge.variant} className="flex items-center">
+                          {statusBadge.icon}
+                          {massProduction.status}
                         </Badge>
-                        <Progress
-                          value={Math.min(100, ((60 - massProduction.days_until_ppap_submission) / 60) * 100)}
-                          className="flex-1 h-2"
-                        />
+                      </div>
+                      <CardDescription className="mt-1">ID: {massProduction.id}</CardDescription>
+                    </div>
+                    <div className="flex flex-col items-start gap-1 md:items-end">
+                      <div className="flex items-center">
+                        <span className="mr-2 text-sm text-muted-foreground">Overall Progress:</span>
+                        <span className="text-sm font-medium">{completionPercentage}%</span>
+                      </div>
+                      <Progress value={completionPercentage} className="w-full h-2 md:w-40" />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6 bg-white">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    {/* Customer Info */}
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="mb-2 text-sm font-medium text-muted-foreground">Customer</h3>
+                        <div className="flex items-center p-3 border rounded-md bg-slate-50 border-slate-200">
+                          <Avatar className="w-10 h-10 mr-3">
+                            <AvatarImage src="/placeholder-user.jpg" alt="Customer" />
+                            <AvatarFallback>{massProduction.customer?.username?.charAt(0) || "C"}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">
+                              {massProduction.customer ? massProduction.customer.username : "N/A"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {massProduction.customer ? massProduction.customer.email : ""}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="mb-2 text-sm font-medium text-muted-foreground">Assigned To</h3>
+                        <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
+                          <div className="flex items-center">
+                            <User className="w-4 h-4 mr-2 text-slate-500" />
+                            <p className="font-medium">{massProduction.assignedRole || "Not assigned"}</p>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">{massProduction.assignedEmail || ""}</p>
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
 
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Product Designations</h3>
-                  {massProduction.product_designation && massProduction.product_designation.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {massProduction.product_designation.map((product) => (
-                        <TooltipProvider key={product._id || product}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Badge variant="outline" className="px-3 py-1 cursor-help">
-                                {product.part_name || (typeof product === "string" ? product : "Unknown")}
+                    {/* Key Dates */}
+                    <div className="space-y-4">
+                      <h3 className="mb-2 text-sm font-medium text-muted-foreground">Key Dates</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
+                          <p className="text-xs text-muted-foreground">Initial Request</p>
+                          <p className="font-medium">{formatDate(massProduction.initial_request)}</p>
+                        </div>
+                        <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
+                          <p className="text-xs text-muted-foreground">Next Review</p>
+                          <p className="font-medium">{formatDate(massProduction.next_review)}</p>
+                        </div>
+                        <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
+                          <p className="text-xs text-muted-foreground">PPAP Submission</p>
+                          <p className="font-medium">{formatDate(massProduction.ppap_submission_date)}</p>
+                        </div>
+                        <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
+                          <p className="text-xs text-muted-foreground">SOP</p>
+                          <p className="font-medium">{formatDate(massProduction.sop)}</p>
+                        </div>
+                      </div>
+
+                      {massProduction.days_until_ppap_submission !== undefined && (
+                        <div className="mt-3">
+                          <h3 className="mb-2 text-sm font-medium text-muted-foreground">PPAP Timeline</h3>
+                          <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm">Days Remaining:</span>
+                              <Badge variant={massProduction.days_until_ppap_submission > 30 ? "outline" : "warning"}>
+                                {massProduction.days_until_ppap_submission} days
                               </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Reference: {product.reference || "N/A"}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">No product designations available</p>
-                  )}
-
-                  {massProduction.description && (
-                    <div className="mt-4">
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Description</h3>
-                      <p className="p-3 rounded-md bg-muted/50 text-sm">{massProduction.description}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Tabs for different sections */}
-          <Tabs defaultValue="overview" onValueChange={setActiveTab} className="mb-6">
-            <div className="bg-slate-50 p-4 rounded-lg border">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="col-span-3">
-                  <TabsList className="w-full grid grid-cols-3">
-                    <TabsTrigger value="overview" className="font-medium">
-                      Overview
-                    </TabsTrigger>
-                    <TabsTrigger value="feasibility" className="font-medium">
-                      Feasibility
-                    </TabsTrigger>
-                    <TabsTrigger value="validationforoffer" className="font-medium">
-                      Validation
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-                <TabsList className="w-full">
-                  <TabsTrigger value="okforlunch" className="w-full font-medium">
-                    OK for Launch
-                  </TabsTrigger>
-                </TabsList>
-                <TabsList className="w-full">
-                  <TabsTrigger value="kickoff" className="w-full font-medium">
-                    Kick Off
-                  </TabsTrigger>
-                </TabsList>
-                <TabsList className="w-full">
-                  <TabsTrigger value="design" className="w-full font-medium">
-                    Design
-                  </TabsTrigger>
-                </TabsList>
-                <TabsList className="w-full">
-                  <TabsTrigger value="facilities" className="w-full font-medium">
-                    Facilities
-                  </TabsTrigger>
-                </TabsList>
-                <TabsList className="w-full">
-                  <TabsTrigger value="pptuning" className="w-full font-medium">
-                    P/P Tuning
-                  </TabsTrigger>
-                </TabsList>
-                <TabsList className="w-full">
-                  <TabsTrigger value="processqualif" className="w-full font-medium">
-                    Process Qualif
-                  </TabsTrigger>
-                </TabsList>
-                <TabsList className="w-full">
-                  <TabsTrigger value="qualificationconfirmation" className="w-full font-medium">
-                    Qualif Confirm
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-            </div>
-
-            <TabsContent value="overview">
-              <Card className="border-2 shadow-md">
-                <CardHeader className="bg-slate-50">
-                  <CardTitle className="text-slate-800 text-xl">Project Overview</CardTitle>
-                  <CardDescription>Summary of all project phases</CardDescription>
-                </CardHeader>
-                <CardContent className="bg-white">
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                      <Card className="bg-white border-2 border-slate-200 shadow-sm hover:shadow-md transition-all">
-                        <CardHeader className="pb-2 bg-slate-50">
-                          <CardTitle className="flex items-center text-base font-medium text-slate-800">
-                            <Clipboard className="w-4 h-4 mr-2 text-blue-500" />
-                            Feasibility
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          {renderTaskStatus(massProduction.feasibility || massProduction.feasability)}
-                        </CardContent>
-                      </Card>
-
-                      <Card className="bg-white border-2 border-slate-200 shadow-sm hover:shadow-md transition-all">
-                        <CardHeader className="pb-2 bg-slate-50">
-                          <CardTitle className="flex items-center text-base font-medium text-slate-800">
-                            <FileCheck className="w-4 h-4 mr-2 text-indigo-500" />
-                            Validation For Offer
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>{renderTaskStatus(massProduction.validation_for_offer)}</CardContent>
-                      </Card>
-
-                      <Card className="bg-white border-2 border-slate-200 shadow-sm hover:shadow-md transition-all">
-                        <CardHeader className="pb-2 bg-slate-50">
-                          <CardTitle className="flex items-center text-base font-medium text-slate-800">
-                            <CheckSquare className="w-4 h-4 mr-2 text-green-500" />
-                            OK For Launch
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>{renderTaskStatus(massProduction.ok_for_lunch)}</CardContent>
-                      </Card>
-
-                      <Card className="bg-white border-2 border-slate-200 shadow-sm hover:shadow-md transition-all">
-                        <CardHeader className="pb-2 bg-slate-50">
-                          <CardTitle className="flex items-center text-base font-medium text-slate-800">
-                            <Calendar className="w-4 h-4 mr-2 text-amber-500" />
-                            Kick Off
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>{renderTaskStatus(massProduction.kick_off)}</CardContent>
-                      </Card>
+                            </div>
+                            <Progress
+                              value={Math.min(100, ((60 - massProduction.days_until_ppap_submission) / 60) * 100)}
+                              className="h-2"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    <Separator />
-
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                      <Card className="bg-white border-2 border-slate-200 shadow-sm hover:shadow-md transition-all">
-                        <CardHeader className="pb-2 bg-slate-50">
-                          <CardTitle className="flex items-center text-base font-medium text-slate-800">
-                            <Package className="w-4 h-4 mr-2 text-purple-500" />
-                            Design
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>{renderTaskStatus(massProduction.design)}</CardContent>
-                      </Card>
-
-                      <Card className="bg-white border-2 border-slate-200 shadow-sm hover:shadow-md transition-all">
-                        <CardHeader className="pb-2 bg-slate-50">
-                          <CardTitle className="flex items-center text-base font-medium text-slate-800">
-                            <Factory className="w-4 h-4 mr-2 text-orange-500" />
-                            Facilities
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>{renderTaskStatus(massProduction.facilities)}</CardContent>
-                      </Card>
-
-                      <Card className="bg-white border-2 border-slate-200 shadow-sm hover:shadow-md transition-all">
-                        <CardHeader className="pb-2 bg-slate-50">
-                          <CardTitle className="flex items-center text-base font-medium text-slate-800">
-                            <Settings className="w-4 h-4 mr-2 text-cyan-500" />
-                            P/P Tuning
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>{renderTaskStatus(massProduction.p_p_tuning)}</CardContent>
-                      </Card>
-
-                      <Card className="bg-white border-2 border-slate-200 shadow-sm hover:shadow-md transition-all">
-                        <CardHeader className="pb-2 bg-slate-50">
-                          <CardTitle className="flex items-center text-base font-medium text-slate-800">
-                            <ShieldCheck className="w-4 h-4 mr-2 text-red-500" />
-                            Process Qualification
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>{renderTaskStatus(massProduction.process_qualif)}</CardContent>
-                      </Card>
-                    </div>
-
-                    <Separator />
-
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                      <Card className="md:col-span-1 bg-white border-2 border-slate-200 shadow-sm hover:shadow-md transition-all">
-                        <CardHeader className="pb-2 bg-slate-50">
-                          <CardTitle className="flex items-center text-base font-medium text-slate-800">
-                            <CheckCircle className="w-4 h-4 mr-2 text-emerald-500" />
-                            Qualification Confirmation
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>{renderTaskStatus(massProduction.qualification_confirmation)}</CardContent>
-                      </Card>
-
-                      <Card className="md:col-span-2 border-2 shadow-md">
-                        <CardHeader className="bg-slate-50">
-                          <CardTitle className="text-slate-800 text-xl text-base font-medium">
-                            Project Timeline
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="bg-white">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Milestone</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Status</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              <TableRow>
-                                <TableCell>Initial Request</TableCell>
-                                <TableCell>{formatDate(massProduction.initial_request)}</TableCell>
-                                <TableCell>
-                                  <Badge variant="success">Completed</Badge>
-                                </TableCell>
-                              </TableRow>
-                              {massProduction.mlo && (
-                                <TableRow>
-                                  <TableCell>MLO</TableCell>
-                                  <TableCell>{formatDate(massProduction.mlo)}</TableCell>
-                                  <TableCell>
-                                    <Badge variant={new Date(massProduction.mlo) < new Date() ? "success" : "warning"}>
-                                      {new Date(massProduction.mlo) < new Date() ? "Completed" : "Scheduled"}
+                    {/* Product Designations */}
+                    <div>
+                      <h3 className="mb-2 text-sm font-medium text-muted-foreground">Product Designations</h3>
+                      {massProduction.product_designation && massProduction.product_designation.length > 0 ? (
+                        <div className="h-full p-3 border rounded-md bg-slate-50 border-slate-200">
+                          <div className="flex flex-wrap gap-2">
+                            {massProduction.product_designation.map((product) => (
+                              <TooltipProvider key={product._id || product}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="outline" className="px-3 py-1 cursor-help">
+                                      {product.part_name || (typeof product === "string" ? product : "Unknown")}
                                     </Badge>
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                              {massProduction.tko && (
-                                <TableRow>
-                                  <TableCell>TKO</TableCell>
-                                  <TableCell>{formatDate(massProduction.tko)}</TableCell>
-                                  <TableCell>
-                                    <Badge variant={new Date(massProduction.tko) < new Date() ? "success" : "warning"}>
-                                      {new Date(massProduction.tko) < new Date() ? "Completed" : "Scheduled"}
-                                    </Badge>
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                              {massProduction.ppap_submission_date && (
-                                <TableRow>
-                                  <TableCell>PPAP Submission</TableCell>
-                                  <TableCell>{formatDate(massProduction.ppap_submission_date)}</TableCell>
-                                  <TableCell>
-                                    <Badge variant={massProduction.ppap_submitted ? "success" : "warning"}>
-                                      {massProduction.ppap_submitted ? "Submitted" : "Pending"}
-                                    </Badge>
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                              {massProduction.sop && (
-                                <TableRow>
-                                  <TableCell>SOP</TableCell>
-                                  <TableCell>{formatDate(massProduction.sop)}</TableCell>
-                                  <TableCell>
-                                    <Badge variant={new Date(massProduction.sop) < new Date() ? "success" : "warning"}>
-                                      {new Date(massProduction.sop) < new Date() ? "Completed" : "Scheduled"}
-                                    </Badge>
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </TableBody>
-                          </Table>
-                        </CardContent>
-                      </Card>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Reference: {product.reference || "N/A"}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ))}
+                          </div>
+
+                          {massProduction.description && (
+                            <div className="mt-4">
+                              <h4 className="mb-1 text-xs font-medium text-muted-foreground">Description</h4>
+                              <p className="p-2 text-sm bg-white border rounded-md border-slate-100">
+                                {massProduction.description}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-full p-4 border rounded-md bg-slate-50 border-slate-200">
+                          <p className="text-center text-muted-foreground">No product designations available</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </motion.div>
 
-            <TabsContent value="feasibility">
+            {/* Process Stages Dashboard */}
+            <motion.div variants={itemVariants}>
               <Card className="border-2 shadow-md">
                 <CardHeader className="bg-slate-50">
-                  <CardTitle className="text-slate-800 text-xl">Feasibility Assessment</CardTitle>
-                  <CardDescription>Detailed feasibility analysis and approval status</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center text-xl text-slate-800">
+                      <LayoutDashboard className="w-5 h-5 mr-2 text-primary" />
+                      Process Stages
+                    </CardTitle>
+                    <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <HelpCircle className="w-5 h-5" />
+                        </Button>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-80">
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-semibold">Process Stages Overview</h4>
+                          <p className="text-sm">
+                            This dashboard shows the status of each process stage. Click on a stage to view details or
+                            add missing information.
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="success" className="gap-1">
+                              <CheckCircle className="w-3 h-3" /> Completed
+                            </Badge>
+                            <Badge variant="warning" className="gap-1">
+                              <Clock className="w-3 h-3" /> In Progress
+                            </Badge>
+                            <Badge variant="outline" className="gap-1">
+                              <Plus className="w-3 h-3" /> Missing
+                            </Badge>
+                          </div>
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
+                  </div>
+                  <CardDescription>Track the status of each process stage and add missing information</CardDescription>
                 </CardHeader>
-                <CardContent>{renderFeasibilitySection()}</CardContent>
+                <CardContent className="p-6 bg-white">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    {stages.map((stage) => {
+                      const status = getStageStatus(stage.data)
+                      return (
+                        <motion.div key={stage.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                          <Card
+                            className={`border-l-4 ${
+                              status.status === "completed"
+                                ? "border-l-green-500"
+                                : status.status === "inProgress"
+                                  ? "border-l-amber-500"
+                                  : "border-l-slate-300"
+                            } hover:shadow-md transition-all cursor-pointer`}
+                            onClick={() => {
+                              if (status.status === "missing") {
+                                navigate(`/${stage.path}/create?massProductionId=${id}`)
+                              } else {
+                                navigate(
+                                  `/${stage.path}/edit/${
+                                    typeof stage.data === "object" && stage.data._id
+                                      ? stage.data._id
+                                      : typeof stage.data === "string"
+                                        ? stage.data
+                                        : id
+                                  }`,
+                                )
+                              }
+                            }}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  {stage.icon}
+                                  <h3 className="ml-2 font-medium">{stage.name}</h3>
+                                </div>
+                                {status.status === "completed" ? (
+                                  <Badge variant="success" className="gap-1">
+                                    <CheckCircle className="w-3 h-3" /> Completed
+                                  </Badge>
+                                ) : status.status === "inProgress" ? (
+                                  <Badge variant="warning" className="gap-1">
+                                    <Clock className="w-3 h-3" /> {status.percentage}% Done
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="gap-1">
+                                    <Plus className="w-3 h-3" /> Add
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="mt-3">
+                                {status.status !== "missing" && (
+                                  <Progress value={status.percentage} className="h-2 mb-2" />
+                                )}
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-muted-foreground">
+                                    {status.status === "missing"
+                                      ? "Click to add information"
+                                      : status.status === "completed"
+                                        ? "All requirements met"
+                                        : `${status.percentage}% complete`}
+                                  </span>
+                                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
               </Card>
-            </TabsContent>
+            </motion.div>
 
-            <TabsContent value="validationforoffer">
+            {/* Timeline Card */}
+            <motion.div variants={itemVariants}>
               <Card className="border-2 shadow-md">
                 <CardHeader className="bg-slate-50">
-                  <CardTitle className="text-slate-800 text-xl">Validation For Offer</CardTitle>
-                  <CardDescription>Validation for offer details and approval status</CardDescription>
+                  <CardTitle className="flex items-center text-xl text-slate-800">
+                    <Calendar className="w-5 h-5 mr-2 text-primary" />
+                    Project Timeline
+                  </CardTitle>
+                  <CardDescription>Key milestones and dates for this mass production</CardDescription>
                 </CardHeader>
-                <CardContent>{renderValidationForOfferSection()}</CardContent>
-              </Card>
-            </TabsContent>
+                <CardContent className="p-6 bg-white">
+                  <div className="relative">
+                    {/* Timeline line */}
+                    <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-slate-200 ml-6"></div>
 
-            <TabsContent value="okforlunch">
-              <Card className="border-2 shadow-md">
-                <CardHeader className="bg-slate-50">
-                  <CardTitle className="text-slate-800 text-xl">OK For Launch</CardTitle>
-                  <CardDescription>Launch approval and readiness assessment</CardDescription>
+                    <div className="relative space-y-8">
+                      {/* Initial Request */}
+                      <div className="flex">
+                        <div className="z-10 flex items-center justify-center flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full">
+                          <Calendar className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div className="ml-4">
+                          <h3 className="font-medium">Initial Request</h3>
+                          <time className="text-sm text-muted-foreground">
+                            {formatDate(massProduction.initial_request)}
+                          </time>
+                          <Badge variant="success" className="ml-2">
+                            Completed
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* MLO */}
+                      {massProduction.mlo && (
+                        <div className="flex">
+                          <div className="z-10 flex items-center justify-center flex-shrink-0 w-12 h-12 bg-indigo-100 rounded-full">
+                            <Milestone className="w-6 h-6 text-indigo-600" />
+                          </div>
+                          <div className="ml-4">
+                            <h3 className="font-medium">MLO</h3>
+                            <time className="text-sm text-muted-foreground">{formatDate(massProduction.mlo)}</time>
+                            <Badge
+                              variant={new Date(massProduction.mlo) < new Date() ? "success" : "warning"}
+                              className="ml-2"
+                            >
+                              {new Date(massProduction.mlo) < new Date() ? "Completed" : "Scheduled"}
+                            </Badge>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* TKO */}
+                      {massProduction.tko && (
+                        <div className="flex">
+                          <div className="z-10 flex items-center justify-center flex-shrink-0 w-12 h-12 bg-purple-100 rounded-full">
+                            <Milestone className="w-6 h-6 text-purple-600" />
+                          </div>
+                          <div className="ml-4">
+                            <h3 className="font-medium">TKO</h3>
+                            <time className="text-sm text-muted-foreground">{formatDate(massProduction.tko)}</time>
+                            <Badge
+                              variant={new Date(massProduction.tko) < new Date() ? "success" : "warning"}
+                              className="ml-2"
+                            >
+                              {new Date(massProduction.tko) < new Date() ? "Completed" : "Scheduled"}
+                            </Badge>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* PPAP Submission */}
+                      {massProduction.ppap_submission_date && (
+                        <div className="flex">
+                          <div className="z-10 flex items-center justify-center flex-shrink-0 w-12 h-12 rounded-full bg-amber-100">
+                            <FileText className="w-6 h-6 text-amber-600" />
+                          </div>
+                          <div className="ml-4">
+                            <h3 className="font-medium">PPAP Submission</h3>
+                            <time className="text-sm text-muted-foreground">
+                              {formatDate(massProduction.ppap_submission_date)}
+                            </time>
+                            <Badge variant={massProduction.ppap_submitted ? "success" : "warning"} className="ml-2">
+                              {massProduction.ppap_submitted ? "Submitted" : "Pending"}
+                            </Badge>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SOP */}
+                      {massProduction.sop && (
+                        <div className="flex">
+                          <div className="z-10 flex items-center justify-center flex-shrink-0 w-12 h-12 bg-green-100 rounded-full">
+                            <CheckSquare className="w-6 h-6 text-green-600" />
+                          </div>
+                          <div className="ml-4">
+                            <h3 className="font-medium">SOP</h3>
+                            <time className="text-sm text-muted-foreground">{formatDate(massProduction.sop)}</time>
+                            <Badge
+                              variant={new Date(massProduction.sop) < new Date() ? "success" : "warning"}
+                              className="ml-2"
+                            >
+                              {new Date(massProduction.sop) < new Date() ? "Completed" : "Scheduled"}
+                            </Badge>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Missing Information Card */}
+            <motion.div variants={itemVariants}>
+              <Card className="border-2 shadow-md border-amber-200">
+                <CardHeader className="bg-amber-50">
+                  <CardTitle className="flex items-center text-xl text-amber-800">
+                    <AlertTriangle className="w-5 h-5 mr-2 text-amber-500" />
+                    Missing Information
+                  </CardTitle>
+                  <CardDescription className="text-amber-700">
+                    The following information is missing or incomplete
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>{renderOkForLunchSection()}</CardContent>
-              </Card>
-            </TabsContent>
+                <CardContent className="p-6 bg-white">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {stages
+                      .filter((stage) => getStageStatus(stage.data).status === "missing")
+                      .map((stage) => (
+                        <Button
+                          key={stage.id}
+                          variant="outline"
+                          className="justify-start border-amber-200 hover:border-amber-300 hover:bg-amber-50"
+                          onClick={() => navigate(`/${stage.path}/create?massProductionId=${id}`)}
+                        >
+                          <Plus className="w-4 h-4 mr-2 text-amber-500" />
+                          Add {stage.name} Information
+                        </Button>
+                      ))}
 
-            <TabsContent value="kickoff">
-              <Card className="border-2 shadow-md">
-                <CardHeader className="bg-slate-50">
-                  <CardTitle className="text-slate-800 text-xl">Kick Off</CardTitle>
-                  <CardDescription>Project initiation and kickoff details</CardDescription>
-                </CardHeader>
-                <CardContent>{renderKickOffSection()}</CardContent>
-              </Card>
-            </TabsContent>
+                    {stages
+                      .filter((stage) => getStageStatus(stage.data).status === "inProgress")
+                      .map((stage) => (
+                        <Button
+                          key={stage.id}
+                          variant="outline"
+                          className="justify-start border-slate-200"
+                          onClick={() => {
+                            navigate(
+                              `/${stage.path}/edit/${
+                                typeof stage.data === "object" && stage.data._id
+                                  ? stage.data._id
+                                  : typeof stage.data === "string"
+                                    ? stage.data
+                                    : id
+                              }`,
+                            )
+                          }}
+                        >
+                          <PenLine className="w-4 h-4 mr-2 text-slate-500" />
+                          Complete {stage.name} Information ({getStageStatus(stage.data).percentage}% done)
+                        </Button>
+                      ))}
 
-            <TabsContent value="design">
-              <Card className="border-2 shadow-md">
-                <CardHeader className="bg-slate-50">
-                  <CardTitle className="text-slate-800 text-xl">Design Details</CardTitle>
-                  <CardDescription>Design tasks and progress</CardDescription>
-                </CardHeader>
-                <CardContent>{renderDesignSection()}</CardContent>
+                    {stages.filter(
+                      (stage) =>
+                        getStageStatus(stage.data).status === "missing" ||
+                        getStageStatus(stage.data).status === "inProgress",
+                    ).length === 0 && (
+                      <div className="col-span-2 p-4 text-center border border-green-200 rounded-md bg-green-50">
+                        <CheckCircle className="w-6 h-6 mx-auto mb-2 text-green-500" />
+                        <p className="font-medium text-green-800">All information is complete!</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
               </Card>
-            </TabsContent>
+            </motion.div>
 
-            <TabsContent value="facilities">
-              <Card className="border-2 shadow-md">
-                <CardHeader className="bg-slate-50">
-                  <CardTitle className="text-slate-800 text-xl">Facilities Details</CardTitle>
-                  <CardDescription>Facilities tasks and progress</CardDescription>
-                </CardHeader>
-                <CardContent>{renderFacilitiesSection()}</CardContent>
-              </Card>
-            </TabsContent>
+            {/* Section Details */}
+            {activeTab !== "overview" && (
+              <motion.div
+                variants={itemVariants}
+                id="section-details"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="border-2 shadow-md">
+                  <CardHeader className="bg-slate-50">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center text-xl text-slate-800">
+                        {stages.find((s) => s.id === activeTab)?.icon}
+                        <span className="ml-2">{stages.find((s) => s.id === activeTab)?.name} Details</span>
+                      </CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/${stages.find((s) => s.id === activeTab)?.path}/edit/${id}`)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" /> Edit
+                      </Button>
+                    </div>
+                    <CardDescription>Detailed information about this process stage</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6 bg-white">
+                    {sectionLoading[activeTab] ? (
+                      <div className="flex flex-col items-center justify-center p-12">
+                        <div className="w-10 h-10 border-4 rounded-full border-slate-200 border-t-primary animate-spin"></div>
+                        <p className="mt-4 font-medium text-slate-600">Loading data...</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* This would be replaced with the actual section content */}
+                        <p className="text-muted-foreground">
+                          Detailed information for {stages.find((s) => s.id === activeTab)?.name} would be displayed
+                          here.
+                        </p>
 
-            <TabsContent value="pptuning">
-              <Card className="border-2 shadow-md">
-                <CardHeader className="bg-slate-50">
-                  <CardTitle className="text-slate-800 text-xl">P/P Tuning Details</CardTitle>
-                  <CardDescription>Product/Process tuning tasks and progress</CardDescription>
-                </CardHeader>
-                <CardContent>{renderPPTuningSection()}</CardContent>
-              </Card>
-            </TabsContent>
+                        {/* Example content - would be replaced with actual data */}
+                        <div className="grid grid-cols-1 gap-4 mt-4 md:grid-cols-2">
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-base">Completion Status</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                  <span>Progress</span>
+                                  <span className="font-medium">65%</span>
+                                </div>
+                                <Progress value={65} className="h-2" />
+                              </div>
+                            </CardContent>
+                          </Card>
 
-            <TabsContent value="processqualif">
-              <Card className="border-2 shadow-md">
-                <CardHeader className="bg-slate-50">
-                  <CardTitle className="text-slate-800 text-xl">Process Qualification Details</CardTitle>
-                  <CardDescription>Process qualification tasks and progress</CardDescription>
-                </CardHeader>
-                <CardContent>{renderProcessQualifSection()}</CardContent>
-              </Card>
-            </TabsContent>
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-base">Approvals</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Project Manager</span>
+                                  <Badge variant="success">Approved</Badge>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Quality Leader</span>
+                                  <Badge variant="outline">Pending</Badge>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
 
-            <TabsContent value="qualificationconfirmation">
-              <Card className="border-2 shadow-md">
-                <CardHeader className="bg-slate-50">
-                  <CardTitle className="text-slate-800 text-xl">Qualification Confirmation Details</CardTitle>
-                  <CardDescription>Qualification confirmation tasks and progress</CardDescription>
-                </CardHeader>
-                <CardContent>{renderQualificationConfirmationSection()}</CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-
-          {process.env.NODE_ENV !== "production" && (
-            <details className="mt-8 border-2 border-slate-200 rounded-md p-4 bg-slate-50">
-              <summary className="font-medium cursor-pointer text-slate-700 flex items-center">
-                <FileQuestion className="w-4 h-4 mr-2 text-slate-500" />
-                Debug Information
-              </summary>
-              <div className="mt-3 p-3 bg-slate-100 rounded-md overflow-auto max-h-96 border border-slate-200">
-                <pre className="text-xs text-slate-800">{JSON.stringify(massProduction, null, 2)}</pre>
-              </div>
-            </details>
-          )}
-        </motion.div>
+                        <Button
+                          className="mt-4"
+                          onClick={() => {
+                            const stage = stages.find((s) => s.id === activeTab)
+                            if (stage) {
+                              navigate(
+                                `/${stage.path}/edit/${
+                                  typeof stage.data === "object" && stage.data._id
+                                    ? stage.data._id
+                                    : typeof stage.data === "string"
+                                      ? stage.data
+                                      : id
+                                }`,
+                              )
+                            }
+                          }}
+                        >
+                          <Edit className="w-4 h-4 mr-2" /> Edit {stages.find((s) => s.id === activeTab)?.name}
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
+        <ContactUs />
       </div>
-      <ContactUs />
-    </div>
+    </MainLayout>
   )
 }
 
-export default MassProductionDetails
+export default MassProductionDashboard
 
