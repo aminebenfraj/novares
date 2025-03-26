@@ -59,8 +59,8 @@ exports.completeCall = async (req, res) => {
       return res.status(404).json({ message: "Call not found" })
     }
 
-    if (req.user?.role !== "LOGÍSTICA") {
-      return res.status(403).json({ message: "Only LOGÍSTICA users can complete calls" })
+    if (req.user?.role !== "LOGISTICA") {
+      return res.status(403).json({ message: "Only LOGISTICA users can complete calls" })
     }
 
     call.status = "Realizada"

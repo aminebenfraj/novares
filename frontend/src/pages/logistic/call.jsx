@@ -170,7 +170,7 @@ const CallDashboard = () => {
         callTime: new Date(),
         date: new Date(),
         status: "Pendiente",
-        createdBy: user?.roles?.includes("PRODUCCION") ? "PRODUCCIÓN" : "LOGÍSTICA",
+        createdBy: user?.roles?.includes("PRODUCCION") ? "PRODUCCIÓN" : "LOGISTICA",
       }
 
       console.log("Call data:", callData)
@@ -198,7 +198,7 @@ const CallDashboard = () => {
       // Show success toast
       toast({
         title: "Llamada creada",
-        description: "Se ha creado una llamada a logística exitosamente",
+        description: "Se ha creado una llamada a LOGISTICA exitosamente",
         variant: "success",
       })
     } catch (error) {
@@ -207,7 +207,7 @@ const CallDashboard = () => {
       // Show error toast
       toast({
         title: "Error",
-        description: "No se pudo crear la llamada a logística",
+        description: "No se pudo crear la llamada a LOGISTICA",
         variant: "destructive",
       })
     } finally {
@@ -326,7 +326,7 @@ const CallDashboard = () => {
     }
   }
 
-  // Check if user has the LOGÍSTICA role
+  // Check if user has the LOGISTICA role
   const isLogistics = user?.roles?.includes("LOGISTICA")
   // Check if user has the PRODUCCIÓN role
   const isProduction = user?.roles?.includes("PRODUCCION")
@@ -374,7 +374,7 @@ const CallDashboard = () => {
               <div className="flex items-center">
                 Usuario:{" "}
                 <Badge variant="outline" className="ml-1 font-mono">
-                  {isProduction ? "PRODUCCIÓN" : "LOGÍSTICA"}
+                  {isProduction ? "PRODUCCIÓN" : "LOGISTICA"}
                 </Badge>
               </div>
             </div>
@@ -397,7 +397,7 @@ const CallDashboard = () => {
           >
             <Card>
               <CardHeader>
-                <CardTitle>Llamar a Logística</CardTitle>
+                <CardTitle>Llamar a LOGISTICA</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
