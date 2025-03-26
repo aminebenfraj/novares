@@ -170,7 +170,7 @@ const CallDashboard = () => {
         callTime: new Date(),
         date: new Date(),
         status: "Pendiente",
-        createdBy: user?.roles?.includes("PRODUCCION") ? "PRODUCCIÓN" : "LOGISTICA",
+        createdBy: user?.roles?.includes("PRODUCCION") ? "PRODUCCION" : "LOGISTICA",
       }
 
       console.log("Call data:", callData)
@@ -328,7 +328,7 @@ const CallDashboard = () => {
 
   // Check if user has the LOGISTICA role
   const isLogistics = user?.roles?.includes("LOGISTICA")
-  // Check if user has the PRODUCCIÓN role
+  // Check if user has the PRODUCCION role
   const isProduction = user?.roles?.includes("PRODUCCION")
 
   // If user is not authenticated or doesn't have either role, show loading or unauthorized message
@@ -374,7 +374,7 @@ const CallDashboard = () => {
               <div className="flex items-center">
                 Usuario:{" "}
                 <Badge variant="outline" className="ml-1 font-mono">
-                  {isProduction ? "PRODUCCIÓN" : "LOGISTICA"}
+                  {isProduction ? "PRODUCCION" : "LOGISTICA"}
                 </Badge>
               </div>
             </div>

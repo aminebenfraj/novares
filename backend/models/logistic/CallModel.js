@@ -29,7 +29,7 @@ const CallSchema = new Schema(
     createdBy: {
       type: String,
       required: true,
-      enum: ["PRODUCCIÓN", "LOGISTICA"],
+      enum: ["PRODUCCION", "LOGISTICA"],
     },
   },
   {

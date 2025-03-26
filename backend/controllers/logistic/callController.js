@@ -36,7 +36,7 @@ exports.createCall = async (req, res) => {
 
     const newCall = new Call({
       machines: [machineId], // Store as array of machine IDs
-      createdBy: req.user?.role || "PRODUCCIÓN", // Default to PRODUCCIÓN if user role not available
+      createdBy: req.user?.role || "PRODUCCION", // Default to PRODUCCION if user role not available
     })
 
     const savedCall = await newCall.save()
@@ -52,30 +52,39 @@ exports.createCall = async (req, res) => {
 
 // Mark a call as completed
 exports.completeCall = async (req, res) => {
-  try {
-    const call = await Call.findById(req.params.id)
-
-    if (!call) {
-      return res.status(404).json({ message: "Call not found" })
+    try {
+      console.log("🔍 Incoming request to complete call. User:", req.user);
+  
+      // Ensure the user has roles and includes "LOGISTICA"
+      if (!req.user?.roles || !req.user.roles.includes("LOGISTICA")) {
+        console.log("⛔ Access Denied. User roles:", req.user?.roles);
+        return res.status(403).json({ message: "Only LOGISTICA users can complete calls" });
+      }
+  
+      // Find the call in the database
+      const call = await Call.findById(req.params.id);
+      if (!call) {
+        return res.status(404).json({ message: "Call not found" });
+      }
+  
+      // Mark the call as completed and log the completion time
+      call.status = "Realizada";
+      call.completionTime = new Date();
+  
+      const updatedCall = await call.save();
+  
+      // Populate machine details before returning response
+      const populatedCall = await Call.findById(updatedCall._id).populate("machines", "name description status");
+  
+      console.log("✅ Call completed successfully:", populatedCall);
+      res.json(populatedCall);
+    } catch (error) {
+      console.error("❌ Error completing call:", error);
+      res.status(500).json({ message: "Server error", error: error.message });
     }
-
-    if (req.user?.role !== "LOGISTICA") {
-      return res.status(403).json({ message: "Only LOGISTICA users can complete calls" })
-    }
-
-    call.status = "Realizada"
-    call.completionTime = new Date()
-
-    const updatedCall = await call.save()
-
-    // Populate the machine details before returning
-    const populatedCall = await Call.findById(updatedCall._id).populate("machines", "name description status")
-
-    res.json(populatedCall)
-  } catch (error) {
-    res.status(500).json({ message: error.message })
-  }
-}
+  };
+  
+  
 
 // Export calls to CSV
 exports.exportCalls = async (req, res) => {
