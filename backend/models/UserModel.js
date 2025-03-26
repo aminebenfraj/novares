@@ -37,7 +37,7 @@ const rolesEnum = [
   "Customer",
   "User", 
   "PRODUCCION",
-  "LOGISTICA" // ✅ Add "User" to the rolesEnum
+  "LOGISTICA" 
 ];
 
 const userSchema = new Schema(

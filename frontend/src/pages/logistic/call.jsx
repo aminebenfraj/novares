@@ -1,0 +1,610 @@
+"use client"
+
+import { useState, useEffect, useRef } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { getCalls, createCall, completeCall, failCall, exportCalls } from "../../apis/logistic/callApi"
+import { getAllMachines } from "../../apis/gestionStockApi/machineApi"
+import { useAuth } from "../../context/AuthContext"
+import MainLayout from "../../components/MainLayout"
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
+import { Input } from "../../components/ui/input"
+import { Button } from "../../components/ui/button"
+import { Label } from "../../components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
+import { Checkbox } from "../../components/ui/checkbox"
+import { Badge } from "../../components/ui/badge"
+import { Separator } from "../../components/ui/separator"
+import {
+  Download,
+  Filter,
+  Loader2,
+  RefreshCw,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  PhoneCall,
+} from "lucide-react"
+import { toast } from "@/hooks/use-toast"
+
+const CallDashboard = () => {
+  // Get the current user from auth context
+  const { user } = useAuth()
+
+  const [selectedMachine, setSelectedMachine] = useState(null)
+  const [machines, setMachines] = useState([])
+  const [calls, setCalls] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [creatingCall, setCreatingCall] = useState(false)
+  const [filters, setFilters] = useState({
+    machineId: "all",
+    date: "",
+    status: "all",
+  })
+
+  // Ref for the interval timer
+  const timerRef = useRef(null)
+
+  useEffect(() => {
+    fetchCalls()
+    fetchMachines()
+
+    // Set up interval to update remaining time every second
+    timerRef.current = setInterval(() => {
+      updateRemainingTime()
+    }, 1000)
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [])
+
+  const fetchMachines = async () => {
+    try {
+      console.log("Fetching machines...")
+      const response = await getAllMachines()
+      console.log("Machines response:", response)
+
+      // Check if response is directly an array (not wrapped in a data property)
+      if (Array.isArray(response)) {
+        console.log("Machines data is directly an array:", response)
+
+        // Only show active machines in the dropdown
+        const activeMachines = response.filter((machine) => machine.status === "active")
+        console.log("Active machines:", activeMachines)
+
+        setMachines(activeMachines)
+      }
+      // Check if response has a data property that is an array
+      else if (response && response.data && Array.isArray(response.data)) {
+        console.log("Machines data in response.data:", response.data)
+
+        // Only show active machines in the dropdown
+        const activeMachines = response.data.filter((machine) => machine.status === "active")
+        console.log("Active machines:", activeMachines)
+
+        setMachines(activeMachines)
+      } else {
+        console.warn("No valid machines data found in response")
+        setMachines([])
+      }
+    } catch (error) {
+      console.error("Error fetching machines:", error)
+      setMachines([])
+    }
+  }
+
+  const fetchCalls = async (silent = false) => {
+    try {
+      if (!silent) setLoading(true)
+      if (silent) setRefreshing(true)
+
+      // Convert filter values for API
+      const apiFilters = { ...filters }
+      if (apiFilters.machineId === "all") apiFilters.machineId = ""
+      if (apiFilters.status === "all") apiFilters.status = ""
+
+      const callsData = await getCalls(apiFilters)
+      setCalls(callsData)
+    } catch (error) {
+      console.error("Error fetching calls:", error)
+      setCalls([])
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
+
+  // Update the remaining time for all calls
+  const updateRemainingTime = () => {
+    setCalls((prevCalls) => {
+      return prevCalls.map((call) => {
+        if (call.status === "Pendiente") {
+          // If timer has reached zero
+          if (call.remainingTime <= 1) {
+            // Mark the call as failed
+            failCall(call._id).catch((error) => {
+              console.error("Error marking call as failed:", error)
+            })
+
+            return {
+              ...call,
+              status: "Failed",
+              remainingTime: 0,
+            }
+          }
+
+          // Otherwise, decrement the timer
+          return {
+            ...call,
+            remainingTime: call.remainingTime - 1,
+          }
+        }
+        return call
+      })
+    })
+  }
+
+  const handleCallLogistics = async () => {
+    if (!selectedMachine) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona una máquina",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setCreatingCall(true)
+      console.log("Creating call for machine:", selectedMachine)
+
+      // Find the selected machine to get its name
+      const selectedMachineObj = machines.find((m) => m._id === selectedMachine)
+
+      // Create a new call with the machine ID, current date, and user
+      const callData = {
+        machineId: selectedMachine,
+        callTime: new Date(),
+        date: new Date(),
+        status: "Pendiente",
+        createdBy: user?.roles?.includes("PRODUCCION") ? "PRODUCCIÓN" : "LOGÍSTICA",
+      }
+
+      console.log("Call data:", callData)
+      const response = await createCall(callData)
+
+      // Get the created call data
+      let newCall
+      if (response && response.data) {
+        newCall = response.data
+      } else {
+        newCall = {
+          _id: Date.now().toString(), // Fallback ID if not provided by API
+          ...callData,
+          remainingTime: 90 * 60, // 90 minutes in seconds
+          machines: [{ name: selectedMachineObj?.name || "Máquina seleccionada" }],
+        }
+      }
+
+      // Add the new call to the calls array
+      setCalls((prevCalls) => [newCall, ...prevCalls])
+
+      // Reset the selected machine
+      setSelectedMachine(null)
+
+      // Show success toast
+      toast({
+        title: "Llamada creada",
+        description: "Se ha creado una llamada a logística exitosamente",
+        variant: "success",
+      })
+    } catch (error) {
+      console.error("Error creating call:", error)
+
+      // Show error toast
+      toast({
+        title: "Error",
+        description: "No se pudo crear la llamada a logística",
+        variant: "destructive",
+      })
+    } finally {
+      setCreatingCall(false)
+    }
+  }
+
+  const handleMachineSelect = (machineId) => {
+    console.log("Machine selected:", machineId)
+    setSelectedMachine(machineId)
+  }
+
+  const handleCompleteCall = async (id) => {
+    try {
+      // Get the current time for completion
+      const completionTime = new Date()
+
+      // Update the call in the local state immediately
+      setCalls((prevCalls) =>
+        prevCalls.map((call) =>
+          call._id === id
+            ? {
+                ...call,
+                status: "Realizada",
+                completionTime: completionTime,
+              }
+            : call,
+        ),
+      )
+
+      // Call the API to update the server
+      await completeCall(id)
+
+      // Show success toast
+      toast({
+        title: "Llamada completada",
+        description: "La llamada ha sido marcada como completada",
+        variant: "success",
+      })
+    } catch (error) {
+      console.error("Error completing call:", error)
+
+      // Revert the local state change if the API call failed
+      fetchCalls(true)
+
+      // Show error toast
+      toast({
+        title: "Error",
+        description: "No se pudo completar la llamada",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleExportToExcel = () => {
+    // Convert filter values for API
+    const apiFilters = { ...filters }
+    if (apiFilters.machineId === "all") apiFilters.machineId = ""
+    if (apiFilters.status === "all") apiFilters.status = ""
+
+    exportCalls(apiFilters)
+  }
+
+  const handleFilterChange = (name, value) => {
+    setFilters((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const applyFilters = () => {
+    fetchCalls()
+  }
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`
+  }
+
+  // Get machine names for display
+  const getMachineNames = (call) => {
+    if (!call.machines || call.machines.length === 0) return "-"
+    return call.machines.map((machine) => machine.name).join(", ")
+  }
+
+  // Get timer variant based on remaining time
+  const getTimerVariant = (remainingTime) => {
+    if (remainingTime <= 15 * 60) return "destructive" // Less than 15 minutes
+    if (remainingTime <= 30 * 60) return "warning" // Less than 30 minutes
+    return "outline"
+  }
+
+  // Get status badge variant
+  const getStatusBadgeVariant = (status) => {
+    switch (status) {
+      case "Realizada":
+        return "success"
+      case "Failed":
+        return "destructive"
+      case "Pendiente":
+        return "secondary"
+      default:
+        return "outline"
+    }
+  }
+
+  // Get status icon
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "Realizada":
+        return <CheckCircle className="w-3 h-3 mr-1" />
+      case "Failed":
+        return <XCircle className="w-3 h-3 mr-1" />
+      case "Pendiente":
+        return <Clock className="w-3 h-3 mr-1" />
+      default:
+        return null
+    }
+  }
+
+  // Check if user has the LOGÍSTICA role
+  const isLogistics = user?.roles?.includes("LOGISTICA")
+  // Check if user has the PRODUCCIÓN role
+  const isProduction = user?.roles?.includes("PRODUCCION")
+
+  // If user is not authenticated or doesn't have either role, show loading or unauthorized message
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="container py-6 mx-auto flex items-center justify-center h-[80vh]">
+          <Loader2 className="w-8 h-8 mr-2 animate-spin" />
+          <span>Cargando información de usuario...</span>
+        </div>
+      </MainLayout>
+    )
+  }
+
+  if (!isLogistics && !isProduction) {
+    return (
+      <MainLayout>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="container py-6 mx-auto"
+        >
+          <h1 className="text-3xl font-bold tracking-tight text-center">Acceso no autorizado</h1>
+          <p className="mt-4 text-center">No tienes permisos para acceder a este módulo. Contacta al administrador.</p>
+        </motion.div>
+      </MainLayout>
+    )
+  }
+
+  return (
+    <MainLayout>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="container py-6 mx-auto space-y-6"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Panel de Control</h1>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center">
+                Usuario:{" "}
+                <Badge variant="outline" className="ml-1 font-mono">
+                  {isProduction ? "PRODUCCIÓN" : "LOGÍSTICA"}
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button variant="outline" size="icon" onClick={() => fetchCalls(true)} disabled={refreshing}>
+              {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            </Button>
+          </motion.div>
+        </div>
+
+        <Separator />
+
+        {isProduction && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Llamar a Logística</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
+                  <div className="flex-1">
+                    <Label htmlFor="machineSelect">Seleccionar máquina</Label>
+                    <div className="flex gap-2 mt-1">
+                      <div className="flex-1">
+                        <Select value={selectedMachine || ""} onValueChange={handleMachineSelect}>
+                          <SelectTrigger id="machineSelect">
+                            <SelectValue placeholder="Seleccionar máquina" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {machines && machines.length > 0 ? (
+                              machines.map((machine) => (
+                                <SelectItem key={machine._id} value={machine._id}>
+                                  {machine.name} {machine.status !== "active" && `(${machine.status})`}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="no-machines" disabled>
+                                No hay máquinas disponibles
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        onClick={handleCallLogistics}
+                        disabled={!selectedMachine || creatingCall}
+                        className="flex items-center gap-2"
+                      >
+                        {creatingCall ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <PhoneCall className="w-4 h-4" />
+                        )}
+                        Llamar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle>Registro de Llamadas</CardTitle>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant="outline" size="sm" onClick={handleExportToExcel} className="flex items-center gap-2">
+                  <Download className="w-4 h-4" />
+                  Exportar
+                </Button>
+              </motion.div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-4">
+                <div className="space-y-2">
+                  <Label htmlFor="filterMachine">Máquina</Label>
+                  <Select value={filters.machineId} onValueChange={(value) => handleFilterChange("machineId", value)}>
+                    <SelectTrigger id="filterMachine">
+                      <SelectValue placeholder="Todas las máquinas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las máquinas</SelectItem>
+                      {machines.map((machine) => (
+                        <SelectItem key={machine._id} value={machine._id}>
+                          {machine.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="filterDate">Fecha</Label>
+                  <Input
+                    id="filterDate"
+                    type="date"
+                    value={filters.date}
+                    onChange={(e) => handleFilterChange("date", e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="filterStatus">Estatus</Label>
+                  <Select value={filters.status} onValueChange={(value) => handleFilterChange("status", value)}>
+                    <SelectTrigger id="filterStatus">
+                      <SelectValue placeholder="Todos los estados" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los estados</SelectItem>
+                      <SelectItem value="Pendiente">Pendiente</SelectItem>
+                      <SelectItem value="Realizada">Realizada</SelectItem>
+                      <SelectItem value="Failed">Failed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-end">
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full">
+                    <Button onClick={applyFilters} className="w-full">
+                      <Filter className="w-4 h-4 mr-2" />
+                      Aplicar Filtros
+                    </Button>
+                  </motion.div>
+                </div>
+              </div>
+
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-bold">Nº DE MÁQUINA</TableHead>
+                      <TableHead className="font-bold">FECHA</TableHead>
+                      <TableHead className="font-bold">HORA LLAMADA</TableHead>
+                      <TableHead className="font-bold">TIEMPO RESTANTE</TableHead>
+                      <TableHead className="font-bold">ESTATUS</TableHead>
+                      <TableHead className="font-bold">ACCIÓN</TableHead>
+                      <TableHead className="font-bold">HORA TAREA TERMINADA</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center">
+                          <div className="flex items-center justify-center">
+                            <Loader2 className="w-6 h-6 mr-2 animate-spin" />
+                            <span>Cargando...</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : calls.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                          No hay llamadas registradas
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      <AnimatePresence>
+                        {calls.map((call) => (
+                          <motion.tr
+                            key={call._id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="border-b"
+                          >
+                            <TableCell className="font-medium">{getMachineNames(call)}</TableCell>
+                            <TableCell>{new Date(call.date).toLocaleDateString()}</TableCell>
+                            <TableCell>{new Date(call.callTime).toLocaleTimeString()}</TableCell>
+                            <TableCell>
+                              {call.status === "Pendiente" ? (
+                                <Badge
+                                  variant={getTimerVariant(call.remainingTime)}
+                                  className="px-3 py-1 font-mono text-base"
+                                >
+                                  {call.remainingTime <= 15 * 60 ? (
+                                    <AlertTriangle className="w-4 h-4 mr-1 animate-pulse" />
+                                  ) : call.remainingTime <= 30 * 60 ? (
+                                    <Clock className="w-4 h-4 mr-1" />
+                                  ) : null}
+                                  {formatTime(call.remainingTime)}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground">0:00</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={getStatusBadgeVariant(call.status)}>
+                                {getStatusIcon(call.status)}
+                                {call.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {isLogistics && call.status === "Pendiente" && (
+                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                  <Checkbox onCheckedChange={() => handleCompleteCall(call._id)} className="w-5 h-5" />
+                                </motion.div>
+                              )}
+                              {call.status === "Realizada" && <Checkbox checked disabled className="w-5 h-5" />}
+                              {call.status === "Failed" && <XCircle className="w-5 h-5 text-red-500" />}
+                            </TableCell>
+                            <TableCell>
+                              {call.completionTime ? new Date(call.completionTime).toLocaleTimeString() : "-"}
+                            </TableCell>
+                          </motion.tr>
+                        ))}
+                      </AnimatePresence>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
+    </MainLayout>
+  )
+}
+
+export default CallDashboard
+

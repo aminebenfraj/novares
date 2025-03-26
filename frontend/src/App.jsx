@@ -92,6 +92,7 @@ import  ShowTableStatus from './pages/pedido/status/show-table-status';
 import  CreateTipo from './pages/pedido/tipo/create-tipo';
 import  EditTipo from './pages/pedido/tipo/edit-tipo';
 import  ShowTipo from './pages/pedido/tipo/show-tipo';
+import  Call from './pages/logistic/call';
 
 
 
@@ -190,6 +191,7 @@ function App() {
         <Route path="/tipo" element={< ShowTipo/>} />
         <Route path="/tipo/edit/:id" element={< EditTipo/>} />
         <Route path="/tipo/create" element={< CreateTipo/>} />
+        <Route path="/call" element={< Call/>} />
     </Routes>
       </AuthProvider>
   );
