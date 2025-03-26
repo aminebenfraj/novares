@@ -16,7 +16,7 @@ const rolesEnum = [
   "Prod. Plant Manager UAP1", "Prod. Plant Manager UAP2",
   "Quality Manager", "Quality Leader UAP1",
   "Quality Leader UAP2", "Quality Leader UAP3",
-  "Laboratory Leader", "Customer", "User"
+  "Laboratory Leader", "Customer", "User","PRODUCCION", "LOGISTICA"
 ];
 
 // 🔹 **Get Current User Information (Authenticated User)**

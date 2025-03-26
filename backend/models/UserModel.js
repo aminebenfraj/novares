@@ -35,7 +35,9 @@ const rolesEnum = [
   "Quality Leader UAP3",
   "Laboratory Leader",
   "Customer",
-  "User"  // ✅ Add "User" to the rolesEnum
+  "User", 
+  "PRODUCCION",
+  "LOGISTICA" // ✅ Add "User" to the rolesEnum
 ];
 
 const userSchema = new Schema(

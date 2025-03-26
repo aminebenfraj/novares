@@ -40,6 +40,8 @@ const rolesEnum = [
   "Laboratory Leader",
   "Customer",
   "User",
+  "PRODUCCION",
+   "LOGISTICA",
 ]
 
 export default function EditUserRoles() {
