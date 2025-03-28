@@ -4,11 +4,11 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import { Search, Bell, Menu } from "lucide-react"
 import { motion } from "framer-motion"
-import { Button } from "../../src/components/ui/button"
-import { Input } from "../../src/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "../../src/components/ui/avatar"
+import { Button } from "../components/ui/button"
+import { Input } from "../components/ui/input"
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
 
-export const Navbar = ({ toggleSidebar }) => {
+export const Navbar = ({ toggleSidebar, isSidebarOpen }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
   const toggleSearch = () => {
@@ -16,15 +16,15 @@ export const Navbar = ({ toggleSidebar }) => {
   }
 
   return (
-    <header className="z-30 w-full h-16 bg-white border-b">
-      <div className="flex items-center justify-between h-full px-4">
+    <header className="z-30 h-16 w-full border-b bg-white">
+      <div className="flex h-full items-center justify-between px-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleSidebar}>
-            <Menu className="w-5 h-5" />
+            <Menu className="h-5 w-5" />
             <span className="sr-only">Toggle menu</span>
           </Button>
           <Link to="/" className="flex items-center">
-            <img src="/novares-logo.webp" alt="Novares" className="w-auto h-8" />
+            <img src="/novares-logo.webp" alt="Novares" className="h-8 w-auto" />
           </Link>
         </div>
 
@@ -42,7 +42,7 @@ export const Navbar = ({ toggleSidebar }) => {
               onClick={toggleSearch}
               aria-label="Toggle search"
             >
-              <Search className="w-5 h-5" />
+              <Search className="h-5 w-5" />
             </Button>
             <motion.div
               initial={false}
@@ -52,14 +52,14 @@ export const Navbar = ({ toggleSidebar }) => {
               <Input
                 type="text"
                 placeholder="Search..."
-                className="w-full border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full rounded-md border border-gray-300 shadow-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary"
                 aria-label="Search input"
               />
             </motion.div>
           </motion.div>
           <Button variant="ghost" size="icon" className="relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+            <Bell className="h-5 w-5" />
+            <span className="absolute right-0 top-0 h-2 w-2 rounded-full bg-red-500"></span>
           </Button>
           <Avatar>
             <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
