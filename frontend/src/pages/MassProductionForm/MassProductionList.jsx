@@ -1031,11 +1031,7 @@ const MassProductionList = () => {
                           <DropdownMenuItem onClick={() => navigate(`/masspd/detail/${item._id}`)}>
                             <Eye className="w-4 h-4 mr-2" />
                             View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/masspd/dashboard/${item._id}`)}>
-                            <LayoutDashboard className="w-4 h-4 mr-2" />
-                            Dashboard
-                          </DropdownMenuItem>
+                          </DropdownMenuItem> 
                           <DropdownMenuItem onClick={() => navigate(`/masspd/edit/${item._id}`)}>
                             <Edit className="w-4 h-4 mr-2" />
                             Edit
