@@ -21,10 +21,20 @@ export const getAllPedidos = async (page = 1, limit = 10, search = "", filters =
     queryParams.append("sortOrder", sort.order || -1)
   }
 
-  // Add all filters
+  // Add all filters - improved to handle different filter types
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
-      queryParams.append(key, value.toString())
+      // Handle special case for ObjectId vs string values
+      if (key === "tipo" || key === "proveedor" || key === "solicitante" || key === "table_status") {
+        // If it's an object with _id, use the _id
+        if (typeof value === "object" && value !== null && value._id) {
+          queryParams.append(key, value._id)
+        } else {
+          queryParams.append(key, value.toString())
+        }
+      } else {
+        queryParams.append(key, value.toString())
+      }
     }
   })
 
@@ -37,6 +47,8 @@ export const getAllPedidos = async (page = 1, limit = 10, search = "", filters =
     throw error // Rethrow the error for better error handling
   }
 }
+
+
 
 // Get filter options for dropdowns
 export const getFilterOptions = async (field) => {

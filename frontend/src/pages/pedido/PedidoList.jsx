@@ -45,14 +45,10 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  SlidersHorizontal,
-  Calendar,
-  DollarSign,
   User,
-  Briefcase,
   Box,
-  ArrowUpDown,
   Tag,
+  Archive,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -68,7 +64,6 @@ function PedidoList() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [currentTab, setCurrentTab] = useState("all")
   const [selectedPedido, setSelectedPedido] = useState(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -80,6 +75,7 @@ function PedidoList() {
     recepcionado: [],
     pedir: [],
     ano: [],
+    table_status: [],
   })
 
   const [filters, setFilters] = useState({
@@ -93,6 +89,9 @@ function PedidoList() {
     anoHasta: "",
     fechaDesde: null,
     fechaHasta: null,
+    table_status: "",
+    status: "",
+    stockStatus: "",
   })
 
   const [sort, setSort] = useState({
@@ -131,7 +130,16 @@ function PedidoList() {
       try {
         const options = {}
 
-        for (const field of ["tipo", "fabricante", "proveedor", "solicitante", "recepcionado", "pedir", "ano"]) {
+        for (const field of [
+          "tipo",
+          "fabricante",
+          "proveedor",
+          "solicitante",
+          "recepcionado",
+          "pedir",
+          "ano",
+          "table_status",
+        ]) {
           const data = await getFilterOptions(field)
           options[field] = data
         }
@@ -150,11 +158,120 @@ function PedidoList() {
     loadFilterOptions()
   }, [])
 
+  // Fix the handleFilterChange function to properly handle "all" value for all filter types
+  const handleFilterChange = (field, value) => {
+    // If value is "all", set to empty string for any field
+    if (value === "all") {
+      setFilters((prev) => ({
+        ...prev,
+        [field]: "",
+      }))
+      return
+    }
+
+    // Handle special case for reference fields
+    if (field === "tipo" || field === "proveedor" || field === "solicitante" || field === "table_status") {
+      // If the value is an object with _id, use it directly
+      if (typeof value === "object" && value !== null && value._id) {
+        setFilters((prev) => ({
+          ...prev,
+          [field]: value._id,
+        }))
+        return
+      }
+    }
+
+    // For all other fields
+    setFilters((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  // Fix the fetchPedidos function to properly handle all filter types
   const fetchPedidos = async () => {
     try {
       setIsLoading(true)
 
-      const response = await getAllPedidos(pagination.page, pagination.limit, debouncedSearch, filters, sort)
+      // Create a clean copy of filters for API
+      const apiFilters = {}
+
+      // Process each filter and only add non-empty values
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== "" && value !== null) {
+          // Skip these special filters as they need special handling
+          if (
+            key !== "status" &&
+            key !== "stockStatus" &&
+            key !== "anoDesde" &&
+            key !== "anoHasta" &&
+            key !== "fechaDesde" &&
+            key !== "fechaHasta"
+          ) {
+            apiFilters[key] = value
+          }
+        }
+      })
+
+      // Handle status filter
+      if (filters.status) {
+        switch (filters.status) {
+          case "pending":
+            apiFilters.recepcionado = "No"
+            apiFilters.aceptado = null
+            apiFilters.introducidaSAP = { $exists: true }
+            break
+          case "in_progress":
+            apiFilters.recepcionado = "No"
+            apiFilters.aceptado = { $exists: true }
+            break
+          case "completed":
+            apiFilters.recepcionado = "Si"
+            break
+          case "cancelled":
+            apiFilters.recepcionado = "No"
+            apiFilters.introducidaSAP = null
+            break
+        }
+      }
+
+      // Handle stock status filter
+      if (filters.stockStatus) {
+        switch (filters.stockStatus) {
+          case "in_stock":
+            apiFilters.cantidad = { $gt: 10 }
+            break
+          case "low_stock":
+            apiFilters.cantidad = { $gt: 0, $lte: 10 }
+            break
+          case "out_of_stock":
+            apiFilters.cantidad = { $lte: 0 }
+            break
+        }
+      }
+
+      // Handle year range filters
+      if (filters.anoDesde && filters.anoHasta) {
+        apiFilters.ano = { $gte: filters.anoDesde, $lte: filters.anoHasta }
+      } else if (filters.anoDesde) {
+        apiFilters.ano = { $gte: filters.anoDesde }
+      } else if (filters.anoHasta) {
+        apiFilters.ano = { $lte: filters.anoHasta }
+      }
+
+      // Handle date range filters
+      if (filters.fechaDesde && filters.fechaHasta) {
+        apiFilters.fechaSolicitud = {
+          $gte: new Date(filters.fechaDesde).toISOString(),
+          $lte: new Date(filters.fechaHasta).toISOString(),
+        }
+      } else if (filters.fechaDesde) {
+        apiFilters.fechaSolicitud = { $gte: new Date(filters.fechaDesde).toISOString() }
+      } else if (filters.fechaHasta) {
+        apiFilters.fechaSolicitud = { $lte: new Date(filters.fechaHasta).toISOString() }
+      }
+
+      const response = await getAllPedidos(pagination.page, pagination.limit, debouncedSearch, apiFilters, sort)
 
       if (response && response.data) {
         setPedidos(response.data)
@@ -184,12 +301,20 @@ function PedidoList() {
   // Fetch pedidos when pagination, search, filters or sort changes
   useEffect(() => {
     fetchPedidos()
-  }, [pagination.page, pagination.limit, debouncedSearch, currentTab, sort])
+  }, [pagination.page, pagination.limit, debouncedSearch, sort])
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }))
     fetchPedidos()
+  }, [filters])
+
+  // Fix the useEffect for filter changes to ensure filters are applied correctly
+  useEffect(() => {
+    if (Object.values(filters).some((value) => value !== "" && value !== null)) {
+      setPagination((prev) => ({ ...prev, page: 1 }))
+      fetchPedidos()
+    }
   }, [filters])
 
   const handlePageChange = (newPage) => {
@@ -223,13 +348,6 @@ function PedidoList() {
     navigate(`/pedido/${pedido._id}`)
   }
 
-  const handleFilterChange = (field, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
-  }
-
   const clearFilters = () => {
     setFilters({
       tipo: "",
@@ -242,17 +360,9 @@ function PedidoList() {
       anoHasta: "",
       fechaDesde: null,
       fechaHasta: null,
-    })
-  }
-
-  const handleSortChange = (field) => {
-    setSort((prev) => {
-      if (prev.field === field) {
-        // Toggle order if same field
-        return { field, order: prev.order === 1 ? -1 : 1 }
-      }
-      // Default to descending for new field
-      return { field, order: -1 }
+      table_status: "",
+      status: "",
+      stockStatus: "",
     })
   }
 
@@ -287,6 +397,30 @@ function PedidoList() {
       },
     }
     return statusMap[status] || statusMap.pending
+  }
+
+  const getStockStatusDetails = (pedido) => {
+    if (!pedido.cantidad && pedido.cantidad !== 0) return null
+
+    if (pedido.cantidad <= 0) {
+      return {
+        label: "Out of Stock",
+        icon: Archive,
+        className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+      }
+    } else if (pedido.cantidad <= 10) {
+      return {
+        label: "Low Stock",
+        icon: AlertCircle,
+        className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+      }
+    } else {
+      return {
+        label: "In Stock",
+        icon: CheckCircle,
+        className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+      }
+    }
   }
 
   const formatDate = (date) => {
@@ -339,8 +473,8 @@ function PedidoList() {
       setNewTableStatus({ name: "", color: "#6E56CF", order: 0 })
 
       // Refresh filter options
-      const data = await getFilterOptions("tipo")
-      setFilterOptions((prev) => ({ ...prev, tipo: data }))
+      const data = await getFilterOptions("table_status")
+      setFilterOptions((prev) => ({ ...prev, table_status: data }))
     } catch (error) {
       console.error("Error creating table status:", error)
       toast({
@@ -547,6 +681,40 @@ function PedidoList() {
                         </div>
                         <ScrollArea className="h-[400px]">
                           <div className="p-4 space-y-4">
+                            {/* Stock Status Filter */}
+                            <div>
+                              <label className="text-sm font-medium">Stock Status</label>
+                              <Select
+                                value={filters.stockStatus}
+                                onValueChange={(value) => handleFilterChange("stockStatus", value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select stock status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All Stock Statuses</SelectItem>
+                                  <SelectItem value="in_stock">
+                                    <div className="flex items-center">
+                                      <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                                      In Stock
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="low_stock">
+                                    <div className="flex items-center">
+                                      <AlertCircle className="w-4 h-4 mr-2 text-yellow-600" />
+                                      Low Stock
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="out_of_stock">
+                                    <div className="flex items-center">
+                                      <Archive className="w-4 h-4 mr-2 text-red-600" />
+                                      Out of Stock
+                                    </div>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
                             {/* Type Filter */}
                             <div>
                               <div className="flex items-center justify-between mb-1">
@@ -568,8 +736,8 @@ function PedidoList() {
                                 <SelectContent>
                                   <SelectItem value="all">All Types</SelectItem>
                                   {filterOptions.tipo.map((option) => (
-                                    <SelectItem key={option} value={option}>
-                                      {option}
+                                    <SelectItem key={option._id || option} value={option._id || option}>
+                                      {option.name || option}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -589,8 +757,8 @@ function PedidoList() {
                                 <SelectContent>
                                   <SelectItem value="all">All Providers</SelectItem>
                                   {filterOptions.proveedor.map((option) => (
-                                    <SelectItem key={option} value={option}>
-                                      {option}
+                                    <SelectItem key={option._id || option} value={option._id || option}>
+                                      {option.name || option}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -621,8 +789,64 @@ function PedidoList() {
                                 <SelectContent>
                                   <SelectItem value="all">All Requesters</SelectItem>
                                   {filterOptions.solicitante.map((option) => (
-                                    <SelectItem key={option} value={option}>
-                                      {option}
+                                    <SelectItem key={option._id || option} value={option._id || option}>
+                                      {option.name || option}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Status Filter */}
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="text-sm font-medium">Status</label>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => setIsTableStatusDialogOpen(true)}
+                                  className="h-6 px-2 text-xs"
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  New Status
+                                </Button>
+                              </div>
+                              <Select
+                                value={filters.status}
+                                onValueChange={(value) => handleFilterChange("status", value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All Statuses</SelectItem>
+                                  <SelectItem value="pending">
+                                    <div className="flex items-center">
+                                      <Clock className="w-4 h-4 mr-2" />
+                                      Pending
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="in_progress">
+                                    <div className="flex items-center">
+                                      <Package className="w-4 h-4 mr-2" />
+                                      In Progress
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="completed">
+                                    <div className="flex items-center">
+                                      <CheckCircle className="w-4 h-4 mr-2" />
+                                      Completed
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="cancelled">
+                                    <div className="flex items-center">
+                                      <AlertCircle className="w-4 h-4 mr-2" />
+                                      Cancelled
+                                    </div>
+                                  </SelectItem>
+                                  {filterOptions.table_status.map((option) => (
+                                    <SelectItem key={option._id || option} value={option._id || option}>
+                                      {option.name || option}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -668,14 +892,37 @@ function PedidoList() {
                                 </SelectContent>
                               </Select>
                             </div>
+
+                            {/* Order Filter */}
+                            <div>
+                              <label className="text-sm font-medium">Order</label>
+                              <Select
+                                value={filters.pedir}
+                                onValueChange={(value) => handleFilterChange("pedir", value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select order status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All</SelectItem>
+                                  {filterOptions.pedir.map((option) => (
+                                    <SelectItem key={option} value={option}>
+                                      {option}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
                         </ScrollArea>
                         <div className="flex items-center justify-between p-4 border-t">
                           <Button variant="ghost" onClick={() => setIsFilterOpen(false)}>
                             Cancel
                           </Button>
+                          {/* Fix the Apply Filters button to ensure it works correctly */}
                           <Button
                             onClick={() => {
+                              setPagination((prev) => ({ ...prev, page: 1 }))
                               fetchPedidos()
                               setIsFilterOpen(false)
                             }}
@@ -685,82 +932,17 @@ function PedidoList() {
                         </div>
                       </PopoverContent>
                     </Popover>
-
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="flex items-center gap-2">
-                          <SlidersHorizontal className="w-4 h-4" />
-                          Sort
-                          <ArrowUpDown className="w-3 h-3 ml-1" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-56" align="end">
-                        <div className="space-y-2">
-                          <h4 className="font-medium">Sort by</h4>
-                          <div className="space-y-1">
-                            {[
-                              { id: "fechaSolicitud", label: "Request Date", icon: Calendar },
-                              { id: "referencia", label: "Reference", icon: FileText },
-                              { id: "solicitante", label: "Requester", icon: User },
-                              { id: "importePedido", label: "Amount", icon: DollarSign },
-                              { id: "proveedor", label: "Provider", icon: Briefcase },
-                            ].map((option) => (
-                              <Button
-                                key={option.id}
-                                variant="ghost"
-                                className="flex items-center justify-between w-full"
-                                onClick={() => handleSortChange(option.id)}
-                              >
-                                <span className="flex items-center">
-                                  <option.icon className="w-4 h-4 mr-2" />
-                                  {option.label}
-                                </span>
-                                {sort.field === option.id && <span>{sort.order === 1 ? "↑" : "↓"}</span>}
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+                <Tabs value="all" className="w-full">
                   <TabsList className="justify-start w-full px-6 border-b rounded-none">
                     <TabsTrigger value="all" className="data-[state=active]:bg-primary/10">
                       All Orders
                     </TabsTrigger>
-                    <TabsTrigger
-                      value="pending"
-                      className="data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-900 dark:data-[state=active]:bg-yellow-900 dark:data-[state=active]:text-yellow-100"
-                    >
-                      <Clock className="w-4 h-4 mr-2" />
-                      Pending
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="in_progress"
-                      className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-900 dark:data-[state=active]:bg-blue-900 dark:data-[state=active]:text-blue-100"
-                    >
-                      <Package className="w-4 h-4 mr-2" />
-                      In Progress
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="completed"
-                      className="data-[state=active]:bg-green-100 data-[state=active]:text-green-900 dark:data-[state=active]:bg-green-900 dark:data-[state=active]:text-green-100"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Completed
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="cancelled"
-                      className="data-[state=active]:bg-red-100 data-[state=active]:text-red-900 dark:data-[state=active]:bg-red-900 dark:data-[state=active]:text-red-100"
-                    >
-                      <AlertCircle className="w-4 h-4 mr-2" />
-                      Cancelled
-                    </TabsTrigger>
                   </TabsList>
-                  <TabsContent value={currentTab} className="m-0">
+                  <TabsContent value="all" className="m-0">
                     {isLoading ? (
                       <div className="p-6 space-y-4">
                         {[1, 2, 3, 4, 5].map((i) => (
@@ -779,76 +961,17 @@ function PedidoList() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead
-                                  onClick={() => handleSortChange("tipo")}
-                                  className="cursor-pointer hover:text-primary"
-                                >
-                                  <div className="flex items-center">
-                                    Type
-                                    {sort.field === "tipo" && (
-                                      <span className="ml-1">{sort.order === 1 ? "↑" : "↓"}</span>
-                                    )}
-                                  </div>
-                                </TableHead>
-                                <TableHead
-                                  onClick={() => handleSortChange("referencia")}
-                                  className="cursor-pointer hover:text-primary"
-                                >
-                                  <div className="flex items-center">
-                                    Reference
-                                    {sort.field === "referencia" && (
-                                      <span className="ml-1">{sort.order === 1 ? "↑" : "↓"}</span>
-                                    )}
-                                  </div>
-                                </TableHead>
-                                <TableHead
-                                  onClick={() => handleSortChange("solicitante")}
-                                  className="cursor-pointer hover:text-primary"
-                                >
-                                  <div className="flex items-center">
-                                    Requester
-                                    {sort.field === "solicitante" && (
-                                      <span className="ml-1">{sort.order === 1 ? "↑" : "↓"}</span>
-                                    )}
-                                  </div>
-                                </TableHead>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Reference</TableHead>
+                                <TableHead>Requester</TableHead>
                                 <TableHead>Manufacturer</TableHead>
-                                <TableHead
-                                  onClick={() => handleSortChange("proveedor")}
-                                  className="cursor-pointer hover:text-primary"
-                                >
-                                  <div className="flex items-center">
-                                    Provider
-                                    {sort.field === "proveedor" && (
-                                      <span className="ml-1">{sort.order === 1 ? "↑" : "↓"}</span>
-                                    )}
-                                  </div>
-                                </TableHead>
+                                <TableHead>Provider</TableHead>
                                 <TableHead>Quantity</TableHead>
                                 <TableHead>Unit Price</TableHead>
-                                <TableHead
-                                  onClick={() => handleSortChange("importePedido")}
-                                  className="cursor-pointer hover:text-primary"
-                                >
-                                  <div className="flex items-center">
-                                    Amount
-                                    {sort.field === "importePedido" && (
-                                      <span className="ml-1">{sort.order === 1 ? "↑" : "↓"}</span>
-                                    )}
-                                  </div>
-                                </TableHead>
-                                <TableHead
-                                  onClick={() => handleSortChange("fechaSolicitud")}
-                                  className="cursor-pointer hover:text-primary"
-                                >
-                                  <div className="flex items-center">
-                                    Request Date
-                                    {sort.field === "fechaSolicitud" && (
-                                      <span className="ml-1">{sort.order === 1 ? "↑" : "↓"}</span>
-                                    )}
-                                  </div>
-                                </TableHead>
+                                <TableHead>Amount</TableHead>
+                                <TableHead>Request Date</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead>Stock</TableHead>
                                 <TableHead className="w-[100px]"></TableHead>
                               </TableRow>
                             </TableHeader>
@@ -856,6 +979,7 @@ function PedidoList() {
                               {pedidos.map((pedido) => {
                                 const status = getStatusFromPedido(pedido)
                                 const statusDetails = getStatusDetails(status)
+                                const stockStatus = getStockStatusDetails(pedido)
                                 const StatusIcon = statusDetails.icon
                                 return (
                                   <tr
@@ -887,6 +1011,14 @@ function PedidoList() {
                                         <Badge variant="secondary" className={statusDetails.className}>
                                           <StatusIcon className="w-3 h-3 mr-1" />
                                           {statusDetails.label}
+                                        </Badge>
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      {stockStatus && (
+                                        <Badge variant="secondary" className={stockStatus.className}>
+                                          <stockStatus.icon className="w-3 h-3 mr-1" />
+                                          {stockStatus.label}
                                         </Badge>
                                       )}
                                     </TableCell>
@@ -930,7 +1062,7 @@ function PedidoList() {
 
                               {pedidos.length === 0 && (
                                 <TableRow>
-                                  <TableCell colSpan={11} className="h-24 text-center">
+                                  <TableCell colSpan={12} className="h-24 text-center">
                                     <div className="flex flex-col items-center justify-center py-8">
                                       <Box className="w-12 h-12 mb-3 text-muted-foreground" />
                                       <p className="mb-2 text-muted-foreground">No orders found</p>
