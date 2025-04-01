@@ -2,19 +2,22 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { getCalls, createCall, completeCall, failCall, exportCalls } from "../../apis/logistic/callApi"
-import { getAllMachines } from "../../apis/gestionStockApi/machineApi"
-import { useAuth } from "../../context/AuthContext"
-import MainLayout from "../../components/MainLayout"
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { Input } from "../../components/ui/input"
-import { Button } from "../../components/ui/button"
-import { Label } from "../../components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
-import { Checkbox } from "../../components/ui/checkbox"
-import { Badge } from "../../components/ui/badge"
-import { Separator } from "../../components/ui/separator"
+import { getCalls, createCall, completeCall, checkExpiredCalls, exportCalls } from "@/apis/logistic/callApi"
+import { getAllMachines } from "@/apis/gestionStockApi/machineApi"
+import { useAuth } from "@/context/AuthContext"
+import MainLayout from "@/components/MainLayout"
+import { CallTimer } from "@/components/CallTimer"
+import { CallStats } from "@/components/CallStats"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Download,
   Filter,
@@ -22,11 +25,14 @@ import {
   RefreshCw,
   Clock,
   CheckCircle,
-  AlertTriangle,
   XCircle,
   PhoneCall,
+  RotateCw,
+  Calendar,
+  Info,
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 const CallDashboard = () => {
   // Get the current user from auth context
@@ -38,6 +44,9 @@ const CallDashboard = () => {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [creatingCall, setCreatingCall] = useState(false)
+  const [checkingExpired, setCheckingExpired] = useState(false)
+  const [completingCall, setCompletingCall] = useState({})
+  const [activeTab, setActiveTab] = useState("all")
   const [filters, setFilters] = useState({
     machineId: "all",
     date: "",
@@ -124,14 +133,9 @@ const CallDashboard = () => {
         if (call.status === "Pendiente") {
           // If timer has reached zero
           if (call.remainingTime <= 1) {
-            // Mark the call as failed
-            failCall(call._id).catch((error) => {
-              console.error("Error marking call as failed:", error)
-            })
-
             return {
               ...call,
-              status: "Failed",
+              status: "Expirada",
               remainingTime: 0,
             }
           }
@@ -180,6 +184,11 @@ const CallDashboard = () => {
       let newCall
       if (response && response.data) {
         newCall = response.data
+
+        // Ensure the new call has a remainingTime property
+        if (!newCall.remainingTime && newCall.remainingTime !== 0) {
+          newCall.remainingTime = 90 * 60 // 90 minutes in seconds
+        }
       } else {
         newCall = {
           _id: Date.now().toString(), // Fallback ID if not provided by API
@@ -222,10 +231,20 @@ const CallDashboard = () => {
 
   const handleCompleteCall = async (id) => {
     try {
+      // Set loading state for this specific call
+      setCompletingCall((prev) => ({ ...prev, [id]: true }))
+
       // Get the current time for completion
       const completionTime = new Date()
 
-      // Update the call in the local state immediately
+      // Get the user role from the auth context
+      const userRole = user?.roles?.includes("LOGISTICA") ? "LOGISTICA" : "PRODUCCION"
+
+      // Call the API to update the server FIRST
+      // Pass the user role to ensure proper authorization
+      await completeCall(id, userRole)
+
+      // Then update the local state after successful API call
       setCalls((prevCalls) =>
         prevCalls.map((call) =>
           call._id === id
@@ -233,13 +252,11 @@ const CallDashboard = () => {
                 ...call,
                 status: "Realizada",
                 completionTime: completionTime,
+                remainingTime: 0, // Explicitly set remaining time to 0
               }
             : call,
         ),
       )
-
-      // Call the API to update the server
-      await completeCall(id)
 
       // Show success toast
       toast({
@@ -250,15 +267,53 @@ const CallDashboard = () => {
     } catch (error) {
       console.error("Error completing call:", error)
 
-      // Revert the local state change if the API call failed
+      // Show error toast with more specific message
+      const errorMessage = error.response?.data?.message || "No se pudo completar la llamada"
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+
+      // Refresh calls to ensure UI is in sync with server
       fetchCalls(true)
+    } finally {
+      // Clear loading state for this call
+      setCompletingCall((prev) => {
+        const newState = { ...prev }
+        delete newState[id]
+        return newState
+      })
+    }
+  }
+
+  const handleCheckExpiredCalls = async () => {
+    try {
+      setCheckingExpired(true)
+
+      // Call the API to check expired calls
+      const response = await checkExpiredCalls()
+
+      // Refresh the calls list
+      await fetchCalls(true)
+
+      // Show success toast
+      toast({
+        title: "Verificación completada",
+        description: response.data.message || "Se han verificado las llamadas expiradas",
+        variant: "success",
+      })
+    } catch (error) {
+      console.error("Error checking expired calls:", error)
 
       // Show error toast
       toast({
         title: "Error",
-        description: "No se pudo completar la llamada",
+        description: "No se pudieron verificar las llamadas expiradas",
         variant: "destructive",
       })
+    } finally {
+      setCheckingExpired(false)
     }
   }
 
@@ -279,23 +334,10 @@ const CallDashboard = () => {
     fetchCalls()
   }
 
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`
-  }
-
   // Get machine names for display
   const getMachineNames = (call) => {
     if (!call.machines || call.machines.length === 0) return "-"
     return call.machines.map((machine) => machine.name).join(", ")
-  }
-
-  // Get timer variant based on remaining time
-  const getTimerVariant = (remainingTime) => {
-    if (remainingTime <= 15 * 60) return "destructive" // Less than 15 minutes
-    if (remainingTime <= 30 * 60) return "warning" // Less than 30 minutes
-    return "outline"
   }
 
   // Get status badge variant
@@ -303,7 +345,7 @@ const CallDashboard = () => {
     switch (status) {
       case "Realizada":
         return "success"
-      case "Failed":
+      case "Expirada":
         return "destructive"
       case "Pendiente":
         return "secondary"
@@ -317,7 +359,7 @@ const CallDashboard = () => {
     switch (status) {
       case "Realizada":
         return <CheckCircle className="w-3 h-3 mr-1" />
-      case "Failed":
+      case "Expirada":
         return <XCircle className="w-3 h-3 mr-1" />
       case "Pendiente":
         return <Clock className="w-3 h-3 mr-1" />
@@ -325,6 +367,15 @@ const CallDashboard = () => {
         return null
     }
   }
+
+  // Filter calls based on active tab
+  const filteredCalls = calls.filter((call) => {
+    if (activeTab === "all") return true
+    if (activeTab === "pending") return call.status === "Pendiente"
+    if (activeTab === "completed") return call.status === "Realizada"
+    if (activeTab === "expired") return call.status === "Expirada"
+    return true
+  })
 
   // Check if user has the LOGISTICA role
   const isLogistics = user?.roles?.includes("LOGISTICA")
@@ -377,17 +428,54 @@ const CallDashboard = () => {
                   {isProduction ? "PRODUCCION" : "LOGISTICA"}
                 </Badge>
               </div>
+              <div className="flex items-center">
+                <Calendar className="w-4 h-4 mr-1" />
+                {new Date().toLocaleDateString()}
+              </div>
             </div>
           </div>
 
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button variant="outline" size="icon" onClick={() => fetchCalls(true)} disabled={refreshing}>
-              {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            </Button>
-          </motion.div>
+          <div className="flex gap-2">
+            {isLogistics && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={handleCheckExpiredCalls} disabled={checkingExpired}>
+                      {checkingExpired ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RotateCw className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Verificar llamadas expiradas</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button variant="outline" size="icon" onClick={() => fetchCalls(true)} disabled={refreshing}>
+                      {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    </Button>
+                  </motion.div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Actualizar datos</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
 
         <Separator />
+
+        {/* Statistics Cards */}
+        <CallStats calls={calls} />
 
         {isProduction && (
           <motion.div
@@ -398,6 +486,7 @@ const CallDashboard = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Llamar a LOGISTICA</CardTitle>
+                <CardDescription>Selecciona una máquina para crear una llamada a LOGISTICA</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
@@ -452,12 +541,28 @@ const CallDashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle>Registro de Llamadas</CardTitle>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button variant="outline" size="sm" onClick={handleExportToExcel} className="flex items-center gap-2">
-                  <Download className="w-4 h-4" />
-                  Exportar
-                </Button>
-              </motion.div>
+              <div className="flex gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleExportToExcel}
+                          className="flex items-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          Exportar
+                        </Button>
+                      </motion.div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Exportar datos a CSV</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-4">
@@ -498,7 +603,7 @@ const CallDashboard = () => {
                       <SelectItem value="all">Todos los estados</SelectItem>
                       <SelectItem value="Pendiente">Pendiente</SelectItem>
                       <SelectItem value="Realizada">Realizada</SelectItem>
-                      <SelectItem value="Failed">Failed</SelectItem>
+                      <SelectItem value="Expirada">Expirada</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -512,6 +617,15 @@ const CallDashboard = () => {
                   </motion.div>
                 </div>
               </div>
+
+              <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="mb-4">
+                <TabsList>
+                  <TabsTrigger value="all">Todas</TabsTrigger>
+                  <TabsTrigger value="pending">Pendientes</TabsTrigger>
+                  <TabsTrigger value="completed">Completadas</TabsTrigger>
+                  <TabsTrigger value="expired">Expiradas</TabsTrigger>
+                </TabsList>
+              </Tabs>
 
               <div className="border rounded-md">
                 <Table>
@@ -536,7 +650,7 @@ const CallDashboard = () => {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ) : calls.length === 0 ? (
+                    ) : filteredCalls.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                           No hay llamadas registradas
@@ -544,7 +658,7 @@ const CallDashboard = () => {
                       </TableRow>
                     ) : (
                       <AnimatePresence>
-                        {calls.map((call) => (
+                        {filteredCalls.map((call) => (
                           <motion.tr
                             key={call._id}
                             initial={{ opacity: 0, y: 10 }}
@@ -557,21 +671,7 @@ const CallDashboard = () => {
                             <TableCell>{new Date(call.date).toLocaleDateString()}</TableCell>
                             <TableCell>{new Date(call.callTime).toLocaleTimeString()}</TableCell>
                             <TableCell>
-                              {call.status === "Pendiente" ? (
-                                <Badge
-                                  variant={getTimerVariant(call.remainingTime)}
-                                  className="px-3 py-1 font-mono text-base"
-                                >
-                                  {call.remainingTime <= 15 * 60 ? (
-                                    <AlertTriangle className="w-4 h-4 mr-1 animate-pulse" />
-                                  ) : call.remainingTime <= 30 * 60 ? (
-                                    <Clock className="w-4 h-4 mr-1" />
-                                  ) : null}
-                                  {formatTime(call.remainingTime)}
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">0:00</span>
-                              )}
+                              <CallTimer remainingTime={call.remainingTime} status={call.status} />
                             </TableCell>
                             <TableCell>
                               <Badge variant={getStatusBadgeVariant(call.status)}>
@@ -582,11 +682,29 @@ const CallDashboard = () => {
                             <TableCell>
                               {isLogistics && call.status === "Pendiente" && (
                                 <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                                  <Checkbox onCheckedChange={() => handleCompleteCall(call._id)} className="w-5 h-5" />
+                                  {completingCall[call._id] ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                  ) : (
+                                    <Checkbox
+                                      onCheckedChange={() => handleCompleteCall(call._id)}
+                                      className="w-5 h-5"
+                                    />
+                                  )}
                                 </motion.div>
                               )}
                               {call.status === "Realizada" && <Checkbox checked disabled className="w-5 h-5" />}
-                              {call.status === "Failed" && <XCircle className="w-5 h-5 text-red-500" />}
+                              {call.status === "Expirada" && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Info className="w-5 h-5 text-red-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Llamada expirada automáticamente</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                             </TableCell>
                             <TableCell>
                               {call.completionTime ? new Date(call.completionTime).toLocaleTimeString() : "-"}

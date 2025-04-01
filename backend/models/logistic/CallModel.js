@@ -19,7 +19,7 @@ const CallSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["Pendiente", "Realizada"],
+      enum: ["Pendiente", "Realizada", "Expirada"],
       default: "Pendiente",
     },
     completionTime: {
@@ -39,7 +39,7 @@ const CallSchema = new Schema(
 
 // Virtual for remaining time (90 minutes from call time)
 CallSchema.virtual("remainingTime").get(function () {
-  if (this.status === "Realizada") return 0
+  if (this.status === "Realizada" || this.status === "Expirada") return 0
 
   const callTime = new Date(this.callTime).getTime()
   const currentTime = new Date().getTime()

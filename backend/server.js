@@ -44,6 +44,7 @@ const tipoRoutes = require("./routes/pedidoRoutes/tipoRoutes");
 const tableStatusRoutes = require("./routes/pedidoRoutes/tableStatusRoutes")
 const pedidosRoutes = require("./routes/pedidoRoutes/pedidoRoutes")
 const callRoutes = require("./routes/logistic/callRoutes") // ✅ Add this line
+const { initCronJobs } = require("./crone/callStatusCron")
 
 
 const app = express()
@@ -60,7 +61,9 @@ mongoose.connect(process.env.MONGODB_URI, {
   }).catch((error) => {
     console.error('MongoDB connection failed:', error);
   });
+
   
+  initCronJobs()
 app.use("/api/pd", ProductDesignationRoutes);
 app.use("/api/users", userRoutes); 
 app.use("/api/auth", authRoutes); 
