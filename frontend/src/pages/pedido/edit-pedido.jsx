@@ -58,6 +58,7 @@ function EditPedido() {
     aceptado: null,
     direccion: "",
     table_status: "",
+    weeks: 0,
     recepcionado: "",
     ano: new Date().getFullYear(),
   })
@@ -543,6 +544,17 @@ function EditPedido() {
                             required
                           />
                         </div>
+                        <div className="space-y-2">
+            <Label htmlFor="weeks">Weeks</Label>
+            <Input
+              id="weeks"
+              name="weeks"
+              type="number"
+              value={pedido.weeks || ""}
+              onChange={handleInputChange}
+              min="1"
+            />
+            </div>
                         <div className="space-y-2">
                           <Label htmlFor="precioUnidad">Unit Price (€)</Label>
                           <Input

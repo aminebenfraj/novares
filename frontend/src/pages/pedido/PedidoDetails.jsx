@@ -386,6 +386,10 @@ export default function PedidoDetails() {
                         <dd className="font-semibold">{pedido.cantidad}</dd>
                       </div>
                       <div className="flex justify-between py-2 border-b">
+            <dt className="font-medium text-muted-foreground">Weeks</dt>
+            <dd className="font-semibold">{pedido.weeks ? `${pedido.weeks} S` : "N/A"}</dd>
+          </div>
+                      <div className="flex justify-between py-2 border-b">
                         <dt className="font-medium text-muted-foreground">Unit Price</dt>
                         <dd>{formatCurrency(pedido.precioUnidad)}</dd>
                       </div>
