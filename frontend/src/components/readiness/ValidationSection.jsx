@@ -2,283 +2,235 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { CheckCircle, XCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { HelpCircle } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
+import { formatFieldName } from "../../components/readiness/readinessUtils"
 
-// Animation variants
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-}
+export const ValidationSection = ({ title, fields, data, setData }) => {
+  const [activeField, setActiveField] = useState(fields[0])
 
-export function ValidationSection({ title, fields, data, setData }) {
-  const [expandedItems, setExpandedItems] = useState([])
-
-  const toggleItem = (value) => {
-    setExpandedItems((prev) => (prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]))
+  const handleValueChange = (field, value) => {
+    setData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        value,
+      },
+    }))
   }
 
-  // Calculate completion percentage for this section
-  const calculateSectionCompletion = () => {
-    const totalFields = fields.length
-    const completedFields = fields.filter((field) => data[field]?.value).length
-    return Math.round((completedFields / totalFields) * 100)
+  const handleValidationChange = (field, validationField, value) => {
+    setData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        validation: {
+          ...prev[field]?.validation,
+          [validationField]: value,
+        },
+      },
+    }))
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <h3 className="text-lg font-medium">{title.charAt(0).toUpperCase() + title.slice(1)} Items</h3>
-          <Badge variant={calculateSectionCompletion() === 100 ? "success" : "outline"} className="ml-2">
-            {calculateSectionCompletion()}% Complete
-          </Badge>
-        </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="cursor-help">
-                <HelpCircle className="w-4 h-4 text-muted-foreground" />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="max-w-xs">Check items as they are completed and add validation details.</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-
-      <Accordion type="multiple" value={expandedItems} className="space-y-2">
-        {fields.map((field, index) => (
-          <motion.div
-            key={field}
-            variants={itemVariants}
-            initial="hidden"
-            animate="visible"
-            transition={{ delay: index * 0.05 }}
-          >
-            <AccordionItem value={field} className="overflow-hidden border rounded-lg bg-card">
-              <AccordionTrigger
-                onClick={() => toggleItem(field)}
-                className="px-4 py-3 transition-colors hover:bg-muted/50"
-              >
-                <div className="flex items-center space-x-2 text-left">
-                  <Checkbox
-                    id={`${title}-${field}-main`}
-                    checked={data[field]?.value || false}
-                    onCheckedChange={(checked) => {
-                      setData((prev) => ({
-                        ...prev,
-                        [field]: { ...prev[field], value: checked },
-                      }))
-                      // Auto-expand when checked
-                      if (checked && !expandedItems.includes(field)) {
-                        toggleItem(field)
-                      }
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-5 h-5"
-                  />
-                  <span className="font-medium">
-                    {field.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+        <Card className="md:col-span-1">
+          <CardHeader>
+            <CardTitle>{title.charAt(0).toUpperCase() + title.slice(1)} Fields</CardTitle>
+            <CardDescription>Select a field to edit</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col space-y-2">
+              {fields.map((field) => (
+                <Button
+                  key={field}
+                  type="button" // Add this line to prevent form submission
+                  variant={activeField === field ? "default" : "outline"}
+                  className="relative justify-start text-left pl-9"
+                  onClick={() => setActiveField(field)}
+                >
+                  <span className="absolute left-2">
+                    {data[field]?.value ? (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-500" />
+                    )}
                   </span>
-                  {data[field]?.validation?.validation_check && (
-                    <Badge variant="success" className="ml-auto mr-2">
-                      Validated
-                    </Badge>
-                  )}
+                  {formatFieldName(field)}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-3">
+          <CardHeader>
+            <CardTitle>{formatFieldName(activeField)}</CardTitle>
+            <CardDescription>Configure validation details for this field</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="status" className="w-full">
+              <TabsList>
+                <TabsTrigger value="status">Status</TabsTrigger>
+                <TabsTrigger value="validation">Validation Details</TabsTrigger>
+              </TabsList>
+              <TabsContent value="status" className="pt-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`${activeField}-value`}
+                    checked={data[activeField]?.value || false}
+                    onCheckedChange={(checked) => handleValueChange(activeField, checked === true)}
+                  />
+                  <Label htmlFor={`${activeField}-value`}>Mark as completed</Label>
                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pt-2 pb-4">
-                <Card className="p-4 border-dashed bg-background/50">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <ValidationCheckbox
-                      id={`${title}-${field}-tko`}
-                      label="TKO"
-                      field={field}
-                      validationField="tko"
-                      data={data}
-                      setData={setData}
-                    />
-                    <ValidationCheckbox
-                      id={`${title}-${field}-ot`}
-                      label="OT"
-                      field={field}
-                      validationField="ot"
-                      data={data}
-                      setData={setData}
-                    />
-                    <ValidationCheckbox
-                      id={`${title}-${field}-ot_op`}
-                      label="OT OP"
-                      field={field}
-                      validationField="ot_op"
-                      data={data}
-                      setData={setData}
-                    />
-                    <ValidationCheckbox
-                      id={`${title}-${field}-is`}
-                      label="IS"
-                      field={field}
-                      validationField="is"
-                      data={data}
-                      setData={setData}
-                    />
-                    <ValidationCheckbox
-                      id={`${title}-${field}-sop`}
-                      label="SOP"
-                      field={field}
-                      validationField="sop"
-                      data={data}
-                      setData={setData}
-                    />
-                    <div className="col-span-1 md:col-span-2 lg:col-span-3">
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                        <ValidationSelect
-                          id={`${title}-${field}-ok_nok`}
-                          label="Status"
-                          field={field}
-                          validationField="ok_nok"
-                          data={data}
-                          setData={setData}
-                          options={[
-                            { value: "OK", label: "OK" },
-                            { value: "NOK", label: "NOK" },
-                          ]}
+              </TabsContent>
+              <TabsContent value="validation" className="pt-4 space-y-6">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-6"
+                >
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor={`${activeField}-tko`}>TKO</Label>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`${activeField}-tko`}
+                          checked={data[activeField]?.validation?.tko || false}
+                          onCheckedChange={(checked) => handleValidationChange(activeField, "tko", checked === true)}
                         />
-                        <ValidationInput
-                          id={`${title}-${field}-who`}
-                          label="Who"
-                          field={field}
-                          validationField="who"
-                          data={data}
-                          setData={setData}
-                        />
-                        <ValidationInput
-                          id={`${title}-${field}-when`}
-                          label="When"
-                          field={field}
-                          validationField="when"
-                          data={data}
-                          setData={setData}
-                          type="date"
-                        />
+                        <Label htmlFor={`${activeField}-tko`}>Completed</Label>
                       </div>
                     </div>
-                    <div className="col-span-1 mt-2 md:col-span-2 lg:col-span-3">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor={`${title}-${field}-validation_check`} className="font-medium">
-                          Mark as Validated
-                        </Label>
+                    <div className="space-y-2">
+                      <Label htmlFor={`${activeField}-ot`}>OT</Label>
+                      <div className="flex items-center space-x-2">
                         <Checkbox
-                          id={`${title}-${field}-validation_check`}
-                          checked={data[field]?.validation?.validation_check || false}
-                          onCheckedChange={(checked) =>
-                            setData((prev) => ({
-                              ...prev,
-                              [field]: {
-                                ...prev[field],
-                                validation: { ...prev[field].validation, validation_check: checked },
-                              },
-                            }))
-                          }
-                          className="w-5 h-5"
+                          id={`${activeField}-ot`}
+                          checked={data[activeField]?.validation?.ot || false}
+                          onCheckedChange={(checked) => handleValidationChange(activeField, "ot", checked === true)}
                         />
+                        <Label htmlFor={`${activeField}-ot`}>Completed</Label>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`${activeField}-ot_op`}>OT OP</Label>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`${activeField}-ot_op`}
+                          checked={data[activeField]?.validation?.ot_op || false}
+                          onCheckedChange={(checked) => handleValidationChange(activeField, "ot_op", checked === true)}
+                        />
+                        <Label htmlFor={`${activeField}-ot_op`}>Completed</Label>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`${activeField}-is`}>IS</Label>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`${activeField}-is`}
+                          checked={data[activeField]?.validation?.is || false}
+                          onCheckedChange={(checked) => handleValidationChange(activeField, "is", checked === true)}
+                        />
+                        <Label htmlFor={`${activeField}-is`}>Completed</Label>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`${activeField}-sop`}>SOP</Label>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`${activeField}-sop`}
+                          checked={data[activeField]?.validation?.sop || false}
+                          onCheckedChange={(checked) => handleValidationChange(activeField, "sop", checked === true)}
+                        />
+                        <Label htmlFor={`${activeField}-sop`}>Completed</Label>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`${activeField}-validation_check`}>Validation Check</Label>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`${activeField}-validation_check`}
+                          checked={data[activeField]?.validation?.validation_check || false}
+                          onCheckedChange={(checked) =>
+                            handleValidationChange(activeField, "validation_check", checked === true)
+                          }
+                        />
+                        <Label htmlFor={`${activeField}-validation_check`}>Completed</Label>
                       </div>
                     </div>
                   </div>
-                </Card>
-              </AccordionContent>
-            </AccordionItem>
-          </motion.div>
-        ))}
-      </Accordion>
-    </div>
-  )
-}
 
-function ValidationCheckbox({ id, label, field, validationField, data, setData }) {
-  return (
-    <div className="flex items-center space-x-2">
-      <Checkbox
-        id={id}
-        checked={data[field]?.validation?.[validationField] || false}
-        onCheckedChange={(checked) =>
-          setData((prev) => ({
-            ...prev,
-            [field]: {
-              ...prev[field],
-              validation: { ...prev[field].validation, [validationField]: checked },
-            },
-          }))
-        }
-        className="w-4 h-4"
-      />
-      <Label htmlFor={id} className="text-sm font-medium cursor-pointer">
-        {label}
-      </Label>
-    </div>
-  )
-}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor={`${activeField}-ok_nok`}>Status</Label>
+                      <RadioGroup
+                        value={data[activeField]?.validation?.ok_nok || ""}
+                        onValueChange={(value) => handleValidationChange(activeField, "ok_nok", value)}
+                        className="flex space-x-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="OK" id={`${activeField}-ok`} />
+                          <Label htmlFor={`${activeField}-ok`}>OK</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="NOK" id={`${activeField}-nok`} />
+                          <Label htmlFor={`${activeField}-nok`}>NOK</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="" id={`${activeField}-none`} />
+                          <Label htmlFor={`${activeField}-none`}>Not Set</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
 
-function ValidationInput({ id, label, field, validationField, data, setData, type = "text" }) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={id} className="text-sm font-medium">
-        {label}
-      </Label>
-      <Input
-        type={type}
-        id={id}
-        value={data[field]?.validation?.[validationField] || ""}
-        onChange={(e) =>
-          setData((prev) => ({
-            ...prev,
-            [field]: {
-              ...prev[field],
-              validation: { ...prev[field].validation, [validationField]: e.target.value },
-            },
-          }))
-        }
-        className="transition-all duration-200 h-9 focus:ring-2 focus:ring-primary"
-      />
-    </div>
-  )
-}
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor={`${activeField}-who`}>Responsible Person</Label>
+                        <Input
+                          id={`${activeField}-who`}
+                          value={data[activeField]?.validation?.who || ""}
+                          onChange={(e) => handleValidationChange(activeField, "who", e.target.value)}
+                          placeholder="Enter name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`${activeField}-when`}>Date</Label>
+                        <Input
+                          id={`${activeField}-when`}
+                          value={data[activeField]?.validation?.when || ""}
+                          onChange={(e) => handleValidationChange(activeField, "when", e.target.value)}
+                          placeholder="YYYY-MM-DD"
+                        />
+                      </div>
+                    </div>
 
-function ValidationSelect({ id, label, field, validationField, data, setData, options }) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={id} className="text-sm font-medium">
-        {label}
-      </Label>
-      <select
-        id={id}
-        value={data[field]?.validation?.[validationField] || ""}
-        onChange={(e) =>
-          setData((prev) => ({
-            ...prev,
-            [field]: {
-              ...prev[field],
-              validation: { ...prev[field].validation, [validationField]: e.target.value },
-            },
-          }))
-        }
-        className="w-full px-3 py-1 text-sm transition-all duration-200 border rounded-md shadow-sm h-9 border-input bg-background focus:ring-2 focus:ring-primary"
-      >
-        <option value="">Select {label}</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+                    <div className="space-y-2">
+                      <Label htmlFor={`${activeField}-comment`}>Comments</Label>
+                      <Textarea
+                        id={`${activeField}-comment`}
+                        value={data[activeField]?.validation?.comment || ""}
+                        onChange={(e) => handleValidationChange(activeField, "comment", e.target.value)}
+                        placeholder="Add any additional comments here"
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

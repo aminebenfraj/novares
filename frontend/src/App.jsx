@@ -86,6 +86,14 @@ import  CreateTipo from './pages/pedido/tipo/create-tipo';
 import  EditTipo from './pages/pedido/tipo/edit-tipo';
 import  ShowTipo from './pages/pedido/tipo/show-tipo';
 import  Call from './pages/logistic/call';
+import  Documentation from './pages/readiness/documentation/DocumentationList';
+import  EditDocumentation from './pages/readiness/documentation/EditDocumentation';
+import  EditLogistics from './pages/readiness/logistics/EditLogistics';
+import  Logistics from './pages/readiness/logistics/LogisticsList';
+import  Maintenance from './pages/readiness/Maintenance/MaintenanceList';
+import  EditMaintenance from './pages/readiness/Maintenance/EditMaintenance';
+import  EditPackaging from './pages/readiness/Packaging/EditPackaging';
+import  Packaging from './pages/readiness/Packaging/PackagingList';
 
 
 
@@ -179,6 +187,14 @@ function App() {
         <Route path="/tipo/edit/:id" element={< EditTipo/>} />
         <Route path="/tipo/create" element={< CreateTipo/>} />
         <Route path="/call" element={< Call/>} />
+        <Route path="/documentation" element={< Documentation/>} />
+        <Route path="/documentation/edit/:id" element={< EditDocumentation/>} />
+        <Route path="/logistics/edit/:id" element={< EditLogistics/>} />
+        <Route path="/logistics" element={< Logistics/>} />
+        <Route path="/maintenance" element={< Maintenance/>} />
+        <Route path="/maintenance/Edit/:id" element={< EditMaintenance/>} />
+        <Route path="/Packaging/Edit/:id" element={< EditPackaging/>} />
+        <Route path="/Packaging" element={< Packaging/>} />
     </Routes>
       </AuthProvider>
   );
