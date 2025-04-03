@@ -104,6 +104,10 @@ import  Safety from './pages/readiness/Safety/SafetyList';
 import  EditSafety from './pages/readiness/Safety/EditSafety';
 import  EditSupp from './pages/readiness/Supp/EditSupp';
 import  Supp from './pages/readiness/Supp/SuppList';
+import  EditTraining from './pages/readiness/Training/EditTraining';
+import  Training from './pages/readiness/Training/TrainingList';
+import  EditToolingStatus from './pages/readiness/ToolingStatus/EditToolingStatus';
+import  ToolingStatus from './pages/readiness/ToolingStatus/ToolingStatusList';
 
 
 
@@ -215,6 +219,10 @@ function App() {
         <Route path="/supply/:id" element={< EditSupp/>} />
         <Route path="/Safety/:id" element={< Safety/>} />
         <Route path="/Safety" element={< EditSafety/>} />
+        <Route path="/Training/edit/:id" element={<EditTraining />} />
+        <Route path="/Training" element={< Training/>} />
+        <Route path="/tooling-status/edit/:id" element={< EditToolingStatus/>} />
+        <Route path="/tooling-status" element={< ToolingStatus/>} />
     </Routes>
       </AuthProvider>
   );
