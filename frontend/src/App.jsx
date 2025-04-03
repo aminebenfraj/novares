@@ -94,6 +94,10 @@ import  Maintenance from './pages/readiness/Maintenance/MaintenanceList';
 import  EditMaintenance from './pages/readiness/Maintenance/EditMaintenance';
 import  EditPackaging from './pages/readiness/Packaging/EditPackaging';
 import  Packaging from './pages/readiness/Packaging/PackagingList';
+import  EditProcessStatusIndustrials from './pages/readiness/ProcessStatusIndustrials/EditProcessStatusIndustrials';
+import  ProcessStatusIndustrials from './pages/readiness/ProcessStatusIndustrials/ProcessStatusIndustrialsList';
+import  ProductProcess from './pages/readiness/ProductProcess/ProductProcessList';
+import  EditProductProcess from './pages/readiness/ProductProcess/EditProductProcess';
 
 
 
@@ -192,9 +196,13 @@ function App() {
         <Route path="/logistics/edit/:id" element={< EditLogistics/>} />
         <Route path="/logistics" element={< Logistics/>} />
         <Route path="/maintenance" element={< Maintenance/>} />
-        <Route path="/maintenance/Edit/:id" element={< EditMaintenance/>} />
-        <Route path="/Packaging/Edit/:id" element={< EditPackaging/>} />
-        <Route path="/Packaging" element={< Packaging/>} />
+        <Route path="/maintenance/edit/:id" element={< EditMaintenance/>} />
+        <Route path="/packaging/edit/:id" element={< EditPackaging/>} />
+        <Route path="/packaging" element={< Packaging/>} />
+        <Route path="/process-status-industrials" element={< ProcessStatusIndustrials/>} />
+        <Route path="/process-status-industrials/edit/:id" element={< EditProcessStatusIndustrials/>} />
+        <Route path="/product-process/edit/:id" element={< EditProductProcess/>} />
+        <Route path="/product-process" element={< ProductProcess/>} />
     </Routes>
       </AuthProvider>
   );
