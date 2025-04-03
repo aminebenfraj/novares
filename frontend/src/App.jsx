@@ -98,6 +98,8 @@ import  EditProcessStatusIndustrials from './pages/readiness/ProcessStatusIndust
 import  ProcessStatusIndustrials from './pages/readiness/ProcessStatusIndustrials/ProcessStatusIndustrialsList';
 import  ProductProcess from './pages/readiness/ProductProcess/ProductProcessList';
 import  EditProductProcess from './pages/readiness/ProductProcess/EditProductProcess';
+import  EditRunAtRateProduction from './pages/readiness/RunAtRateProduction/EditRunAtRateProduction';
+import  RunAtRateProduction from './pages/readiness/RunAtRateProduction/RunAtRateProductionList';
 
 
 
@@ -203,6 +205,8 @@ function App() {
         <Route path="/process-status-industrials/edit/:id" element={< EditProcessStatusIndustrials/>} />
         <Route path="/product-process/edit/:id" element={< EditProductProcess/>} />
         <Route path="/product-process" element={< ProductProcess/>} />
+        <Route path="/run-at-rate" element={< RunAtRateProduction/>} />
+        <Route path="/run-at-rate/edit/:id" element={< EditRunAtRateProduction/>} />
     </Routes>
       </AuthProvider>
   );
