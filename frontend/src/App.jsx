@@ -100,6 +100,10 @@ import  ProductProcess from './pages/readiness/ProductProcess/ProductProcessList
 import  EditProductProcess from './pages/readiness/ProductProcess/EditProductProcess';
 import  EditRunAtRateProduction from './pages/readiness/RunAtRateProduction/EditRunAtRateProduction';
 import  RunAtRateProduction from './pages/readiness/RunAtRateProduction/RunAtRateProductionList';
+import  Safety from './pages/readiness/Safety/SafetyList';
+import  EditSafety from './pages/readiness/Safety/EditSafety';
+import  EditSupp from './pages/readiness/Supp/EditSupp';
+import  Supp from './pages/readiness/Supp/SuppList';
 
 
 
@@ -207,6 +211,10 @@ function App() {
         <Route path="/product-process" element={< ProductProcess/>} />
         <Route path="/run-at-rate" element={< RunAtRateProduction/>} />
         <Route path="/run-at-rate/edit/:id" element={< EditRunAtRateProduction/>} />
+        <Route path="/supply" element={< Supp/>} />
+        <Route path="/supply/:id" element={< EditSupp/>} />
+        <Route path="/Safety/:id" element={< Safety/>} />
+        <Route path="/Safety" element={< EditSafety/>} />
     </Routes>
       </AuthProvider>
   );

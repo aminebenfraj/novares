@@ -3,9 +3,18 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { getUserByLicense, adminUpdateUser, updateUserRoles } from "../../apis/admin"
-import { CheckIcon, SearchIcon } from "lucide-react"
+import { motion } from "framer-motion"
+import { Check, Search, Loader2, ArrowLeft, User, Mail, ImageIcon } from "lucide-react"
 import Navbar from "../../components/NavBar"
 import ContactUs from "../../components/ContactUs"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "@/hooks/use-toast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const rolesEnum = [
   "Admin",
@@ -41,8 +50,24 @@ const rolesEnum = [
   "Customer",
   "User",
   "PRODUCCION",
-   "LOGISTICA",
+  "LOGISTICA",
 ]
+
+// Animation variants
+const fadeIn = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.4 } },
+}
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
 
 export default function EditUserRoles() {
   const { license } = useParams()
@@ -55,6 +80,7 @@ export default function EditUserRoles() {
   })
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [searchRole, setSearchRole] = useState("")
 
   useEffect(() => {
@@ -71,7 +97,11 @@ export default function EditUserRoles() {
         roles: data.roles || [],
       })
     } catch (error) {
-      setMessage("Failed to load user data.")
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load user data.",
+      })
     } finally {
       setLoading(false)
     }
@@ -92,147 +122,156 @@ export default function EditUserRoles() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
+    setSubmitting(true)
     try {
       await adminUpdateUser(license, formData)
       await updateUserRoles(license, formData.roles)
       setMessage("User updated successfully!")
+      toast({
+        title: "Success",
+        description: "User updated successfully!",
+        variant: "default",
+      })
       setTimeout(() => navigate("/admin"), 2000)
     } catch (error) {
       setMessage("Error updating user.")
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update user.",
+      })
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
-  if (loading)
-    return <div className="flex items-center justify-center h-screen text-xl font-semibold">Loading user data...</div>
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen space-y-4">
+        <Skeleton className="w-12 h-12 rounded-full" />
+        <Skeleton className="w-48 h-6" />
+        <Skeleton className="w-32 h-4" />
+      </div>
+    )
+  }
 
   return (
-    <div>
-        <Navbar />
-    <div className="container px-4 py-8 mx-auto">
-      <h1 className="mb-6 text-3xl font-bold text-gray-800">Edit User</h1>
-      {message && <div className="p-4 mb-4 text-green-700 bg-green-100 rounded-md">{message}</div>}
-
-      <form onSubmit={handleSubmit} className="p-6 space-y-6 bg-white rounded-lg shadow-md">
-        <div>
-          <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-            Username
-          </label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            required
-          />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <Navbar />
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={fadeIn}
+        className="container max-w-4xl px-4 py-8 mx-auto"
+      >
+        <div className="flex items-center mb-6 space-x-2">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/admin")} className="mr-2">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <h1 className="text-3xl font-bold tracking-tight">Edit User</h1>
         </div>
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            required
-          />
-        </div>
+        {message && (
+          <Alert className="mb-6">
+            <AlertDescription>{message}</AlertDescription>
+          </Alert>
+        )}
 
-        <div>
-          <label htmlFor="image" className="block text-sm font-medium text-gray-700">
-            Profile Image URL
-          </label>
-          <input
-            type="text"
-            id="image"
-            name="image"
-            value={formData.image}
-            onChange={handleChange}
-            className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          />
-        </div>
+        <Card as={motion.div} variants={fadeIn}>
+          <CardHeader>
+            <CardTitle>User Information</CardTitle>
+            <CardDescription>
+              Update user details and manage role assignments for license: <strong>{license}</strong>
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-6">
+              <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-6">
+                <motion.div variants={fadeIn} className="space-y-2">
+                  <Label htmlFor="username" className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Username
+                  </Label>
+                  <Input
+                    type="text"
+                    id="username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    required
+                  />
+                </motion.div>
 
-        <div>
-          <label className="block mb-2 text-sm font-medium text-gray-700">Assign Roles</label>
-          <div className="relative mb-4">
-            <input
-              type="text"
-              placeholder="Search roles..."
-              value={searchRole}
-              onChange={(e) => setSearchRole(e.target.value)}
-              className="w-full py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <SearchIcon className="absolute w-5 h-5 text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
-          </div>
-          <div className="flex flex-wrap gap-2 p-4 border rounded-lg bg-gray-50 min-h-[100px] max-h-[300px] overflow-y-auto">
-            {filteredRoles.map((role) => (
-              <button
-                key={role}
-                type="button"
-                onClick={() => toggleRole(role)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors duration-200 ${
-                  formData.roles.includes(role)
-                    ? "bg-blue-500 text-white hover:bg-blue-600"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                {role}
-              </button>
-            ))}
-          </div>
-        </div>
+                <motion.div variants={fadeIn} className="space-y-2">
+                  <Label htmlFor="email" className="flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    Email
+                  </Label>
+                  <Input type="email" id="email" name="email" value={formData.email} onChange={handleChange} required />
+                </motion.div>
 
-        <div className="flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={() => navigate("/admin")}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            disabled={loading}
-          >
-            {loading ? (
-              <span className="flex items-center">
-                <svg
-                  className="w-5 h-5 mr-3 -ml-1 text-white animate-spin"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Saving...
-              </span>
-            ) : (
-              <span className="flex items-center">
-                <CheckIcon className="w-5 h-5 mr-2" />
-                Save Changes
-              </span>
-            )}
-          </button>
-        </div>
-      </form>
-      
+                <motion.div variants={fadeIn} className="space-y-2">
+                  <Label htmlFor="image" className="flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4" />
+                    Profile Image URL
+                  </Label>
+                  <Input type="text" id="image" name="image" value={formData.image} onChange={handleChange} />
+                </motion.div>
+
+                <motion.div variants={fadeIn} className="space-y-2">
+                  <Label className="flex items-center gap-2">Assign Roles</Label>
+                  <div className="relative mb-4">
+                    <Search className="absolute w-4 h-4 text-muted-foreground left-3 top-3" />
+                    <Input
+                      type="text"
+                      placeholder="Search roles..."
+                      value={searchRole}
+                      onChange={(e) => setSearchRole(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <motion.div
+                    variants={staggerContainer}
+                    className="flex flex-wrap gap-2 p-4 border rounded-lg bg-background min-h-[100px] max-h-[300px] overflow-y-auto"
+                  >
+                    {filteredRoles.map((role) => (
+                      <motion.div key={role} variants={fadeIn} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Badge
+                          variant={formData.roles.includes(role) ? "default" : "outline"}
+                          className="px-3 py-1.5 cursor-pointer"
+                          onClick={() => toggleRole(role)}
+                        >
+                          {role}
+                        </Badge>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </motion.div>
+              </motion.div>
+            </CardContent>
+            <CardFooter className="flex justify-end space-x-4">
+              <Button type="button" variant="outline" onClick={() => navigate("/admin")}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </motion.div>
+      <ContactUs />
     </div>
-            <ContactUs />
-            </div>
   )
 }
 
