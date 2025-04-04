@@ -743,7 +743,7 @@ const ReadinessDetails = () => {
       name: "Process Status",
       icon: <Cog className="w-5 h-5 text-purple-500" />,
       data: readiness.ProcessStatusIndustrials,
-      path: "process-status",
+      path: "process-status-industrials",
     },
     {
       id: "productProcess",
@@ -757,7 +757,7 @@ const ReadinessDetails = () => {
       name: "Production",
       icon: <Factory className="w-5 h-5 text-cyan-500" />,
       data: readiness.RunAtRateProduction,
-      path: "production",
+      path: "run-at-rate",
     },
     {
       id: "safety",
@@ -771,7 +771,7 @@ const ReadinessDetails = () => {
       name: "Suppliers",
       icon: <Users className="w-5 h-5 text-emerald-500" />,
       data: readiness.Suppliers,
-      path: "suppliers",
+      path: "supply",
     },
     {
       id: "toolingStatus",

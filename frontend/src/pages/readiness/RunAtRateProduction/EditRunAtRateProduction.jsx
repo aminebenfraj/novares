@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { getRunAtRateProductionById, updateRunAtRateProduction } from "../../../apis/readiness/runAtRateProductionApi"
+import { getAllReadiness } from "../../../apis/readiness/readinessApi"
 
 // Define the field labels and descriptions for better UI
 const fieldConfig = {
@@ -70,6 +71,16 @@ function EditRunAtRateProductionPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("qualityWallInPlace")
   const [runAtRate, setRunAtRate] = useState(null)
+  const [readinessId, setReadinessId] = useState(null)
+
+  // Add useEffect to extract readinessId from URL query parameters after the existing useState declarations
+  useEffect(() => {
+    // Get the readinessId from the URL query parameters
+    const queryParams = new URLSearchParams(window.location.search)
+    const id = queryParams.get("readinessId")
+    console.log("Extracted readinessId from URL:", id)
+    setReadinessId(id)
+  }, [])
 
   // Fetch run-at-rate production data
   useEffect(() => {
@@ -78,6 +89,22 @@ function EditRunAtRateProductionPage() {
         setIsLoading(true)
         const data = await getRunAtRateProductionById(params.id)
         setRunAtRate(data)
+
+        // Extract readinessId from the run-at-rate production object
+        console.log("Run-at-rate production data:", data)
+
+        // Check for possible readiness reference fields
+        if (data._readinessId) {
+          console.log("Found readinessId in _readinessId:", data._readinessId)
+          setReadinessId(data._readinessId)
+        } else if (data.readinessId) {
+          console.log("Found readinessId in readinessId:", data.readinessId)
+          setReadinessId(data.readinessId)
+        } else if (data.readiness) {
+          const readinessRef = typeof data.readiness === "object" ? data.readiness._id : data.readiness
+          console.log("Found readinessId in readiness:", readinessRef)
+          setReadinessId(readinessRef)
+        }
       } catch (error) {
         console.error("Error fetching run-at-rate production:", error)
         toast({
@@ -108,8 +135,36 @@ function EditRunAtRateProductionPage() {
         description: "Run-at-rate production updated successfully",
       })
 
-      // Navigate back to run-at-rate production details page
-      navigate(`/run-at-rate/edit/${params.id}`)
+      // Navigate back to readiness details page if readinessId is available
+      if (readinessId) {
+        console.log("Navigating to readiness detail:", readinessId)
+        navigate(`/readiness/detail/${readinessId}`)
+      } else {
+        // If we couldn't extract the readinessId, try to get it from the API response
+        try {
+          // Make an API call to get all readiness entries
+          const readinessEntries = await getAllReadiness()
+
+          // Find the readiness entry that references this run-at-rate production
+          const readinessEntry = readinessEntries.find(
+            (entry) =>
+              entry.RunAtRateProduction === params.id ||
+              (entry.RunAtRateProduction && entry.RunAtRateProduction._id === params.id),
+          )
+
+          if (readinessEntry) {
+            console.log("Found readiness entry:", readinessEntry)
+            navigate(`/readiness/detail/${readinessEntry._id}`)
+            return
+          }
+        } catch (error) {
+          console.error("Error finding readiness entry:", error)
+        }
+
+        // Fallback to run-at-rate production details page if readinessId is not available
+        console.log("No readinessId found, navigating to run-at-rate production detail")
+        navigate(`/run-at-rate/${params.id}`)
+      }
     } catch (error) {
       console.error("Error updating run-at-rate production:", error)
       toast({
@@ -178,7 +233,18 @@ function EditRunAtRateProductionPage() {
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="icon" onClick={() => navigate(`/run-at-rate/edit/${params.id}`)}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                if (readinessId) {
+                  console.log("Back button: Navigating to readiness detail:", readinessId)
+                  navigate(`/readiness/detail/${readinessId}`)
+                } else {
+                  navigate(`/run-at-rate/${params.id}`)
+                }
+              }}
+            >
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>

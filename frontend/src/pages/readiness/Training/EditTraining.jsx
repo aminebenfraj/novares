@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
@@ -28,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { getTrainingById, updateTraining, createTraining } from "../../../apis/readiness/trainingApi"
+import { getAllReadiness } from "../../../apis/readiness/readinessApi"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -87,6 +90,7 @@ function EditTrainingPage() {
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
   const [navigationPath, setNavigationPath] = useState("")
   const isNewRecord = params.id === "new"
+  const [readinessId, setReadinessId] = useState(null)
 
   // Initialize new training record
   const initializeNewTraining = () => {
@@ -125,6 +129,15 @@ function EditTrainingPage() {
     return Math.round((completedFields.length / fields.length) * 100)
   }
 
+  // Add useEffect to extract readinessId from URL query parameters
+  useEffect(() => {
+    // Get the readinessId from the URL query parameters
+    const queryParams = new URLSearchParams(window.location.search)
+    const id = queryParams.get("readinessId")
+    console.log("Extracted readinessId from URL:", id)
+    setReadinessId(id)
+  }, [])
+
   // Fetch training data or initialize new record
   useEffect(() => {
     const fetchTraining = async () => {
@@ -135,6 +148,22 @@ function EditTrainingPage() {
         } else {
           const data = await getTrainingById(params.id)
           setTraining(data)
+
+          // Extract readinessId from the training object
+          console.log("Training data:", data)
+
+          // Check for possible readiness reference fields
+          if (data._readinessId) {
+            console.log("Found readinessId in _readinessId:", data._readinessId)
+            setReadinessId(data._readinessId)
+          } else if (data.readinessId) {
+            console.log("Found readinessId in readinessId:", data.readinessId)
+            setReadinessId(data.readinessId)
+          } else if (data.readiness) {
+            const readinessRef = typeof data.readiness === "object" ? data.readiness._id : data.readiness
+            console.log("Found readinessId in readiness:", readinessRef)
+            setReadinessId(readinessRef)
+          }
         }
       } catch (error) {
         console.error("Error fetching training record:", error)
@@ -157,7 +186,11 @@ function EditTrainingPage() {
       setNavigationPath(path)
       setShowUnsavedDialog(true)
     } else {
-      navigate(path)
+      if (readinessId && path === "/training") {
+        navigate(`/readiness/detail/${readinessId}`)
+      } else {
+        navigate(path)
+      }
     }
   }
 
@@ -174,7 +207,22 @@ function EditTrainingPage() {
           description: "Training record created successfully",
           variant: "success",
         })
-        navigate(`/training/edit/${newRecord.data._id}`)
+
+        // If we have a readinessId from URL params, use it for navigation
+        if (params.readinessId) {
+          navigate(`/readiness/detail/${params.readinessId}`)
+        }
+        // Otherwise use the readinessId from the new record
+        else if (newRecord && newRecord.data) {
+          const newId = newRecord.data._id
+          // Extract the readiness ID from the record ID if possible
+          const extractedReadinessId = newId.split("-")[0]
+          navigate(`/readiness/detail/${extractedReadinessId}`)
+        }
+        // Fallback to training list
+        else {
+          navigate("/training")
+        }
       } else {
         await updateTraining(params.id, training)
         toast({
@@ -182,6 +230,35 @@ function EditTrainingPage() {
           description: "Training record updated successfully",
           variant: "success",
         })
+
+        // Navigate back to readiness details page if readinessId is available
+        if (readinessId) {
+          console.log("Navigating to readiness detail:", readinessId)
+          navigate(`/readiness/detail/${readinessId}`)
+        } else {
+          // If we couldn't extract the readinessId, try to get it from the API response
+          try {
+            // Make an API call to get all readiness entries
+            const readinessEntries = await getAllReadiness()
+
+            // Find the readiness entry that references this training record
+            const readinessEntry = readinessEntries.find(
+              (entry) => entry.Training === params.id || (entry.Training && entry.Training._id === params.id),
+            )
+
+            if (readinessEntry) {
+              console.log("Found readiness entry:", readinessEntry)
+              navigate(`/readiness/detail/${readinessEntry._id}`)
+              return
+            }
+          } catch (error) {
+            console.error("Error finding readiness entry:", error)
+          }
+
+          // Fallback to training details page if readinessId is not available
+          console.log("No readinessId found, navigating to training detail")
+          navigate(`/training/${params.id}`)
+        }
       }
 
       setHasChanges(false)

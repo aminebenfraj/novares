@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
@@ -33,6 +35,7 @@ import {
   updateToolingStatus,
   createToolingStatus,
 } from "../../../apis/readiness/toolingStatusApi"
+import { getAllReadiness } from "../../../apis/readiness/readinessApi"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -129,6 +132,16 @@ function EditToolingStatusPage() {
   const [navigationPath, setNavigationPath] = useState("")
   const isNewRecord = params.id === "new"
 
+  const [readinessId, setReadinessId] = useState(null)
+
+  useEffect(() => {
+    // Get the readinessId from the URL query parameters
+    const queryParams = new URLSearchParams(window.location.search)
+    const id = queryParams.get("readinessId")
+    console.log("Extracted readinessId from URL:", id)
+    setReadinessId(id)
+  }, [])
+
   // Initialize new tooling status record
   const initializeNewToolingStatus = () => {
     const newToolingStatus = {
@@ -176,6 +189,22 @@ function EditToolingStatusPage() {
         } else {
           const data = await getToolingStatusById(params.id)
           setToolingStatus(data)
+
+          // Extract readinessId from the tooling status object
+          console.log("Tooling status data:", data)
+
+          // Check for possible readiness reference fields
+          if (data._readinessId) {
+            console.log("Found readinessId in _readinessId:", data._readinessId)
+            setReadinessId(data._readinessId)
+          } else if (data.readinessId) {
+            console.log("Found readinessId in readinessId:", data.readinessId)
+            setReadinessId(data.readinessId)
+          } else if (data.readiness) {
+            const readinessRef = typeof data.readiness === "object" ? data.readiness._id : data.readiness
+            console.log("Found readinessId in readiness:", readinessRef)
+            setReadinessId(readinessRef)
+          }
         }
       } catch (error) {
         console.error("Error fetching tooling status record:", error)
@@ -198,7 +227,11 @@ function EditToolingStatusPage() {
       setNavigationPath(path)
       setShowUnsavedDialog(true)
     } else {
-      navigate(path)
+      if (readinessId && path === "/tooling-status") {
+        navigate(`/readiness/detail/${readinessId}`)
+      } else {
+        navigate(path)
+      }
     }
   }
 
@@ -215,7 +248,22 @@ function EditToolingStatusPage() {
           description: "Tooling status record created successfully",
           variant: "success",
         })
-        navigate(`/tooling-status/edit/${newRecord.data._id}`)
+
+        // If we have a readinessId from URL params, use it for navigation
+        if (params.readinessId) {
+          navigate(`/readiness/detail/${params.readinessId}`)
+        }
+        // Otherwise use the readinessId from the new record
+        else if (newRecord && newRecord.data) {
+          const newId = newRecord.data._id
+          // Extract the readiness ID from the record ID if possible
+          const extractedReadinessId = newId.split("-")[0]
+          navigate(`/readiness/detail/${extractedReadinessId}`)
+        }
+        // Fallback to tooling status list
+        else {
+          navigate("/tooling-status")
+        }
       } else {
         await updateToolingStatus(params.id, toolingStatus)
         toast({
@@ -223,6 +271,36 @@ function EditToolingStatusPage() {
           description: "Tooling status record updated successfully",
           variant: "success",
         })
+
+        // Navigate back to readiness details page if readinessId is available
+        if (readinessId) {
+          console.log("Navigating to readiness detail:", readinessId)
+          navigate(`/readiness/detail/${readinessId}`)
+        } else {
+          // If we couldn't extract the readinessId, try to get it from the API response
+          try {
+            // Make an API call to get all readiness entries
+            const readinessEntries = await getAllReadiness()
+
+            // Find the readiness entry that references this tooling status
+            const readinessEntry = readinessEntries.find(
+              (entry) =>
+                entry.ToolingStatus === params.id || (entry.ToolingStatus && entry.ToolingStatus._id === params.id),
+            )
+
+            if (readinessEntry) {
+              console.log("Found readiness entry:", readinessEntry)
+              navigate(`/readiness/detail/${readinessEntry._id}`)
+              return
+            }
+          } catch (error) {
+            console.error("Error finding readiness entry:", error)
+          }
+
+          // Fallback to tooling status details page if readinessId is not available
+          console.log("No readinessId found, navigating to tooling status detail")
+          navigate(`/tooling-status/${params.id}`)
+        }
       }
 
       setHasChanges(false)

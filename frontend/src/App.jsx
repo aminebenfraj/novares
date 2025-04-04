@@ -216,11 +216,11 @@ function App() {
         <Route path="/run-at-rate" element={< RunAtRateProduction/>} />
         <Route path="/run-at-rate/edit/:id" element={< EditRunAtRateProduction/>} />
         <Route path="/supply" element={< Supp/>} />
-        <Route path="/supply/:id" element={< EditSupp/>} />
-        <Route path="/Safety/:id" element={< Safety/>} />
-        <Route path="/Safety" element={< EditSafety/>} />
-        <Route path="/Training/edit/:id" element={<EditTraining />} />
-        <Route path="/Training" element={< Training/>} />
+        <Route path="/supply/edit/:id" element={< EditSupp/>} />
+        <Route path="/safety" element={< Safety/>} />
+        <Route path="/safety/edit/:id" element={< EditSafety/>} />
+        <Route path="/training/edit/:id" element={<EditTraining />} />
+        <Route path="/training" element={< Training/>} />
         <Route path="/tooling-status/edit/:id" element={< EditToolingStatus/>} />
         <Route path="/tooling-status" element={< ToolingStatus/>} />
     </Routes>

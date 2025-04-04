@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { getSuppById, updateSupp } from "../../../apis/readiness/suppApi"
+import { getAllReadiness } from "../../../apis/readiness/readinessApi"
 
 // Define the field labels and descriptions for better UI
 const fieldConfig = {
@@ -62,26 +63,92 @@ function EditSuppPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("componentsRawMaterialAvailable")
   const [supp, setSupp] = useState(null)
+  const [readinessId, setReadinessId] = useState(null)
+
+  // Add useEffect to extract readinessId from URL query parameters after the existing useState declarations
+  useEffect(() => {
+    // Get the readinessId from the URL query parameters
+    const queryParams = new URLSearchParams(window.location.search)
+    const id = queryParams.get("readinessId")
+    console.log("Extracted readinessId from URL:", id)
+    setReadinessId(id)
+  }, [])
 
   // Fetch supp data
-  useEffect(() => {
-    const fetchSupp = async () => {
-      try {
-        setIsLoading(true)
-        const data = await getSuppById(params.id)
-        setSupp(data)
-      } catch (error) {
-        console.error("Error fetching supply record:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load supply data",
-        })
-      } finally {
-        setIsLoading(false)
-      }
-    }
+  const fetchSupp = async () => {
+    try {
+      setIsLoading(true)
+      const data = await getSuppById(params.id)
+      setSupp(data)
 
+      // Extract readinessId from the supply object
+      console.log("Supply data:", data)
+      console.log("Supplier ID:", params.id)
+      console.log("Extracting readiness ID from supplier data...")
+
+      let extractedReadinessId = null
+
+      // Check for possible readiness reference fields
+      if (data._readinessId) {
+        extractedReadinessId = typeof data._readinessId === "object" ? data._readinessId._id : data._readinessId
+        console.log("Found readinessId in _readinessId:", extractedReadinessId)
+      } else if (data.readinessId) {
+        extractedReadinessId = typeof data.readinessId === "object" ? data.readinessId._id : data.readinessId
+        console.log("Found readinessId in readinessId:", extractedReadinessId)
+      } else if (data.readiness) {
+        extractedReadinessId = typeof data.readiness === "object" ? data.readiness._id : data.readiness
+        console.log("Found readinessId in readiness:", extractedReadinessId)
+      } else if (data.Readiness) {
+        extractedReadinessId = typeof data.Readiness === "object" ? data.Readiness._id : data.Readiness
+        console.log("Found readinessId in Readiness:", extractedReadinessId)
+      } else {
+        console.log("No direct readinessId reference found in data object")
+
+        // Try to extract from ID format (if ID follows pattern readinessId-entityId)
+        const idParts = params.id.split("-")
+        if (idParts.length > 1) {
+          extractedReadinessId = idParts[0]
+          console.log("Extracted potential readinessId from ID format:", extractedReadinessId)
+        }
+      }
+
+      // If we found a readiness ID, set it
+      if (extractedReadinessId) {
+        console.log("FINAL EXTRACTED READINESS ID:", extractedReadinessId)
+        setReadinessId(extractedReadinessId)
+      } else {
+        console.log("WARNING: Could not extract readiness ID from supplier data")
+      }
+
+      // Additional debugging - log all keys in the data object
+      console.log("All keys in supplier data:", Object.keys(data))
+
+      // Check if there are any keys that might contain "readiness"
+      const potentialReadinessKeys = Object.keys(data).filter(
+        (key) =>
+          key.toLowerCase().includes("readiness") ||
+          (typeof data[key] === "object" && data[key] !== null && data[key]._id),
+      )
+
+      if (potentialReadinessKeys.length > 0) {
+        console.log("Potential readiness reference keys:", potentialReadinessKeys)
+        potentialReadinessKeys.forEach((key) => {
+          console.log(`Key ${key} value:`, data[key])
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching supply record:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load supply data",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
     if (params.id) {
       fetchSupp()
     }
@@ -91,6 +158,7 @@ function EditSuppPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSaving(true)
+    console.log("Submitting supplier data with readiness ID:", readinessId || "unknown")
 
     try {
       await updateSupp(params.id, supp)
@@ -100,8 +168,34 @@ function EditSuppPage() {
         description: "Supply record updated successfully",
       })
 
-      // Navigate back to supp details page
-      navigate(`/supply/edit/${params.id}`)
+      // Navigate back to readiness details page if readinessId is available
+      if (readinessId) {
+        console.log("Navigating to readiness detail:", readinessId)
+        navigate(`/readiness/detail/${readinessId}`)
+      } else {
+        // If we couldn't extract the readinessId, try to get it from the API response
+        try {
+          // Make an API call to get all readiness entries
+          const readinessEntries = await getAllReadiness()
+
+          // Find the readiness entry that references this supply
+          const readinessEntry = readinessEntries.find(
+            (entry) => entry.Supp === params.id || (entry.Supp && entry.Supp._id === params.id),
+          )
+
+          if (readinessEntry) {
+            console.log("Found readiness entry:", readinessEntry)
+            navigate(`/readiness/detail/${readinessEntry._id}`)
+            return
+          }
+        } catch (error) {
+          console.error("Error finding readiness entry:", error)
+        }
+
+        // Fallback to supply details page if readinessId is not available
+        console.log("No readinessId found, navigating to supply detail")
+        navigate(`/supply/${params.id}`)
+      }
     } catch (error) {
       console.error("Error updating supply record:", error)
       toast({
@@ -170,7 +264,18 @@ function EditSuppPage() {
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="icon" onClick={() => navigate(`/supply/edit/${params.id}`)}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                if (readinessId) {
+                  console.log("Back button: Navigating to readiness detail:", readinessId)
+                  navigate(`/readiness/detail/${readinessId}`)
+                } else {
+                  navigate(`/supply/${params.id}`)
+                }
+              }}
+            >
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
@@ -374,7 +479,17 @@ function EditSuppPage() {
                 </Tabs>
               </CardContent>
               <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => navigate(`/supply/${params.id}`)}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (readinessId) {
+                      console.log("Cancel button: Navigating to readiness detail:", readinessId)
+                      navigate(`/readiness/detail/${readinessId}`)
+                    } else {
+                      navigate(`/supply/${params.id}`)
+                    }
+                  }}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSaving}>
@@ -386,7 +501,7 @@ function EditSuppPage() {
           </div>
         </form>
       </motion.div>
-    </div>
+  </div>
   )
 }
 

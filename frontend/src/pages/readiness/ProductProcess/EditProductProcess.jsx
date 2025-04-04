@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { getProductProcessesById, updateProductProcesses } from "../../../apis/readiness/productProcessesApi"
+import { getAllReadiness } from "../../../apis/readiness/readinessApi"
 
 // Define the field labels and descriptions for better UI
 const fieldConfig = {
@@ -78,26 +79,92 @@ function EditProductProcessPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("technicalReview")
   const [productProcess, setProductProcess] = useState(null)
+  const [readinessId, setReadinessId] = useState(null)
+
+  // Add useEffect to extract readinessId from URL query parameters after the existing useState declarations
+  useEffect(() => {
+    // Get the readinessId from the URL query parameters
+    const queryParams = new URLSearchParams(window.location.search)
+    const id = queryParams.get("readinessId")
+    console.log("Extracted readinessId from URL:", id)
+    setReadinessId(id)
+  }, [])
 
   // Fetch product process data
-  useEffect(() => {
-    const fetchProductProcess = async () => {
-      try {
-        setIsLoading(true)
-        const data = await getProductProcessesById(params.id)
-        setProductProcess(data)
-      } catch (error) {
-        console.error("Error fetching product process:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load product process data",
-        })
-      } finally {
-        setIsLoading(false)
-      }
-    }
+  const fetchProductProcess = async () => {
+    try {
+      setIsLoading(true)
+      const data = await getProductProcessesById(params.id)
+      setProductProcess(data)
 
+      // Extract readinessId from the product process object
+      console.log("Product process data:", data)
+      console.log("Product Process ID:", params.id)
+      console.log("Extracting readiness ID from product process data...")
+
+      let extractedReadinessId = null
+
+      // Check for possible readiness reference fields
+      if (data._readinessId) {
+        extractedReadinessId = typeof data._readinessId === "object" ? data._readinessId._id : data._readinessId
+        console.log("Found readinessId in _readinessId:", extractedReadinessId)
+      } else if (data.readinessId) {
+        extractedReadinessId = typeof data.readinessId === "object" ? data.readinessId._id : data.readinessId
+        console.log("Found readinessId in readinessId:", extractedReadinessId)
+      } else if (data.readiness) {
+        extractedReadinessId = typeof data.readiness === "object" ? data.readiness._id : data.readiness
+        console.log("Found readinessId in readiness:", extractedReadinessId)
+      } else if (data.Readiness) {
+        extractedReadinessId = typeof data.Readiness === "object" ? data.Readiness._id : data.Readiness
+        console.log("Found readinessId in Readiness:", extractedReadinessId)
+      } else {
+        console.log("No direct readinessId reference found in data object")
+
+        // Try to extract from ID format (if ID follows pattern readinessId-entityId)
+        const idParts = params.id.split("-")
+        if (idParts.length > 1) {
+          extractedReadinessId = idParts[0]
+          console.log("Extracted potential readinessId from ID format:", extractedReadinessId)
+        }
+      }
+
+      // If we found a readiness ID, set it
+      if (extractedReadinessId) {
+        console.log("FINAL EXTRACTED READINESS ID:", extractedReadinessId)
+        setReadinessId(extractedReadinessId)
+      } else {
+        console.log("WARNING: Could not extract readiness ID from product process data")
+      }
+
+      // Additional debugging - log all keys in the data object
+      console.log("All keys in product process data:", Object.keys(data))
+
+      // Check if there are any keys that might contain "readiness"
+      const potentialReadinessKeys = Object.keys(data).filter(
+        (key) =>
+          key.toLowerCase().includes("readiness") ||
+          (typeof data[key] === "object" && data[key] !== null && data[key]._id),
+      )
+
+      if (potentialReadinessKeys.length > 0) {
+        console.log("Potential readiness reference keys:", potentialReadinessKeys)
+        potentialReadinessKeys.forEach((key) => {
+          console.log(`Key ${key} value:`, data[key])
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching product process:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load product process data",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
     if (params.id) {
       fetchProductProcess()
     }
@@ -107,6 +174,7 @@ function EditProductProcessPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSaving(true)
+    console.log("Submitting product process with readiness ID:", readinessId || "unknown")
 
     try {
       await updateProductProcesses(params.id, productProcess)
@@ -116,8 +184,36 @@ function EditProductProcessPage() {
         description: "Product process updated successfully",
       })
 
-      // Navigate back to product process details page
-      navigate(`/product-process/edit/${params.id}`)
+      // Navigate back to readiness details page if readinessId is available
+      if (readinessId) {
+        console.log("Navigating to readiness detail:", readinessId)
+        navigate(`/readiness/detail/${readinessId}`)
+      } else {
+        // If we couldn't extract the readinessId, try to get it from the API response
+        try {
+          // Make an API call to get all readiness entries
+          const readinessEntries = await getAllReadiness()
+
+          // Find the readiness entry that references this product process
+          const readinessEntry = readinessEntries.find(
+            (entry) =>
+              entry.ProductProcesses === params.id ||
+              (entry.ProductProcesses && entry.ProductProcesses._id === params.id),
+          )
+
+          if (readinessEntry) {
+            console.log("Found readiness entry:", readinessEntry)
+            navigate(`/readiness/detail/${readinessEntry._id}`)
+            return
+          }
+        } catch (error) {
+          console.error("Error finding readiness entry:", error)
+        }
+
+        // Fallback to product process details page if readinessId is not available
+        console.log("No readinessId found, navigating to product process detail")
+        navigate(`/product-process/${params.id}`)
+      }
     } catch (error) {
       console.error("Error updating product process:", error)
       toast({
@@ -186,7 +282,18 @@ function EditProductProcessPage() {
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="icon" onClick={() => navigate(`/product-process/edit/${params.id}`)}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                if (readinessId) {
+                  console.log("Back button: Navigating to readiness detail:", readinessId)
+                  navigate(`/readiness/detail/${readinessId}`)
+                } else {
+                  navigate(`/product-process/${params.id}`)
+                }
+              }}
+            >
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
@@ -390,7 +497,17 @@ function EditProductProcessPage() {
                 </Tabs>
               </CardContent>
               <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => navigate(`/product-process/${params.id}`)}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (readinessId) {
+                      console.log("Cancel button: Navigating to readiness detail:", readinessId)
+                      navigate(`/readiness/detail/${readinessId}`)
+                    } else {
+                      navigate(`/product-process/${params.id}`)
+                    }
+                  }}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSaving}>

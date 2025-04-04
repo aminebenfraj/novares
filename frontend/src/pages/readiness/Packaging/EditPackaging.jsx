@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { getPackagingById, updatePackaging } from "../../../apis/readiness/packagingApi"
+import { getAllReadiness } from "../../../apis/readiness/readinessApi"
 
 // Define the field labels and descriptions for better UI
 const fieldConfig = {
@@ -44,6 +45,16 @@ function EditPackagingPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("customerDefined")
   const [packaging, setPackaging] = useState(null)
+  const [readinessId, setReadinessId] = useState(null)
+
+  // Add useEffect to extract readinessId from URL query parameters after the existing useState declarations
+  useEffect(() => {
+    // Get the readinessId from the URL query parameters
+    const queryParams = new URLSearchParams(window.location.search)
+    const id = queryParams.get("readinessId")
+    console.log("Extracted readinessId from URL:", id)
+    setReadinessId(id)
+  }, [])
 
   // Fetch packaging data
   useEffect(() => {
@@ -52,6 +63,22 @@ function EditPackagingPage() {
         setIsLoading(true)
         const data = await getPackagingById(params.id)
         setPackaging(data)
+
+        // Extract readinessId from the packaging object
+        console.log("Packaging data:", data)
+
+        // Check for possible readiness reference fields
+        if (data._readinessId) {
+          console.log("Found readinessId in _readinessId:", data._readinessId)
+          setReadinessId(data._readinessId)
+        } else if (data.readinessId) {
+          console.log("Found readinessId in readinessId:", data.readinessId)
+          setReadinessId(data.readinessId)
+        } else if (data.readiness) {
+          const readinessRef = typeof data.readiness === "object" ? data.readiness._id : data.readiness
+          console.log("Found readinessId in readiness:", readinessRef)
+          setReadinessId(readinessRef)
+        }
       } catch (error) {
         console.error("Error fetching packaging:", error)
         toast({
@@ -82,8 +109,34 @@ function EditPackagingPage() {
         description: "Packaging updated successfully",
       })
 
-      // Navigate back to packaging details page
-      navigate(`/packaging/${params.id}`)
+      // Navigate back to readiness details page if readinessId is available
+      if (readinessId) {
+        console.log("Navigating to readiness detail:", readinessId)
+        navigate(`/readiness/detail/${readinessId}`)
+      } else {
+        // If we couldn't extract the readinessId, try to get it from the API response
+        try {
+          // Make an API call to get all readiness entries
+          const readinessEntries = await getAllReadiness()
+
+          // Find the readiness entry that references this packaging
+          const readinessEntry = readinessEntries.find(
+            (entry) => entry.Packaging === params.id || (entry.Packaging && entry.Packaging._id === params.id),
+          )
+
+          if (readinessEntry) {
+            console.log("Found readiness entry:", readinessEntry)
+            navigate(`/readiness/detail/${readinessEntry._id}`)
+            return
+          }
+        } catch (error) {
+          console.error("Error finding readiness entry:", error)
+        }
+
+        // Fallback to packaging details page if readinessId is not available
+        console.log("No readinessId found, navigating to packaging detail")
+        navigate(`/packaging/${params.id}`)
+      }
     } catch (error) {
       console.error("Error updating packaging:", error)
       toast({
@@ -152,7 +205,18 @@ function EditPackagingPage() {
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="icon" onClick={() => navigate(`/packaging/${params.id}`)}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                if (readinessId) {
+                  console.log("Back button: Navigating to readiness detail:", readinessId)
+                  navigate(`/readiness/detail/${readinessId}`)
+                } else {
+                  navigate(`/packaging/${params.id}`)
+                }
+              }}
+            >
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
@@ -373,3 +437,4 @@ function EditPackagingPage() {
 }
 
 export default EditPackagingPage
+
