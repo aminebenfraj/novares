@@ -1,17 +1,21 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Navbar from "../components/NavBar"
-import Sidebar from "../components/Sidebar"
+import { useLocation } from "react-router-dom"
+import Navbar from "./navbar"
+import Sidebar from "./sidebar"
+import { Toaster } from "@/components/ui/toaster"
 
 export default function MainLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const location = useLocation()
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
+  // Handle responsive sidebar
   useEffect(() => {
     const handleResize = () => {
-      setIsSidebarOpen(window.innerWidth >= 768)
+      setIsSidebarOpen(window.innerWidth >= 1024)
     }
 
     window.addEventListener("resize", handleResize)
@@ -19,6 +23,13 @@ export default function MainLayout({ children }) {
 
     return () => window.removeEventListener("resize", handleResize)
   }, [])
+
+  // Close sidebar on mobile when navigating
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setIsSidebarOpen(false)
+    }
+  }, [location.pathname])
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
@@ -31,8 +42,11 @@ export default function MainLayout({ children }) {
         <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
         {/* Main content area */}
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="relative flex-1 overflow-auto">{children}</main>
       </div>
+
+      {/* Toast notifications */}
+      <Toaster />
     </div>
   )
 }

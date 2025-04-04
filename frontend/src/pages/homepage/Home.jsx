@@ -18,6 +18,12 @@ import {
   Search,
   RefreshCw,
   ChevronRight,
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
+  PieChart,
+  LayoutDashboard,
+  Users,
 } from "lucide-react"
 import { Card, CardContent, CardFooter, CardTitle, CardHeader, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -26,10 +32,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import MainLayout from "@/components/MainLayout"
+import MainLayout from "../../components/MainLayout"
+import { motion } from "framer-motion"
 
 // Import the APIs
 import { getAllMaterials } from "@/apis/gestionStockApi/materialApi"
@@ -38,87 +44,137 @@ import { getAllAllocations } from "@/apis/gestionStockApi/materialMachineApi"
 import { getAllPedidos } from "@/apis/pedido/pedidoApi"
 import { getAllMassProductions } from "@/apis/massProductionApi"
 import { getAllReadiness } from "@/apis/readiness/readinessApi"
+import { useToast } from "@/hooks/use-toast"
 
-// Dashboard stat card component
-const StatCard = ({ icon: Icon, title, value, trend, color, isLoading, onClick }) => (
-  <Card className="overflow-hidden transition-all shadow-sm hover:shadow-md" onClick={onClick}>
-    <CardContent className="p-6">
-      <div className="flex items-start justify-between">
-        <div className="w-full">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          {isLoading ? <Skeleton className="w-20 h-8 mt-1" /> : <h3 className="mt-1 text-2xl font-bold">{value}</h3>}
-          {trend !== undefined && !isLoading && (
-            <div className="flex items-center mt-1">
-              <span className={`text-xs font-medium ${trend >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
-                {trend > 0 ? "+" : ""}
-                {trend}%
-              </span>
-              <span className="ml-1 text-xs text-muted-foreground">vs last month</span>
-            </div>
-          )}
-        </div>
-        <div className={`p-3 rounded-full ${color}`}>
-          <Icon className="w-5 h-5 text-white" />
-        </div>
-      </div>
-    </CardContent>
-    <div className="h-1 bg-muted">
-      <div
-        className={`h-full ${color.replace("bg-", "bg-")}`}
-        style={{ width: `${Math.min(Math.abs(trend || 0) * 2, 100)}%` }}
-      ></div>
-    </div>
-  </Card>
+// Import Chart.js components
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip as ChartTooltip,
+  Legend,
+  ArcElement,
+  Filler,
+} from "chart.js"
+import { Line, Bar, Doughnut } from "react-chartjs-2"
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  ChartTooltip,
+  Legend,
+  ArcElement,
+  Filler,
 )
 
-// Feature card component
-const FeatureCard = ({ to, icon: Icon, title, description, color, count }) => (
-  <Card className="h-full transition-all shadow-sm hover:shadow-md hover:translate-y-[-2px]">
-    <CardHeader className="pb-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-full ${color} flex items-center justify-center`}>
+// Dashboard stat card component with animation
+const StatCard = ({ icon: Icon, title, value, trend, color, isLoading, onClick }) => (
+  <motion.div
+    whileHover={{ y: -5, transition: { duration: 0.2 } }}
+    whileTap={{ y: 0, transition: { duration: 0.2 } }}
+    className="w-full"
+  >
+    <Card className="overflow-hidden transition-all shadow-sm cursor-pointer hover:shadow-md" onClick={onClick}>
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between">
+          <div className="w-full">
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            {isLoading ? <Skeleton className="w-20 h-8 mt-1" /> : <h3 className="mt-1 text-2xl font-bold">{value}</h3>}
+            {trend !== undefined && !isLoading && (
+              <div className="flex items-center mt-1">
+                {trend >= 0 ? (
+                  <TrendingUp className="w-3 h-3 mr-1 text-emerald-500" />
+                ) : (
+                  <TrendingDown className="w-3 h-3 mr-1 text-rose-500" />
+                )}
+                <span className={`text-xs font-medium ${trend >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                  {trend > 0 ? "+" : ""}
+                  {trend}%
+                </span>
+                <span className="ml-1 text-xs text-muted-foreground">vs last month</span>
+              </div>
+            )}
+          </div>
+          <div className={`p-3 rounded-full ${color}`}>
             <Icon className="w-5 h-5 text-white" />
           </div>
-          <h2 className="text-lg font-semibold">{title}</h2>
         </div>
-        {count !== undefined && (
-          <Badge variant="secondary" className="text-xs">
-            {count}
-          </Badge>
-        )}
+      </CardContent>
+      <div className="h-1 bg-muted">
+        <div
+          className={`h-full ${color.replace("bg-", "bg-")}`}
+          style={{ width: `${Math.min(Math.abs(trend || 0) * 2, 100)}%` }}
+        ></div>
       </div>
-    </CardHeader>
-    <CardContent className="pb-2">
-      <p className="text-sm text-muted-foreground">{description}</p>
-    </CardContent>
-    <CardFooter className="pt-0">
-      <Button variant="ghost" asChild className="p-0 text-primary hover:text-primary/80">
-        <Link to={to} className="flex items-center text-sm">
-          Access
-          <ArrowUpRight className="w-3 h-3 ml-1" />
-        </Link>
-      </Button>
-    </CardFooter>
-  </Card>
+    </Card>
+  </motion.div>
 )
 
-// Activity item component
-const ActivityItem = ({ title, description, time, icon: Icon, iconColor, onClick }) => (
-  <div
-    className="flex items-start gap-4 p-3 transition-colors rounded-lg cursor-pointer bg-muted/50 hover:bg-muted"
-    onClick={onClick}
+// Feature card component with animation
+const FeatureCard = ({ to, icon: Icon, title, description, color, count }) => (
+  <motion.div
+    whileHover={{ y: -5, transition: { duration: 0.2 } }}
+    whileTap={{ y: 0, transition: { duration: 0.2 } }}
+    className="h-full"
   >
-    <div className={`p-2 rounded-full ${iconColor}`}>
-      <Icon className="w-4 h-4" />
+    <Card className="h-full transition-all shadow-sm hover:shadow-md">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full ${color} flex items-center justify-center`}>
+              <Icon className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-lg font-semibold">{title}</h2>
+          </div>
+          {count !== undefined && (
+            <Badge variant="secondary" className="text-xs">
+              {count}
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="pb-2">
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </CardContent>
+      <CardFooter className="pt-0">
+        <Button variant="ghost" asChild className="p-0 text-primary hover:text-primary/80">
+          <Link to={to} className="flex items-center text-sm">
+            Access
+            <ArrowUpRight className="w-3 h-3 ml-1" />
+          </Link>
+        </Button>
+      </CardFooter>
+    </Card>
+  </motion.div>
+)
+
+// Activity item component with animation
+const ActivityItem = ({ title, description, time, icon: Icon, iconColor, onClick }) => (
+  <motion.div whileHover={{ x: 5, transition: { duration: 0.2 } }} whileTap={{ x: 0, transition: { duration: 0.2 } }}>
+    <div
+      className="flex items-start gap-4 p-3 transition-colors rounded-lg cursor-pointer bg-muted/50 hover:bg-muted"
+      onClick={onClick}
+    >
+      <div className={`p-2 rounded-full ${iconColor}`}>
+        <Icon className="w-4 h-4" />
+      </div>
+      <div className="flex-1">
+        <p className="font-medium">{title}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{time}</p>
+      </div>
+      <ChevronRight className="w-4 h-4 text-muted-foreground" />
     </div>
-    <div className="flex-1">
-      <p className="font-medium">{title}</p>
-      <p className="text-sm text-muted-foreground">{description}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{time}</p>
-    </div>
-    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-  </div>
+  </motion.div>
 )
 
 // Status badge component
@@ -176,6 +232,7 @@ const Dashboard = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const { toast } = useToast()
 
   const navigate = useNavigate()
 
@@ -224,18 +281,28 @@ const Dashboard = () => {
 
       // Process readiness entries
       setReadinessEntries(Array.isArray(readinessResponse) ? readinessResponse : readinessResponse?.data || [])
+
+      toast({
+        title: "Data loaded successfully",
+        description: "Dashboard data has been refreshed",
+      })
     } catch (err) {
       console.error("Error fetching data:", err)
       setError("Failed to load dashboard data. Please try again later.")
+      toast({
+        title: "Error loading data",
+        description: "Failed to load dashboard data. Please try again later.",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
   const handleRefresh = async () => {
     setRefreshing(true)
     await fetchAllData()
-    setRefreshing(false)
   }
 
   // Calculate statistics
@@ -396,6 +463,63 @@ const Dashboard = () => {
     }
   }
 
+  // Generate chart data for inventory trends
+  const getInventoryChartData = () => {
+    // Mock data - replace with actual historical data
+    return {
+      labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+      datasets: [
+        {
+          label: "Total Stock",
+          data: [120, 135, 110, 125, 145, 160],
+          borderColor: "rgb(59, 130, 246)",
+          backgroundColor: "rgba(59, 130, 246, 0.1)",
+          tension: 0.3,
+          fill: true,
+        },
+        {
+          label: "Low Stock Items",
+          data: [20, 25, 15, 18, 12, 10],
+          borderColor: "rgb(245, 158, 11)",
+          backgroundColor: "rgba(245, 158, 11, 0.1)",
+          tension: 0.3,
+          fill: true,
+        },
+      ],
+    }
+  }
+
+  // Generate chart data for project status
+  const getProjectStatusChartData = () => {
+    const projectStatus = calculateProjectStatus()
+
+    return {
+      labels: ["On-going", "Stand-by", "Completed", "Cancelled"],
+      datasets: [
+        {
+          data: [projectStatus.ongoing, projectStatus.standby, projectStatus.completed, projectStatus.cancelled],
+          backgroundColor: ["rgb(59, 130, 246)", "rgb(245, 158, 11)", "rgb(34, 197, 94)", "rgb(239, 68, 68)"],
+          borderWidth: 1,
+        },
+      ],
+    }
+  }
+
+  // Generate chart data for orders by month
+  const getOrdersChartData = () => {
+    // Mock data - replace with actual data
+    return {
+      labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+      datasets: [
+        {
+          label: "Orders",
+          data: [65, 59, 80, 81, 56, 55],
+          backgroundColor: "rgba(59, 130, 246, 0.7)",
+        },
+      ],
+    }
+  }
+
   const inventoryStatus = calculateInventoryStatus()
   const projectStatus = calculateProjectStatus()
   const recentActivities = getRecentActivities()
@@ -425,24 +549,26 @@ const Dashboard = () => {
               <h2 className="mb-2 text-2xl font-bold">Welcome to the Management Dashboard</h2>
               <p>Monitor your inventory, production processes, and orders in one place.</p>
             </div>
-            <Button
-              variant="secondary"
-              onClick={handleRefresh}
-              disabled={refreshing || loading}
-              className="w-full md:w-auto"
-            >
-              {refreshing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Refreshing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh Data
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                onClick={handleRefresh}
+                disabled={refreshing || loading}
+                className="w-full md:w-auto"
+              >
+                {refreshing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Refreshing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh Data
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -456,7 +582,10 @@ const Dashboard = () => {
 
           {/* Stats section */}
           <div className="mb-8">
-            <h2 className="mb-4 text-lg font-semibold">Overview</h2>
+            <h2 className="flex items-center mb-4 text-lg font-semibold">
+              <LayoutDashboard className="w-5 h-5 mr-2 text-primary" />
+              Overview
+            </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               <StatCard
                 icon={Package}
@@ -500,7 +629,10 @@ const Dashboard = () => {
           {/* Tabs for different sections */}
           <Tabs defaultValue="overview" className="mb-8" onValueChange={setActiveTab}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Dashboard</h2>
+              <h2 className="flex items-center text-lg font-semibold">
+                <BarChart3 className="w-5 h-5 mr-2 text-primary" />
+                Dashboard Analytics
+              </h2>
               <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="inventory">Inventory</TabsTrigger>
@@ -509,12 +641,72 @@ const Dashboard = () => {
             </div>
 
             <TabsContent value="overview" className="mt-0 space-y-6">
+              {/* Charts Section */}
+              <div className="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Inventory Trends</CardTitle>
+                    <CardDescription>Stock levels over the past 6 months</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {loading ? (
+                      <Skeleton className="w-full h-[300px]" />
+                    ) : (
+                      <div className="h-[300px]">
+                        <Line
+                          data={getInventoryChartData()}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                              y: {
+                                beginAtZero: true,
+                              },
+                            },
+                          }}
+                        />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Orders by Month</CardTitle>
+                    <CardDescription>Number of orders placed each month</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {loading ? (
+                      <Skeleton className="w-full h-[300px]" />
+                    ) : (
+                      <div className="h-[300px]">
+                        <Bar
+                          data={getOrdersChartData()}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                              y: {
+                                beginAtZero: true,
+                              },
+                            },
+                          }}
+                        />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
               {/* Recent Activity and Status Section */}
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 {/* Recent activity */}
                 <Card className="lg:col-span-2">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-xl">Recent Activity</CardTitle>
+                    <CardTitle className="flex items-center text-lg">
+                      <Activity className="w-5 h-5 mr-2 text-primary" />
+                      Recent Activity
+                    </CardTitle>
                     <div className="flex items-center gap-2">
                       <div className="relative">
                         <Search className="absolute w-4 h-4 transform -translate-y-1/2 left-2.5 top-1/2 text-muted-foreground" />
@@ -579,121 +771,101 @@ const Dashboard = () => {
                   </CardContent>
                 </Card>
 
-                {/* Stats */}
+                {/* Project Status */}
                 <Card>
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <CardTitle>System Status</CardTitle>
-                      <Activity className="w-4 h-4 text-muted-foreground" />
+                      <CardTitle className="flex items-center text-lg">
+                        <PieChart className="w-5 h-5 mr-2 text-primary" />
+                        Project Status
+                      </CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent>
                     {loading ? (
                       <div className="space-y-6">
-                        {[1, 2, 3, 4].map((i) => (
-                          <div key={i}>
-                            <div className="flex items-center justify-between mb-1">
-                              <Skeleton className="w-24 h-4" />
-                              <Skeleton className="w-8 h-4" />
-                            </div>
-                            <Skeleton className="w-full h-2" />
-                          </div>
-                        ))}
+                        <Skeleton className="w-full h-[200px] rounded-full" />
+                        <Skeleton className="w-full h-4" />
+                        <Skeleton className="w-full h-4" />
                       </div>
                     ) : (
                       <div className="space-y-6">
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium">Readiness Progress</span>
-                            <span className="text-sm text-muted-foreground">{getReadinessProgress()}%</span>
-                          </div>
-                          <Progress value={getReadinessProgress()} className="h-2" />
+                        <div className="h-[200px] flex justify-center">
+                          <Doughnut
+                            data={getProjectStatusChartData()}
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              cutout: "70%",
+                              plugins: {
+                                legend: {
+                                  position: "bottom",
+                                  labels: {
+                                    boxWidth: 12,
+                                    padding: 15,
+                                  },
+                                },
+                              },
+                            }}
+                          />
                         </div>
 
                         <div>
-                          <h4 className="mb-3 text-sm font-medium">Inventory Status</h4>
+                          <h4 className="mb-3 text-sm font-medium">Project Status Breakdown</h4>
                           <div className="space-y-2">
                             <div>
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs">In Stock</span>
-                                <span className="text-xs text-muted-foreground">{inventoryStatus.inStock}%</span>
-                              </div>
-                              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                                <div
-                                  className="h-full bg-blue-500 rounded-full"
-                                  style={{ width: `${inventoryStatus.inStock}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs">Critical</span>
-                                <span className="text-xs text-muted-foreground">{inventoryStatus.critical}%</span>
-                              </div>
-                              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                                <div
-                                  className="h-full rounded-full bg-amber-500"
-                                  style={{ width: `${inventoryStatus.critical}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs">Out of Stock</span>
-                                <span className="text-xs text-muted-foreground">{inventoryStatus.outOfStock}%</span>
-                              </div>
-                              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                                <div
-                                  className="h-full rounded-full bg-rose-500"
-                                  style={{ width: `${inventoryStatus.outOfStock}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <Separator />
-
-                        <div>
-                          <h4 className="mb-3 text-sm font-medium">Project Status</h4>
-                          <div className="space-y-2">
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs">On-going</span>
+                                <span className="flex items-center text-xs">
+                                  <span className="inline-block w-2 h-2 mr-1 bg-blue-500 rounded-full"></span>
+                                  On-going
+                                </span>
                                 <span className="text-xs text-muted-foreground">{projectStatus.ongoing}%</span>
                               </div>
-                              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                                <div
-                                  className="h-full bg-blue-500 rounded-full"
-                                  style={{ width: `${projectStatus.ongoing}%` }}
-                                ></div>
-                              </div>
+                              <Progress value={projectStatus.ongoing} className="h-1.5" />
                             </div>
                             <div>
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs">Stand-by</span>
+                                <span className="flex items-center text-xs">
+                                  <span className="inline-block w-2 h-2 mr-1 rounded-full bg-amber-500"></span>
+                                  Stand-by
+                                </span>
                                 <span className="text-xs text-muted-foreground">{projectStatus.standby}%</span>
                               </div>
-                              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                                <div
-                                  className="h-full rounded-full bg-amber-500"
-                                  style={{ width: `${projectStatus.standby}%` }}
-                                ></div>
-                              </div>
+                              <Progress value={projectStatus.standby} className="h-1.5 bg-muted">
+                                <div className="h-full bg-amber-500" style={{ width: `${projectStatus.standby}%` }} />
+                              </Progress>
                             </div>
                             <div>
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs">Completed</span>
+                                <span className="flex items-center text-xs">
+                                  <span className="inline-block w-2 h-2 mr-1 bg-green-500 rounded-full"></span>
+                                  Completed
+                                </span>
                                 <span className="text-xs text-muted-foreground">{projectStatus.completed}%</span>
                               </div>
-                              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                                <div
-                                  className="h-full bg-green-500 rounded-full"
-                                  style={{ width: `${projectStatus.completed}%` }}
-                                ></div>
+                              <Progress value={projectStatus.completed} className="h-1.5 bg-muted">
+                                <div className="h-full bg-green-500" style={{ width: `${projectStatus.completed}%` }} />
+                              </Progress>
+                            </div>
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="flex items-center text-xs">
+                                  <span className="inline-block w-2 h-2 mr-1 bg-red-500 rounded-full"></span>
+                                  Cancelled
+                                </span>
+                                <span className="text-xs text-muted-foreground">{projectStatus.cancelled}%</span>
                               </div>
+                              <Progress value={projectStatus.cancelled} className="h-1.5 bg-muted">
+                                <div className="h-full bg-red-500" style={{ width: `${projectStatus.cancelled}%` }} />
+                              </Progress>
                             </div>
                           </div>
+                        </div>
+
+                        <div className="pt-2">
+                          <Button variant="outline" size="sm" className="w-full" asChild>
+                            <Link to="/masspd">View All Projects</Link>
+                          </Button>
                         </div>
                       </div>
                     )}
@@ -702,55 +874,61 @@ const Dashboard = () => {
               </div>
 
               {/* Quick Access Section */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <FeatureCard
-                  to="/materials"
-                  icon={Package}
-                  title="Materials"
-                  description="Manage materials, stock levels, and inventory."
-                  color="bg-blue-500"
-                  count={materials.length}
-                />
-                <FeatureCard
-                  to="/machines"
-                  icon={Wrench}
-                  title="Machines"
-                  description="View and manage machines and equipment."
-                  color="bg-emerald-500"
-                  count={machines.length}
-                />
-                <FeatureCard
-                  to="/machinematerial"
-                  icon={Warehouse}
-                  title="Allocations"
-                  description="Allocate materials to machines and track usage."
-                  color="bg-amber-500"
-                  count={allocations.length}
-                />
-                <FeatureCard
-                  to="/pedido"
-                  icon={ShoppingCart}
-                  title="Orders"
-                  description="View and manage material orders and requests."
-                  color="bg-rose-500"
-                  count={orders.length}
-                />
-                <FeatureCard
-                  to="/masspd"
-                  icon={Box}
-                  title="Mass Production"
-                  description="Manage mass production processes and tracking."
-                  color="bg-indigo-500"
-                  count={massProductions.length}
-                />
-                <FeatureCard
-                  to="/readiness"
-                  icon={FileText}
-                  title="Readiness"
-                  description="Track project readiness and documentation."
-                  color="bg-purple-500"
-                  count={readinessEntries.length}
-                />
+              <div>
+                <h2 className="flex items-center mb-4 text-lg font-semibold">
+                  <Users className="w-5 h-5 mr-2 text-primary" />
+                  Quick Access
+                </h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <FeatureCard
+                    to="/materials"
+                    icon={Package}
+                    title="Materials"
+                    description="Manage materials, stock levels, and inventory."
+                    color="bg-blue-500"
+                    count={materials.length}
+                  />
+                  <FeatureCard
+                    to="/machines"
+                    icon={Wrench}
+                    title="Machines"
+                    description="View and manage machines and equipment."
+                    color="bg-emerald-500"
+                    count={machines.length}
+                  />
+                  <FeatureCard
+                    to="/machinematerial"
+                    icon={Warehouse}
+                    title="Allocations"
+                    description="Allocate materials to machines and track usage."
+                    color="bg-amber-500"
+                    count={allocations.length}
+                  />
+                  <FeatureCard
+                    to="/pedido"
+                    icon={ShoppingCart}
+                    title="Orders"
+                    description="View and manage material orders and requests."
+                    color="bg-rose-500"
+                    count={orders.length}
+                  />
+                  <FeatureCard
+                    to="/masspd"
+                    icon={Box}
+                    title="Mass Production"
+                    description="Manage mass production processes and tracking."
+                    color="bg-indigo-500"
+                    count={massProductions.length}
+                  />
+                  <FeatureCard
+                    to="/readiness"
+                    icon={FileText}
+                    title="Readiness"
+                    description="Track project readiness and documentation."
+                    color="bg-purple-500"
+                    count={readinessEntries.length}
+                  />
+                </div>
               </div>
             </TabsContent>
 
@@ -759,7 +937,10 @@ const Dashboard = () => {
                 {/* Inventory Summary */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Inventory Summary</CardTitle>
+                    <CardTitle className="flex items-center">
+                      <Package className="w-5 h-5 mr-2 text-primary" />
+                      Inventory Summary
+                    </CardTitle>
                     <CardDescription>Overview of your current inventory status</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -838,7 +1019,10 @@ const Dashboard = () => {
                 {/* Low Stock Items */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Low Stock Items</CardTitle>
+                    <CardTitle className="flex items-center">
+                      <AlertTriangle className="w-5 h-5 mr-2 text-amber-500" />
+                      Low Stock Items
+                    </CardTitle>
                     <CardDescription>Materials that need attention</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -858,7 +1042,8 @@ const Dashboard = () => {
                               .map((material) => (
                                 <div
                                   key={material._id}
-                                  className="flex items-center justify-between p-3 border rounded-lg"
+                                  className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50"
+                                  onClick={() => navigate(`/materials/details/${material._id}`)}
                                 >
                                   <div>
                                     <p className="font-medium">{material.reference || "N/A"}</p>
@@ -898,7 +1083,10 @@ const Dashboard = () => {
                 {/* Project Status */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Project Status</CardTitle>
+                    <CardTitle className="flex items-center">
+                      <Box className="w-5 h-5 mr-2 text-primary" />
+                      Project Status
+                    </CardTitle>
                     <CardDescription>Overview of your production projects</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -965,7 +1153,10 @@ const Dashboard = () => {
                 {/* Recent Projects */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Recent Projects</CardTitle>
+                    <CardTitle className="flex items-center">
+                      <Activity className="w-5 h-5 mr-2 text-primary" />
+                      Recent Projects
+                    </CardTitle>
                     <CardDescription>Latest production projects</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -982,7 +1173,8 @@ const Dashboard = () => {
                             {massProductions.slice(0, 5).map((project) => (
                               <div
                                 key={project._id || project.id}
-                                className="flex items-center justify-between p-3 border rounded-lg"
+                                className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50"
+                                onClick={() => navigate(`/masspd/detail/${project._id || project.id}`)}
                               >
                                 <div>
                                   <p className="font-medium">{project.project_n || project.id || "N/A"}</p>
