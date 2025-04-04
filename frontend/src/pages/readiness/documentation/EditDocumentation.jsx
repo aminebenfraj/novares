@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { getDocumentationById, updateDocumentation } from "../../../apis/readiness/documentationApi"
+import { getAllReadiness } from "../../../apis/readiness/readinessApi"
 
 // Define the field labels and descriptions for better UI
 const fieldConfig = {
@@ -63,6 +64,17 @@ function EditDocumentationPage() {
   const [activeTab, setActiveTab] = useState("workStandardsInPlace")
   const [documentation, setDocumentation] = useState(null)
 
+  // Extract readinessId from URL query parameters
+  const [readinessId, setReadinessId] = useState(null)
+
+  useEffect(() => {
+    // Get the readinessId from the URL query parameters
+    const queryParams = new URLSearchParams(window.location.search)
+    const id = queryParams.get("readinessId")
+    console.log("Extracted readinessId from URL:", id)
+    setReadinessId(id)
+  }, [])
+
   // Fetch documentation data
   useEffect(() => {
     const fetchDocumentation = async () => {
@@ -70,6 +82,25 @@ function EditDocumentationPage() {
         setIsLoading(true)
         const data = await getDocumentationById(params.id)
         setDocumentation(data)
+
+        // Extract readinessId from the documentation object
+        // The documentation object might have a reference to the readiness it belongs to
+        // This could be in different formats depending on your data structure
+        console.log("Documentation data:", data)
+
+        // Check for possible readiness reference fields
+        if (data._readinessId) {
+          console.log("Found readinessId in _readinessId:", data._readinessId)
+          setReadinessId(data._readinessId)
+        } else if (data.readinessId) {
+          console.log("Found readinessId in readinessId:", data.readinessId)
+          setReadinessId(data.readinessId)
+        } else if (data.readiness) {
+          const readinessRef = typeof data.readiness === "object" ? data.readiness._id : data.readiness
+          console.log("Found readinessId in readiness:", readinessRef)
+          setReadinessId(readinessRef)
+        }
+        // Add more checks based on your data structure
       } catch (error) {
         console.error("Error fetching documentation:", error)
         toast({
@@ -89,7 +120,7 @@ function EditDocumentationPage() {
 
   // Handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    if (e) e.preventDefault()
     setIsSaving(true)
 
     try {
@@ -100,8 +131,35 @@ function EditDocumentationPage() {
         description: "Documentation updated successfully",
       })
 
-      // Navigate back to documentation details page
-      navigate(`/documentation/edit/${params.id}`)
+      // Navigate back to readiness details page if readinessId is available
+      if (readinessId) {
+        console.log("Navigating to readiness detail:", readinessId)
+        navigate(`/readiness/detail/${readinessId}`)
+      } else {
+        // If we couldn't extract the readinessId, try to get it from the API response
+        try {
+          // Make an API call to get all readiness entries
+          const readinessEntries = await getAllReadiness()
+
+          // Find the readiness entry that references this documentation
+          const readinessEntry = readinessEntries.find(
+            (entry) =>
+              entry.Documentation === params.id || (entry.Documentation && entry.Documentation._id === params.id),
+          )
+
+          if (readinessEntry) {
+            console.log("Found readiness entry:", readinessEntry)
+            navigate(`/readiness/detail/${readinessEntry._id}`)
+            return
+          }
+        } catch (error) {
+          console.error("Error finding readiness entry:", error)
+        }
+
+        // Fallback to documentation details page if readinessId is not available
+        console.log("No readinessId found, navigating to documentation detail")
+        navigate(`/documentation/${params.id}`)
+      }
     } catch (error) {
       console.error("Error updating documentation:", error)
       toast({
@@ -109,7 +167,6 @@ function EditDocumentationPage() {
         title: "Error",
         description: "Failed to update documentation",
       })
-    } finally {
       setIsSaving(false)
     }
   }
@@ -170,7 +227,18 @@ function EditDocumentationPage() {
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="icon" onClick={() => navigate(`/documentation/edit/${params.id}`)}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                if (readinessId) {
+                  console.log("Back button: Navigating to readiness detail:", readinessId)
+                  navigate(`/readiness/detail/${readinessId}`)
+                } else {
+                  navigate(`/documentation/${params.id}`)
+                }
+              }}
+            >
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
@@ -178,7 +246,10 @@ function EditDocumentationPage() {
               <p className="text-muted-foreground">Update documentation details and validation information</p>
             </div>
           </div>
-          <Button onClick={handleSubmit} disabled={isSaving}>
+          <Button
+            onClick={() => handleSubmit()}
+            disabled={isSaving}
+          >
             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Save Changes
           </Button>
@@ -377,7 +448,10 @@ function EditDocumentationPage() {
                 <Button variant="outline" onClick={() => navigate(`/documentation/${params.id}`)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSaving}>
+                <Button
+                  onClick={() => handleSubmit()}
+                  disabled={isSaving}
+                >
                   {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                   Save Changes
                 </Button>
@@ -386,7 +460,7 @@ function EditDocumentationPage() {
           </div>
         </form>
       </motion.div>
-    </div>
+  </div>
   )
 }
 

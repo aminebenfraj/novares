@@ -1,3 +1,4 @@
+"use client"
 
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
@@ -14,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { getLogisticsById, updateLogistics } from "../../../apis/readiness/logisticsApi"
+import { getAllReadiness } from "../../../apis/readiness/readinessApi"
 
 // Define the field labels and descriptions for better UI
 const fieldConfig = {
@@ -47,6 +49,16 @@ function EditLogisticsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("loopsFlowsDefined")
   const [logistics, setLogistics] = useState(null)
+  const [readinessId, setReadinessId] = useState(null)
+
+  // Extract readinessId from URL query parameters
+  useEffect(() => {
+    // Get the readinessId from the URL query parameters
+    const queryParams = new URLSearchParams(window.location.search)
+    const id = queryParams.get("readinessId")
+    console.log("Extracted readinessId from URL:", id)
+    setReadinessId(id)
+  }, [])
 
   // Fetch logistics data
   useEffect(() => {
@@ -55,6 +67,22 @@ function EditLogisticsPage() {
         setIsLoading(true)
         const data = await getLogisticsById(params.id)
         setLogistics(data)
+
+        // Extract readinessId from the logistics object
+        console.log("Logistics data:", data)
+
+        // Check for possible readiness reference fields
+        if (data._readinessId) {
+          console.log("Found readinessId in _readinessId:", data._readinessId)
+          setReadinessId(data._readinessId)
+        } else if (data.readinessId) {
+          console.log("Found readinessId in readinessId:", data.readinessId)
+          setReadinessId(data.readinessId)
+        } else if (data.readiness) {
+          const readinessRef = typeof data.readiness === "object" ? data.readiness._id : data.readiness
+          console.log("Found readinessId in readiness:", readinessRef)
+          setReadinessId(readinessRef)
+        }
       } catch (error) {
         console.error("Error fetching logistics:", error)
         toast({
@@ -74,7 +102,7 @@ function EditLogisticsPage() {
 
   // Handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    if (e) e.preventDefault()
     setIsSaving(true)
 
     try {
@@ -85,8 +113,33 @@ function EditLogisticsPage() {
         description: "Logistics updated successfully",
       })
 
-      // Navigate back to logistics details page
-      navigate(`/logistics/${params.id}`)
+      // Navigate back to readiness details page if readinessId is available
+      if (readinessId) {
+        console.log("Navigating to readiness detail:", readinessId)
+        navigate(`/readiness/detail/${readinessId}`)
+      } else {
+        // If we couldn't extract the readinessId, try to get it from the API response
+        try {
+          // Make an API call to get all readiness entries
+          const readinessEntries = await getAllReadiness()
+
+          // Find the readiness entry that references this logistics
+          const readinessEntry = readinessEntries.find(
+            (entry) => entry.Logistics === params.id || (entry.Logistics && entry.Logistics._id === params.id),
+          )
+
+          if (readinessEntry) {
+            console.log("Found readiness entry:", readinessEntry)
+            navigate(`/readiness/detail/${readinessEntry._id}`)
+            return
+          }
+        } catch (error) {
+          console.error("Error finding readiness entry:", error)
+        }
+
+        // Fallback to logistics details page if readinessId is not available
+        navigate(`/logistics/${params.id}`)
+      }
     } catch (error) {
       console.error("Error updating logistics:", error)
       toast({
@@ -94,7 +147,6 @@ function EditLogisticsPage() {
         title: "Error",
         description: "Failed to update logistics",
       })
-    } finally {
       setIsSaving(false)
     }
   }
@@ -155,7 +207,18 @@ function EditLogisticsPage() {
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="icon" onClick={() => navigate(`/logistics/${params.id}`)}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                if (readinessId) {
+                  console.log("Back button: Navigating to readiness detail:", readinessId)
+                  navigate(`/readiness/detail/${readinessId}`)
+                } else {
+                  navigate(`/logistics/${params.id}`)
+                }
+              }}
+            >
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
@@ -359,10 +422,19 @@ function EditLogisticsPage() {
                 </Tabs>
               </CardContent>
               <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => navigate(`/logistics/${params.id}`)}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (readinessId) {
+                      navigate(`/readiness/detail/${readinessId}`)
+                    } else {
+                      navigate(`/logistics/${params.id}`)
+                    }
+                  }}
+                >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSaving}>
+                <Button type="submit" disabled={isSaving} onClick={() => handleSubmit()}>
                   {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                   Save Changes
                 </Button>
