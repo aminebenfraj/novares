@@ -14,7 +14,7 @@ export const apiRequest = async (
 
     const config = {
       method,
-      url: `http://localhost:5000/${url}`,
+      url: `http://192.168.1.187:5000/${url}`,
       headers: {
         Authorization: `Bearer ${token}`,
         ...(isFormData ? {} : { "Content-Type": "application/json" }),

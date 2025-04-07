@@ -129,7 +129,7 @@ const OkForLunchList = () => {
                         <TableCell>
                           {entry.upload ? (
                             <motion.a
-                              href={`http://localhost:5000/${entry.upload}`}
+                              href={`http://192.168.1.187:5000/${entry.upload}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center text-blue-500 transition-colors hover:text-blue-700"
