@@ -1,4 +1,4 @@
-const P_P_Tuning = require("../models/p_p_tuningModel");
+const P_P_Tuning = require("../models/pPTuningModel");
 const Task = require("../models/Task");
 const mongoose = require("mongoose");
 

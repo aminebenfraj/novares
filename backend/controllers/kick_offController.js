@@ -1,4 +1,4 @@
-const KickOff = require("../models/Kick_off");
+const KickOff = require("../models/kickoff");
 const Task = require("../models/Task");
 
 const kickOffFields = [
