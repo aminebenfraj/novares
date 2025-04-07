@@ -1,0 +1,59 @@
+"use strict";
+
+var mongoose = require("mongoose");
+var Schema = mongoose.Schema;
+var FeasabilityDetail = require("./FeasabilityDetailModel");
+
+// Reusable Schema for Feasibility Fields
+var FeasibilityFieldSchema = new Schema({
+  value: {
+    type: Boolean,
+    "default": false
+  },
+  details: {
+    type: Schema.Types.ObjectId,
+    ref: "FeasabilityDetail",
+    "default": null
+  }
+});
+
+// Main Feasibility Schema
+var FeasabilitySchema = new Schema({
+  product: FeasibilityFieldSchema,
+  raw_material_type: FeasibilityFieldSchema,
+  raw_material_qty: FeasibilityFieldSchema,
+  packaging: FeasibilityFieldSchema,
+  purchased_part: FeasibilityFieldSchema,
+  // Process Metrics
+  injection_cycle_time: FeasibilityFieldSchema,
+  moulding_labor: FeasibilityFieldSchema,
+  press_size: FeasibilityFieldSchema,
+  assembly_finishing_paint_cycle_time: FeasibilityFieldSchema,
+  assembly_finishing_paint_labor: FeasibilityFieldSchema,
+  ppm_level: FeasibilityFieldSchema,
+  // Impact on Investment
+  pre_study: FeasibilityFieldSchema,
+  project_management: FeasibilityFieldSchema,
+  study_design: FeasibilityFieldSchema,
+  cae_design: FeasibilityFieldSchema,
+  monitoring: FeasibilityFieldSchema,
+  measurement_metrology: FeasibilityFieldSchema,
+  validation: FeasibilityFieldSchema,
+  molds: FeasibilityFieldSchema,
+  special_machines: FeasibilityFieldSchema,
+  checking_fixture: FeasibilityFieldSchema,
+  equipment_painting_prehension: FeasibilityFieldSchema,
+  run_validation: FeasibilityFieldSchema,
+  stock_production_coverage: FeasibilityFieldSchema,
+  is_presentation: FeasibilityFieldSchema,
+  documentation_update: FeasibilityFieldSchema,
+  // Check-in & Mass Production References
+  checkin: {
+    type: Schema.Types.ObjectId,
+    ref: "Checkin",
+    required: true
+  }
+}, {
+  timestamps: true
+});
+module.exports = mongoose.model("Feasibility", FeasabilitySchema);

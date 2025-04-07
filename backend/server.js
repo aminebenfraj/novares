@@ -1,6 +1,3 @@
-const path = require('path');
-console.log('Current directory:', process.cwd());
-console.log('Attempting to require:', path.resolve(__dirname, './routes/readinessRoutes/documentationRoutes'));
 const express = require("express")
 const mongoose = require("mongoose")
 const cors = require("cors")
