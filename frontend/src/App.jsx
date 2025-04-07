@@ -108,6 +108,8 @@ import  EditTraining from './pages/readiness/Training/EditTraining';
 import  Training from './pages/readiness/Training/TrainingList';
 import  EditToolingStatus from './pages/readiness/ToolingStatus/EditToolingStatus';
 import  ToolingStatus from './pages/readiness/ToolingStatus/ToolingStatusList';
+import  MachineDashboard from './pages/gestionStock/machine_dashboard/machine-dashboard';
+import  MachineDashboardDetails from './pages/gestionStock/machine_dashboard/machine-detail-dashboard';
 
 
 
@@ -223,6 +225,8 @@ function App() {
         <Route path="/training" element={< Training/>} />
         <Route path="/tooling-status/edit/:id" element={< EditToolingStatus/>} />
         <Route path="/tooling-status" element={< ToolingStatus/>} />
+        <Route path="/machine-dashboard" element={< MachineDashboard/>} />
+        <Route path="/machine-dashboard/:id" element={< MachineDashboardDetails/>} />
     </Routes>
       </AuthProvider>
   );
