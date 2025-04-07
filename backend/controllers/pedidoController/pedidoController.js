@@ -25,6 +25,7 @@ exports.createPedido = async (req, res) => {
       pedir,
       introducidaSAP,
       aceptado,
+      date_receiving,
       direccion,
       weeks,
       table_status,
@@ -67,6 +68,14 @@ exports.createPedido = async (req, res) => {
       }
     }
 
+    // Calculate date_receiving if aceptado is provided but date_receiving is not
+    let calculatedDateReceiving = date_receiving
+    if (aceptado && !date_receiving) {
+      const acceptanceDate = new Date(aceptado)
+      calculatedDateReceiving = new Date(acceptanceDate)
+      calculatedDateReceiving.setDate(acceptanceDate.getDate() + 14) // Add 2 weeks (14 days)
+    }
+
     // Set default values
     const newPedidoData = {
       tipo,
@@ -84,6 +93,7 @@ exports.createPedido = async (req, res) => {
       pedir,
       introducidaSAP,
       aceptado,
+      date_receiving: calculatedDateReceiving,
       direccion,
       weeks,
       table_status,
@@ -113,8 +123,6 @@ exports.createPedido = async (req, res) => {
   }
 }
 
-// Get all pedidos with pagination, filtering, and search
-// Get all pedidos with pagination, filtering, and search
 // Get all pedidos with pagination, filtering, and search
 exports.getAllPedidos = async (req, res) => {
   try {
@@ -150,15 +158,15 @@ exports.getAllPedidos = async (req, res) => {
     // Handle proveedor (supplier) parameter
     if (proveedor) {
       if (mongoose.Types.ObjectId.isValid(proveedor)) {
-        filter.proveedor = proveedor;
+        filter.proveedor = proveedor
       } else {
         // If it's not a valid ObjectId, try to find by name
-        const supplierByName = await Supplier.findOne({ 
-          name: { $regex: new RegExp(proveedor, 'i') } 
-        });
-        
+        const supplierByName = await Supplier.findOne({
+          name: { $regex: new RegExp(proveedor, "i") },
+        })
+
         if (supplierByName) {
-          filter.proveedor = supplierByName._id;
+          filter.proveedor = supplierByName._id
         } else {
           // If no supplier found with this name, return empty results
           return res.json({
@@ -167,7 +175,7 @@ exports.getAllPedidos = async (req, res) => {
             limit,
             totalPages: 0,
             data: [],
-          });
+          })
         }
       }
     }
@@ -175,14 +183,14 @@ exports.getAllPedidos = async (req, res) => {
     // Handle tipo parameter
     if (tipo) {
       if (mongoose.Types.ObjectId.isValid(tipo)) {
-        filter.tipo = tipo;
+        filter.tipo = tipo
       } else {
-        const tipoByName = await Tipo.findOne({ 
-          name: { $regex: new RegExp(tipo, 'i') } 
-        });
-        
+        const tipoByName = await Tipo.findOne({
+          name: { $regex: new RegExp(tipo, "i") },
+        })
+
         if (tipoByName) {
-          filter.tipo = tipoByName._id;
+          filter.tipo = tipoByName._id
         } else {
           return res.json({
             total: 0,
@@ -190,7 +198,7 @@ exports.getAllPedidos = async (req, res) => {
             limit,
             totalPages: 0,
             data: [],
-          });
+          })
         }
       }
     }
@@ -198,17 +206,17 @@ exports.getAllPedidos = async (req, res) => {
     // Handle solicitante parameter
     if (solicitante) {
       if (mongoose.Types.ObjectId.isValid(solicitante)) {
-        filter.solicitante = solicitante;
+        filter.solicitante = solicitante
       } else {
         const solicitanteByName = await Solicitante.findOne({
           $or: [
-            { name: { $regex: new RegExp(solicitante, 'i') } },
-            { email: { $regex: new RegExp(solicitante, 'i') } }
-          ]
-        });
-        
+            { name: { $regex: new RegExp(solicitante, "i") } },
+            { email: { $regex: new RegExp(solicitante, "i") } },
+          ],
+        })
+
         if (solicitanteByName) {
-          filter.solicitante = solicitanteByName._id;
+          filter.solicitante = solicitanteByName._id
         } else {
           return res.json({
             total: 0,
@@ -216,7 +224,7 @@ exports.getAllPedidos = async (req, res) => {
             limit,
             totalPages: 0,
             data: [],
-          });
+          })
         }
       }
     }
@@ -224,14 +232,14 @@ exports.getAllPedidos = async (req, res) => {
     // Handle table_status parameter
     if (table_status) {
       if (mongoose.Types.ObjectId.isValid(table_status)) {
-        filter.table_status = table_status;
+        filter.table_status = table_status
       } else {
-        const statusByName = await TableStatus.findOne({ 
-          name: { $regex: new RegExp(table_status, 'i') } 
-        });
-        
+        const statusByName = await TableStatus.findOne({
+          name: { $regex: new RegExp(table_status, "i") },
+        })
+
         if (statusByName) {
-          filter.table_status = statusByName._id;
+          filter.table_status = statusByName._id
         } else {
           return res.json({
             total: 0,
@@ -239,7 +247,7 @@ exports.getAllPedidos = async (req, res) => {
             limit,
             totalPages: 0,
             data: [],
-          });
+          })
         }
       }
     }
@@ -499,6 +507,13 @@ exports.updatePedido = async (req, res) => {
       }
     }
 
+    // Calculate date_receiving if aceptado is updated but date_receiving is not provided
+    if (req.body.aceptado && req.body.aceptado !== existingPedido.aceptado?.toString() && !req.body.date_receiving) {
+      const acceptanceDate = new Date(req.body.aceptado)
+      req.body.date_receiving = new Date(acceptanceDate)
+      req.body.date_receiving.setDate(acceptanceDate.getDate() + 14) // Add 2 weeks (14 days)
+    }
+
     // Update the pedido fields
     Object.keys(req.body).forEach((key) => {
       existingPedido[key] = req.body[key]
@@ -724,7 +739,7 @@ exports.bulkUpdatePedidos = async (req, res) => {
 
     // In the bulkUpdatePedidos function
     if (updates.proveedor === "") {
-      updates.proveedor = null;
+      updates.proveedor = null
     }
 
     // Then continue with your existing validation
@@ -740,6 +755,13 @@ exports.bulkUpdatePedidos = async (req, res) => {
       if (!tableStatus) {
         return res.status(400).json({ error: "Table status not found" })
       }
+    }
+
+    // Calculate date_receiving if aceptado is updated but date_receiving is not provided
+    if (updates.aceptado && !updates.date_receiving) {
+      const acceptanceDate = new Date(updates.aceptado)
+      updates.date_receiving = new Date(acceptanceDate)
+      updates.date_receiving.setDate(acceptanceDate.getDate() + 14) // Add 2 weeks (14 days)
     }
 
     // For bulk updates, we'll use updateMany for efficiency
@@ -815,6 +837,7 @@ exports.exportPedidos = async (req, res) => {
       "Pedir",
       "Introducida SAP",
       "Aceptado",
+      "Fecha Recepción",
       "Dirección",
       "Semanas",
       "Estado",
@@ -844,6 +867,7 @@ exports.exportPedidos = async (req, res) => {
         pedido.pedir || "",
         pedido.introducidaSAP ? new Date(pedido.introducidaSAP).toISOString().split("T")[0] : "",
         pedido.aceptado ? new Date(pedido.aceptado).toISOString().split("T")[0] : "",
+        pedido.date_receiving ? new Date(pedido.date_receiving).toISOString().split("T")[0] : "",
         (pedido.direccion || "").replace(/,/g, ";"), // Replace commas
         pedido.weeks || "",
         pedido.table_status ? pedido.table_status.name : "",
@@ -871,39 +895,39 @@ exports.exportPedidos = async (req, res) => {
 // Generate QR code for a pedido
 exports.generateQRCode = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params
 
     // Find the pedido
-    const pedido = await Pedido.findById(id);
+    const pedido = await Pedido.findById(id)
     if (!pedido) {
-      return res.status(404).json({ message: "Pedido not found" });
+      return res.status(404).json({ message: "Pedido not found" })
     }
 
     // If QR code already exists, return it
     if (pedido.qrCode) {
       return res.status(200).json({
         qrCode: pedido.qrCode,
-        pedidoId: pedido._id
-      });
+        pedidoId: pedido._id,
+      })
     }
 
     // Generate a new QR code
-    await pedido.generateQRCode();
+    await pedido.generateQRCode()
 
     res.status(200).json({
       qrCode: pedido.qrCode,
-      pedidoId: pedido._id
-    });
+      pedidoId: pedido._id,
+    })
   } catch (error) {
-    console.error("Error generating QR code:", error);
-    res.status(500).json({ message: "Error generating QR code", error: error.message });
+    console.error("Error generating QR code:", error)
+    res.status(500).json({ message: "Error generating QR code", error: error.message })
   }
-};
+}
 
 // Get pedido by QR code
 exports.getPedidoByQRCode = async (req, res) => {
   try {
-    const { qrCode } = req.params;
+    const { qrCode } = req.params
 
     const pedido = await Pedido.findOne({ qrCode })
       .populate("tipo", "name")
@@ -911,18 +935,18 @@ exports.getPedidoByQRCode = async (req, res) => {
       .populate("solicitante", "name email number")
       .populate("proveedor", "name contact email phone address")
       .populate("table_status", "name color")
-      .lean();
+      .lean()
 
     if (!pedido) {
-      return res.status(404).json({ message: "Pedido not found" });
+      return res.status(404).json({ message: "Pedido not found" })
     }
 
-    res.status(200).json(pedido);
+    res.status(200).json(pedido)
   } catch (error) {
-    console.error("Error fetching pedido by QR code:", error);
-    res.status(500).json({ message: "Error fetching pedido", error: error.message });
+    console.error("Error fetching pedido by QR code:", error)
+    res.status(500).json({ message: "Error fetching pedido", error: error.message })
   }
-};
+}
 // Get pedidos by QR code
 exports.getPedidoByQRCode = async (req, res) => {
   try {
@@ -946,3 +970,4 @@ exports.getPedidoByQRCode = async (req, res) => {
     res.status(500).json({ message: "Error fetching pedido", error: error.message })
   }
 }
+

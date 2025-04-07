@@ -56,6 +56,7 @@ function EditPedido() {
     pedir: "",
     introducidaSAP: null,
     aceptado: null,
+    date_receiving: null,
     direccion: "",
     table_status: "",
     weeks: 0,
@@ -111,6 +112,7 @@ function EditPedido() {
             fechaSolicitud: pedidoData.fechaSolicitud ? new Date(pedidoData.fechaSolicitud) : new Date(),
             introducidaSAP: pedidoData.introducidaSAP ? new Date(pedidoData.introducidaSAP) : null,
             aceptado: pedidoData.aceptado ? new Date(pedidoData.aceptado) : null,
+            date_receiving: pedidoData.date_receiving ? new Date(pedidoData.date_receiving) : null,
             // Extract IDs from populated fields
             tipo: pedidoData.tipo?._id || "",
             referencia: pedidoData.referencia?._id || "",
@@ -229,7 +231,18 @@ function EditPedido() {
   }
 
   const handleDateChange = (name, date) => {
-    setPedido((prev) => ({ ...prev, [name]: date }))
+    setPedido((prev) => {
+      const updatedPedido = { ...prev, [name]: date }
+
+      // If acceptance date changes, calculate receiving date (2 weeks later)
+      if (name === "aceptado" && date) {
+        const receivingDate = new Date(date)
+        receivingDate.setDate(receivingDate.getDate() + 14) // Add 2 weeks (14 days)
+        updatedPedido.date_receiving = receivingDate
+      }
+
+      return updatedPedido
+    })
   }
 
   const calculateImporte = () => {
@@ -545,16 +558,16 @@ function EditPedido() {
                           />
                         </div>
                         <div className="space-y-2">
-            <Label htmlFor="weeks">Weeks</Label>
-            <Input
-              id="weeks"
-              name="weeks"
-              type="number"
-              value={pedido.weeks || ""}
-              onChange={handleInputChange}
-              min="1"
-            />
-            </div>
+                          <Label htmlFor="weeks">Weeks</Label>
+                          <Input
+                            id="weeks"
+                            name="weeks"
+                            type="number"
+                            value={pedido.weeks || ""}
+                            onChange={handleInputChange}
+                            min="1"
+                          />
+                        </div>
                         <div className="space-y-2">
                           <Label htmlFor="precioUnidad">Unit Price (€)</Label>
                           <Input
@@ -682,6 +695,23 @@ function EditPedido() {
                               />
                             </PopoverContent>
                           </Popover>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="date_receiving">Receiving Date (Auto-calculated)</Label>
+                          <Input
+                            id="date_receiving"
+                            name="date_receiving"
+                            value={
+                              pedido.date_receiving
+                                ? format(new Date(pedido.date_receiving), "PPP")
+                                : "Will be calculated after acceptance"
+                            }
+                            readOnly
+                            className="bg-muted"
+                          />
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            This date is automatically set to 2 weeks after the acceptance date
+                          </p>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="recepcionado">Received</Label>

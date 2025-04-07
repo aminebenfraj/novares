@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { getPedidoById } from "../../apis/pedido/pedidoApi"
@@ -384,9 +386,9 @@ export default function PedidoDetails() {
                         <dd className="font-semibold">{pedido.cantidad}</dd>
                       </div>
                       <div className="flex justify-between py-2 border-b">
-            <dt className="font-medium text-muted-foreground">Weeks</dt>
-            <dd className="font-semibold">{pedido.weeks ? `${pedido.weeks} S` : "N/A"}</dd>
-          </div>
+                        <dt className="font-medium text-muted-foreground">Weeks</dt>
+                        <dd className="font-semibold">{pedido.weeks ? `${pedido.weeks} S` : "N/A"}</dd>
+                      </div>
                       <div className="flex justify-between py-2 border-b">
                         <dt className="font-medium text-muted-foreground">Unit Price</dt>
                         <dd>{formatCurrency(pedido.precioUnidad)}</dd>
@@ -486,6 +488,19 @@ export default function PedidoDetails() {
                       </div>
                       <h3 className="font-semibold">Acceptance Date</h3>
                       <p className="text-muted-foreground">{formatDate(pedido.aceptado) || "Pending"}</p>
+                    </div>
+
+                    <div className="relative pb-8 pl-12">
+                      <div
+                        className={`absolute left-0 rounded-full w-10 h-10 ${pedido.date_receiving ? "bg-primary" : "bg-muted"} flex items-center justify-center`}
+                      >
+                        <Calendar
+                          className={`w-5 h-5 ${pedido.date_receiving ? "text-primary-foreground" : "text-muted-foreground"}`}
+                        />
+                      </div>
+                      <h3 className="font-semibold">Receiving Date</h3>
+                      <p className="text-muted-foreground">{formatDate(pedido.date_receiving) || "Pending"}</p>
+                      <p className="text-xs text-muted-foreground">Automatically set to 2 weeks after acceptance</p>
                     </div>
 
                     <div className="relative pl-12">
