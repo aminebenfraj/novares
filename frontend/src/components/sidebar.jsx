@@ -20,7 +20,6 @@ import {
   Wrench,
   ShoppingCart,
   Warehouse,
-  Bell,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -28,7 +27,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { getCurrentUser } from "../apis/userApi"
+import { CallNotifications } from "@/components/call-notifications"
 
 // Restructured menu items with nested actions
 const menuItems = [
@@ -151,6 +151,7 @@ const menuItems = [
 
 export const Sidebar = ({ isOpen, toggleSidebar }) => {
   const [openItems, setOpenItems] = useState({})
+  const [user, setUser] = useState({ username: "Loading...", email: "..." })
   const location = useLocation()
 
   // Auto-expand the menu item that matches the current path
@@ -165,6 +166,20 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
       }
     })
   }, [location.pathname])
+
+  // Fetch user data
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userData = await getCurrentUser()
+        setUser(userData)
+      } catch (error) {
+        console.error("Failed to fetch user data:", error)
+      }
+    }
+
+    fetchUser()
+  }, [])
 
   const toggleItem = (label) => {
     setOpenItems((prev) => ({
@@ -210,11 +225,6 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
         className={`h-full bg-white border-r overflow-hidden ${isOpen ? "block" : "hidden md:block"} shadow-sm`}
       >
         <div className="flex flex-col h-full">
-          {/* Sidebar header with logo */}
-          <div className="flex items-center gap-3 px-6 py-4 border-b">
-            <h2 className="text-lg font-semibold">Dashboard</h2>
-          </div>
-
           {/* User profile section */}
           <div className="px-4 py-3 border-b">
             <div className="flex items-center gap-3">
@@ -223,21 +233,11 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
                 <AvatarFallback className="bg-primary/10 text-primary">AD</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">Admin User</p>
-                <p className="text-xs truncate text-muted-foreground">admin@example.com</p>
+                <p className="text-sm font-medium truncate">{user.username || "User"}</p>
+                <p className="text-xs truncate text-muted-foreground">{user.email || "user@example.com"}</p>
               </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="w-8 h-8">
-                      <Bell className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Notifications</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {/* Replace the Bell button with our CallNotifications component */}
+              <CallNotifications />
             </div>
           </div>
 
