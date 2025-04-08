@@ -9,8 +9,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, ArrowLeft, Save } from "lucide-react"
-import Navbar from "@/components/NavBar"
-import ContactUs from "@/components/ContactUs"
+import MainLayout from "@/components/MainLayout"
 
 const EditCheckin = () => {
   const { id } = useParams()
@@ -70,21 +69,20 @@ const EditCheckin = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navbar />
+      <MainLayout/>
         <div className="container flex items-center justify-center py-8 mx-auto">
           <div className="flex flex-col items-center">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p className="mt-4 text-lg">Loading check-in data...</p>
           </div>
         </div>
-        <ContactUs />
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <MainLayout/>
       <div className="container py-8 mx-auto">
         <div className="flex items-center mb-6">
           <Button variant="outline" onClick={() => navigate("/checkins")} className="mr-4">
@@ -142,7 +140,6 @@ const EditCheckin = () => {
           </form>
         </Card>
       </div>
-      <ContactUs />
     </div>
   )
 }

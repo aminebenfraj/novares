@@ -35,8 +35,7 @@ import {
 import { Skeleton } from "../../components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast"
 import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Loader2, CheckCircle, XCircle } from 'lucide-react';
-import Navbar from "@/components/NavBar";
-import ContactUs from "@/components/ContactUs";
+import MainLayout from "@/components/MainLayout";
 
 const CheckinList = () => {
   const [checkins, setCheckins] = useState([]);
@@ -109,7 +108,7 @@ const CheckinList = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <MainLayout/>
       <div className="container py-8 mx-auto">
         <Card>
           <CardHeader className="pb-3">
@@ -274,7 +273,7 @@ const CheckinList = () => {
           </CardContent>
         </Card>
       </div>
-      <ContactUs />
+      <MainLayout />
     </div>
   );
 };

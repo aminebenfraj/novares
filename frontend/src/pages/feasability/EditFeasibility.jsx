@@ -12,8 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Navbar from "@/components/NavBar";
-import ContactUs from "@/components/ContactUs";
+import MainLayout from "@/components/MainLayout";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
@@ -144,7 +143,7 @@ const EditFeasibility = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <MainLayout />
       <div className="container p-6 mx-auto">
         <Card className="max-w-4xl mx-auto overflow-hidden shadow-lg">
           <CardHeader className="bg-white border-b border-gray-200">
@@ -256,7 +255,6 @@ const EditFeasibility = () => {
           </CardFooter>
         </Card>
       </div>
-      <ContactUs />
     </div>
   );
 };

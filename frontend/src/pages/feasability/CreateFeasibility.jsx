@@ -1,4 +1,4 @@
-import { useState } from "react";
+import  { useState } from "react";
 import { createFeasibility } from "../../apis/feasabilityApi";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import ContactUs from "@/components/ContactUs";
-import Navbar from "@/components/NavBar";
+ import MainLayout from "@/components/MainLayout";
 
 // List of feasibility fields (same as backend)
 const feasibilityFields = [
@@ -79,7 +78,7 @@ const CreateFeasibility = () => {
 
   return (
     <div>
-      <Navbar />
+      <MainLayout />
       <div className="container p-6 mx-auto bg-gray-50">
         <Card className="max-w-4xl mx-auto bg-white shadow-lg">
           <CardHeader>
@@ -150,7 +149,6 @@ const CreateFeasibility = () => {
           </CardContent>
         </Card>
       </div>
-      <ContactUs />
     </div>
   );
 };

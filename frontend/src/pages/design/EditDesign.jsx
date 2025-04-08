@@ -15,8 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Upload, CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
-import Navbar from "@/components/NavBar"
-import ContactUs from "@/components/ContactUs"
+import MainLayout from "@/components/MainLayout"
 
 const designFields = [
   "Validation_of_the_validation",
@@ -157,7 +156,7 @@ const EditDesign = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Navbar />
+      <MainLayout />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -304,7 +303,6 @@ const EditDesign = () => {
           </CardContent>
         </Card>
       </motion.div>
-      <ContactUs />
     </div>
   )
 }

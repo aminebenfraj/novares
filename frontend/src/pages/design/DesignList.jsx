@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Search, Plus, Edit, Trash2, ChevronRight } from 'lucide-react'
-import Navbar from "@/components/NavBar"
+import MainLayout from "@/components/MainLayout"
 
 const DesignList = () => {
   const [designs, setDesigns] = useState([])
@@ -86,7 +86,7 @@ const DesignList = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Navbar />
+      <MainLayout />
       <div className="container px-4 py-8 mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Designs</h1>

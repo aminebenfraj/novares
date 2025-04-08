@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
-import Navbar from "@/components/NavBar";
+import MainLayout from "@/components/MainLayout";
 
 const FacilitiesList = () => {
   const [facilities, setFacilities] = useState([]);
@@ -83,7 +83,7 @@ const FacilitiesList = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Navbar />
+      <MainLayout />
       <div className="container px-4 py-8 mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Facilities</h1>

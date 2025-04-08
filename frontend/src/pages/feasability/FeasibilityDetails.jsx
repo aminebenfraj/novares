@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
-
+import MainLayout from "@/components/MainLayout";
 // List of feasibility fields (same as backend)
 const feasibilityFields = [
   "product",

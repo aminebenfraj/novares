@@ -9,8 +9,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, ArrowLeft } from "lucide-react"
-import Navbar from "@/components/NavBar"
-import ContactUs from "@/components/ContactUs"
+import MainLayout from "@/components/MainLayout"
 
 const initialCheckinState = {
   project_manager: false,
@@ -61,7 +60,7 @@ const CreateCheckin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <MainLayout />
       <div className="container py-8 mx-auto">
         <div className="flex items-center mb-6">
           <Button variant="outline" onClick={() => navigate("/checkins")} className="mr-4">
@@ -110,7 +109,7 @@ const CreateCheckin = () => {
           </form>
         </Card>
       </div>
-      <ContactUs />
+      <MainLayout />
     </div>
   )
 }

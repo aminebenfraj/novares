@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import Navbar from "@/components/NavBar"
-import ContactUs from "@/components/ContactUs"
+import MainLayout from "@/components/MainLayout"
 
 const designFields = [
   "Validation_of_the_validation",
@@ -97,7 +96,7 @@ const DesignForm = () => {
 
   return (
     <div>
-      <Navbar />
+      <MainLayout />
       <div className="container p-6 mx-auto bg-gray-50">
         <Card className="max-w-4xl mx-auto bg-white shadow-lg">
           <CardHeader>
@@ -181,7 +180,6 @@ const DesignForm = () => {
           </CardContent>
         </Card>
       </div>
-      <ContactUs />
     </div>
   )
 }
