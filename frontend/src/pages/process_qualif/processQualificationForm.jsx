@@ -88,7 +88,7 @@ const ProcessQualificationForm = () => {
 
     try {
       await createQualificationProcess(submissionData)
-      navigate("/process-qualification")
+      navigate("/processqualification")
     } catch (error) {
       console.error("❌ API Error:", error.response?.data || error.message)
     }

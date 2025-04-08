@@ -120,15 +120,15 @@ const ProcessQualificationList = () => {
   }
 
   const handleEdit = (id) => {
-    navigate(`/process-qualification/edit/${id}`)
+    navigate(`/processqualification/edit/${id}`)
   }
 
   const handleView = (id) => {
-    navigate(`/process-qualification/${id}`)
+    navigate(`/processqualification/${id}`)
   }
 
   const handleCreate = () => {
-    navigate("/process-qualification/create")
+    navigate("/processqualification/create")
   }
 
   const handleSort = (key) => {

@@ -3,20 +3,18 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
+import { Loader2, Save, ArrowLeft, CheckCircle, XCircle } from 'lucide-react'
 import { getProcessQualificationById, updateProcessQualification } from "../../apis/process_qualifApi"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { Upload, CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
-import Navbar from "@/components/NavBar"
-import ContactUs from "@/components/ContactUs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Separator } from "@/components/ui/separator"
+import { useToast } from "@/hooks/use-toast"
+import MainLayout from "@/components/MainLayout"
 
 const processQualificationFields = [
   "updating_of_capms",
@@ -31,282 +29,390 @@ const processQualificationFields = [
   "initial_sample_acceptance",
 ]
 
+// Define the field labels and descriptions for better UI
+const fieldConfig = {
+  updating_of_capms: {
+    label: "Updating of CAPMS",
+    description: "Update Computer-Aided Production Management System",
+  },
+  modification_of_customer_logistics: {
+    label: "Modification of Customer Logistics",
+    description: "Update logistics arrangements with customer",
+  },
+  qualification_of_supplier: {
+    label: "Qualification of Supplier",
+    description: "Verify supplier meets quality standards",
+  },
+  presentation_of_initial_samples: {
+    label: "Presentation of Initial Samples",
+    description: "Present initial product samples",
+  },
+  filing_of_initial_samples: {
+    label: "Filing of Initial Samples",
+    description: "Document and file initial samples",
+  },
+  information_on_modification_implementation: {
+    label: "Information on Modification Implementation",
+    description: "Document implementation of modifications",
+  },
+  full_production_run: {
+    label: "Full Production Run",
+    description: "Complete a full production cycle",
+  },
+  request_for_dispensation: {
+    label: "Request for Dispensation",
+    description: "Request for temporary deviation from requirements",
+  },
+  process_qualification: {
+    label: "Process Qualification",
+    description: "Validate production process meets requirements",
+  },
+  initial_sample_acceptance: {
+    label: "Initial Sample Acceptance",
+    description: "Get approval for initial product samples",
+  },
+}
+
 const EditProcessQualification = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState("updating_of_capms")
+  const [formData, setFormData] = useState({})
+  const [massProductionId, setMassProductionId] = useState(null)
 
-  const [formData, setFormData] = useState(() => {
-    const initialState = {}
-    processQualificationFields.forEach((field) => {
-      initialState[field] = {
-        value: false,
-        task: {
-          check: false,
-          responsible: "",
-          planned: "",
-          done: "",
-          comments: "",
-          filePath: null,
-        },
-      }
-    })
-    return initialState
-  })
-
+  // Extract massProductionId from URL query parameters
   useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search)
+    const mpId = queryParams.get("massProductionId")
+    console.log("Extracted massProductionId from URL:", mpId)
+    setMassProductionId(mpId)
+  }, [])
+
+  // Fetch process qualification data
+  useEffect(() => {
+    const fetchProcessQualification = async () => {
+      try {
+        setIsLoading(true)
+        const data = await getProcessQualificationById(id)
+        
+        // Initialize form data with fetched data
+        const initialFormData = {}
+        processQualificationFields.forEach((field) => {
+          initialFormData[field] = {
+            value: data[field]?.value || false,
+            task: {
+              check: data[field]?.task?.check || false,
+              responsible: data[field]?.task?.responsible || "",
+              planned: data[field]?.task?.planned || "",
+              done: data[field]?.task?.done || "",
+              comments: data[field]?.task?.comments || "",
+              filePath: data[field]?.task?.filePath || null,
+            },
+          }
+        })
+        
+        setFormData(initialFormData)
+        
+        // Check for possible massProduction reference fields
+        if (data._massProductionId) {
+          console.log("Found massProductionId in _massProductionId:", data._massProductionId)
+          setMassProductionId(data._massProductionId)
+        } else if (data.massProductionId) {
+          console.log("Found massProductionId in massProductionId:", data.massProductionId)
+          setMassProductionId(data.massProductionId)
+        } else if (data.massProduction) {
+          const mpRef = typeof data.massProduction === "object" ? data.massProduction._id : data.massProduction
+          console.log("Found massProductionId in massProduction:", mpRef)
+          setMassProductionId(mpRef)
+        }
+      } catch (error) {
+        console.error("Error fetching process qualification:", error)
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load process qualification data",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
     if (id) {
       fetchProcessQualification()
     }
-  }, [id])
+  }, [id, toast])
 
-  const fetchProcessQualification = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await getProcessQualificationById(id)
-      if (!data) {
-        throw new Error("Process Qualification data not found.")
-      }
-
-      const fetchedData = { ...formData }
-      processQualificationFields.forEach((field) => {
-        fetchedData[field] = {
-          value: data[field]?.value || false,
-          task: { ...data[field]?.task },
-        }
-      })
-      setFormData(fetchedData)
-    } catch (error) {
-      console.error("Error fetching Process Qualification data:", error)
-      setError(error.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleCheckboxChange = (field, checked) => {
-    setFormData({
-      ...formData,
-      [field]: { ...formData[field], value: checked },
-    })
-  }
-
-  const handleTaskChange = (e, field, type) => {
-    const value = type === "check" ? e.target.checked : e.target.value
-    setFormData({
-      ...formData,
+  // Handle checkbox change for main value
+  const handleValueChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
       [field]: {
-        ...formData[field],
-        task: { ...formData[field].task, [type]: value },
+        ...prev[field],
+        value,
       },
-    })
+    }))
   }
 
-  const handleDateChange = (field, type, date) => {
-    setFormData({
-      ...formData,
+  // Handle task field changes
+  const handleTaskChange = (field, taskField, value) => {
+    setFormData((prev) => ({
+      ...prev,
       [field]: {
-        ...formData[field],
-        task: { ...formData[field].task, [type]: format(date, "yyyy-MM-dd") },
+        ...prev[field],
+        task: {
+          ...prev[field].task,
+          [taskField]: value,
+        },
       },
-    })
+    }))
   }
 
-  const handleFileChange = (e, field) => {
-    setFormData({
-      ...formData,
+  // Handle file upload
+  const handleFileChange = (field, file) => {
+    setFormData((prev) => ({
+      ...prev,
       [field]: {
-        ...formData[field],
-        task: { ...formData[field].task, filePath: e.target.files[0] },
+        ...prev[field],
+        task: {
+          ...prev[field].task,
+          filePath: file,
+        },
       },
-    })
+    }))
   }
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    const submissionData = { ...formData }
-
-    Object.keys(submissionData).forEach((field) => {
-      if (submissionData[field].task.filePath instanceof File) {
-        submissionData[field].task.filePath = submissionData[field].task.filePath.name
-      }
-    })
+    setIsSaving(true)
 
     try {
+      // Process file paths for submission
+      const submissionData = { ...formData }
+      Object.keys(submissionData).forEach((field) => {
+        if (submissionData[field].task.filePath instanceof File) {
+          submissionData[field].task.filePath = submissionData[field].task.filePath.name
+        }
+      })
+
       await updateProcessQualification(id, submissionData)
-      navigate("/process-qualification")
+      
+      toast({
+        title: "Success",
+        description: "Process qualification updated successfully",
+      })
+
+      // Navigate back to mass production details page if massProductionId is available
+      if (massProductionId) {
+        navigate(`/masspd/detail/${massProductionId}`)
+      } else {
+        navigate("/processqualification")
+      }
     } catch (error) {
-      console.error("Error updating Process Qualification:", error)
-      setError("Failed to update Process Qualification. Please try again.")
+      console.error("Error updating process qualification:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update process qualification",
+      })
+    } finally {
+      setIsSaving(false)
     }
   }
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>
-  }
-
-  if (error) {
-    return <div className="flex items-center justify-center h-screen text-red-500">{error}</div>
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Navbar />
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="container p-6 mx-auto"
-      >
-        <Card className="max-w-4xl mx-auto bg-white shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-3xl font-bold text-gray-900">Edit Process Qualification</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <Accordion type="single" collapsible className="w-full">
-                {processQualificationFields.map((field, index) => (
-                  <AccordionItem key={field} value={field}>
-                    <AccordionTrigger className="text-lg font-semibold">
+    <MainLayout>
+      <div className="container px-4 py-8 mx-auto">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  if (massProductionId) {
+                    navigate(`/masspd/detail/${massProductionId}`)
+                  } else {
+                    navigate("/processqualification")
+                  }
+                }}
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">Edit Process Qualification</h1>
+                <p className="text-muted-foreground">Update process qualification details and validation information</p>
+              </div>
+            </div>
+            <Button onClick={handleSubmit} disabled={isSaving}>
+              {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              Save Changes
+            </Button>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+              <Card className="md:col-span-1">
+                <CardHeader>
+                  <CardTitle>Process Qualification Fields</CardTitle>
+                  <CardDescription>Select a field to edit</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs value={activeTab} onValueChange={setActiveTab} orientation="vertical" className="w-full">
+                    <TabsList className="flex flex-col items-stretch h-auto">
+                      {processQualificationFields.map((field) => (
+                        <TabsTrigger key={field} value={field} className="relative justify-start mb-1 text-left pl-9">
+                          <span className="absolute left-2">
+                            {formData[field]?.value ? (
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <XCircle className="w-4 h-4 text-red-500" />
+                            )}
+                          </span>
+                          {fieldConfig[field].label}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                </CardContent>
+              </Card>
+
+              <Card className="md:col-span-3">
+                <CardHeader>
+                  <CardTitle>{fieldConfig[activeTab].label}</CardTitle>
+                  <CardDescription>{fieldConfig[activeTab].description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="status" className="w-full">
+                    <TabsList>
+                      <TabsTrigger value="status">Status</TabsTrigger>
+                      <TabsTrigger value="details">Task Details</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="status" className="pt-4">
                       <div className="flex items-center space-x-2">
                         <Checkbox
-                          id={field}
-                          checked={formData[field]?.value}
-                          onCheckedChange={(checked) => handleCheckboxChange(field, checked)}
+                          id={`${activeTab}-value`}
+                          checked={formData[activeTab]?.value || false}
+                          onCheckedChange={(checked) => handleValueChange(activeTab, checked === true)}
                         />
-                        <Label htmlFor={field} className="text-left">
-                          {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                        </Label>
+                        <Label htmlFor={`${activeTab}-value`}>Mark as completed</Label>
                       </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label htmlFor={`${field}-responsible`}>Responsible</Label>
-                          <Input
-                            id={`${field}-responsible`}
-                            type="text"
-                            value={formData[field]?.task.responsible || ""}
-                            onChange={(e) => handleTaskChange(e, field, "responsible")}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${field}-planned`}>Planned Date</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant={"outline"}
-                                className={`w-full justify-start text-left font-normal ${
-                                  !formData[field]?.task.planned && "text-muted-foreground"
-                                }`}
-                              >
-                                <CalendarIcon className="w-4 h-4 mr-2" />
-                                {formData[field]?.task.planned ? (
-                                  format(new Date(formData[field]?.task.planned), "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                              <Calendar
-                                mode="single"
-                                selected={
-                                  formData[field]?.task.planned ? new Date(formData[field]?.task.planned) : undefined
-                                }
-                                onSelect={(date) => handleDateChange(field, "planned", date)}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${field}-done`}>Completion Date</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant={"outline"}
-                                className={`w-full justify-start text-left font-normal ${
-                                  !formData[field]?.task.done && "text-muted-foreground"
-                                }`}
-                              >
-                                <CalendarIcon className="w-4 h-4 mr-2" />
-                                {formData[field]?.task.done ? (
-                                  format(new Date(formData[field]?.task.done), "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                              <Calendar
-                                mode="single"
-                                selected={formData[field]?.task.done ? new Date(formData[field]?.task.done) : undefined}
-                                onSelect={(date) => handleDateChange(field, "done", date)}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor={`${field}-comments`}>Comments</Label>
-                          <Textarea
-                            id={`${field}-comments`}
-                            value={formData[field]?.task.comments || ""}
-                            onChange={(e) => handleTaskChange(e, field, "comments")}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${field}-file`}>Upload File</Label>
-                          <div className="flex items-center space-x-2">
+                    </TabsContent>
+                    <TabsContent value="details" className="pt-4 space-y-6">
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-6"
+                      >
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label htmlFor={`${activeTab}-responsible`}>Responsible Person</Label>
                             <Input
-                              id={`${field}-file`}
-                              type="file"
-                              onChange={(e) => handleFileChange(e, field)}
-                              className="hidden"
+                              id={`${activeTab}-responsible`}
+                              value={formData[activeTab]?.task?.responsible || ""}
+                              onChange={(e) => handleTaskChange(activeTab, "responsible", e.target.value)}
+                              placeholder="Enter name"
                             />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => document.getElementById(`${field}-file`).click()}
-                            >
-                              <Upload className="w-4 h-4 mr-2" />
-                              Choose File
-                            </Button>
-                            <span className="text-sm text-gray-500">
-                              {formData[field]?.task.filePath?.name ||
-                                formData[field]?.task.filePath ||
-                                "No file chosen"}
-                            </span>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`${activeTab}-planned`}>Planned Date</Label>
+                            <Input
+                              id={`${activeTab}-planned`}
+                              type="date"
+                              value={formData[activeTab]?.task?.planned || ""}
+                              onChange={(e) => handleTaskChange(activeTab, "planned", e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`${activeTab}-done`}>Completion Date</Label>
+                            <Input
+                              id={`${activeTab}-done`}
+                              type="date"
+                              value={formData[activeTab]?.task?.done || ""}
+                              onChange={(e) => handleTaskChange(activeTab, "done", e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`${activeTab}-file`}>Upload Document</Label>
+                            <Input
+                              id={`${activeTab}-file`}
+                              type="file"
+                              onChange={(e) => handleFileChange(activeTab, e.target.files[0])}
+                            />
+                            {formData[activeTab]?.task?.filePath && (
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {typeof formData[activeTab].task.filePath === "string"
+                                  ? formData[activeTab].task.filePath
+                                  : formData[activeTab].task.filePath.name}
+                              </p>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`${field}-check`}
-                            checked={formData[field]?.task.check || false}
-                            onCheckedChange={(checked) => handleTaskChange({ target: { checked } }, field, "check")}
-                          />
-                          <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+
+                        <Separator />
+
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor={`${activeTab}-comments`}>Comments</Label>
+                            <Textarea
+                              id={`${activeTab}-comments`}
+                              value={formData[activeTab]?.task?.comments || ""}
+                              onChange={(e) => handleTaskChange(activeTab, "comments", e.target.value)}
+                              placeholder="Add any additional comments here"
+                              rows={4}
+                            />
+                          </div>
+
+                          <div className="flex items-center pt-2 space-x-2">
+                            <Checkbox
+                              id={`${activeTab}-check`}
+                              checked={formData[activeTab]?.task?.check || false}
+                              onCheckedChange={(checked) => handleTaskChange(activeTab, "check", checked === true)}
+                            />
+                            <Label htmlFor={`${activeTab}-check`}>Mark task as completed</Label>
+                          </div>
                         </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-              <Button type="submit" className="w-full text-white bg-green-600 hover:bg-green-700">
-                Update Process Qualification
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </motion.div>
-      <ContactUs />
-    </div>
+                      </motion.div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      if (massProductionId) {
+                        navigate(`/masspd/detail/${massProductionId}`)
+                      } else {
+                        navigate("/processqualification")
+                      }
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save Changes
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          </form>
+        </motion.div>
+      </div>
+    </MainLayout>
   )
 }
 
 export default EditProcessQualification
-
