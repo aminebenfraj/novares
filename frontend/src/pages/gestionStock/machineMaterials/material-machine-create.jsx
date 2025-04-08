@@ -16,6 +16,7 @@ import { Trash2, Plus, Save, AlertCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import MainLayout from "@/components/MainLayout"
 
 const MaterialMachineCreate = () => {
   const { toast } = useToast()
@@ -240,6 +241,8 @@ const MaterialMachineCreate = () => {
   }
 
   return (
+    <MainLayout>
+
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -413,6 +416,8 @@ const MaterialMachineCreate = () => {
         </CardContent>
       </Card>
     </motion.div>
+    </MainLayout>
+
   )
 }
 

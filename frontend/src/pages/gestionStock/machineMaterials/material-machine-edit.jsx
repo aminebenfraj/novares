@@ -13,6 +13,7 @@ import { Save, ArrowLeft, AlertCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import MainLayout from "@/components/MainLayout"
 
 const MaterialMachineEdit = () => {
   const { id } = useParams()
@@ -155,6 +156,8 @@ const MaterialMachineEdit = () => {
   }
 
   return (
+    <MainLayout>
+
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -317,6 +320,8 @@ const MaterialMachineEdit = () => {
         </CardContent>
       </Card>
     </motion.div>
+        </MainLayout>
+
   )
 }
 

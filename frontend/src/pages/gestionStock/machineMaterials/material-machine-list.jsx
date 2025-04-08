@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Pencil, Eye, Search, Plus } from "lucide-react"
 import { Toaster } from "@/components/ui/toaster"
 import { useToast } from "@/hooks/use-toast"
+import MainLayout from "@/components/MainLayout"
 
 const MaterialMachineList = () => {
   const { toast } = useToast()
@@ -86,6 +87,8 @@ const MaterialMachineList = () => {
   }
 
   return (
+    <MainLayout>
+
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -180,6 +183,8 @@ const MaterialMachineList = () => {
         </CardContent>
       </Card>
     </motion.div>
+        </MainLayout>
+
   )
 }
 

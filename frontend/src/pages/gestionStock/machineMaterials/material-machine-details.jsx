@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Pencil, Clock, Package, Settings } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+import MainLayout from "@/components/MainLayout"
 
 const MaterialMachineDetails = () => {
   const { id } = useParams()
@@ -91,6 +92,8 @@ const MaterialMachineDetails = () => {
   }
 
   return (
+    <MainLayout>
+
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -308,6 +311,8 @@ const MaterialMachineDetails = () => {
         </div>
       </div>
     </motion.div>
+        </MainLayout>
+
   )
 }
 
