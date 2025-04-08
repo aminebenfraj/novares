@@ -1,7 +1,8 @@
-"use client"
 
-import { useState, useEffect, useRef } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import React from "react"
+
+import { useState, useEffect, useRef, useMemo } from "react"
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 import {
   Search,
   Menu,
@@ -18,6 +19,25 @@ import {
   FileText,
   BarChart3,
   PlusCircle,
+  Star,
+  Clock,
+  ChevronRight,
+  Bookmark,
+  History,
+  Briefcase,
+  Atom,
+  Warehouse,
+  MapPin,
+  Box,
+  CheckSquare,
+  FileCheck,
+  ClipboardCheck,
+  Clipboard,
+  PenToolIcon as Tool,
+  Truck,
+  Shield,
+  Bell,
+  Edit,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,69 +51,288 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup,
   DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { CallNotifications } from "./call-notifications"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { CallNotifications } from "./call-notifications"
+import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/context/AuthContext"
+
+// Define module groups for navigation
+const moduleGroups = [
+  {
+    id: "inventory",
+    label: "Inventory Management",
+    icon: Package,
+    modules: [
+      { id: "materials", label: "Materials", path: "/materials", icon: Package },
+      { id: "machines", label: "Machines", path: "/machines", icon: Wrench },
+      { id: "allocations", label: "Material Allocations", path: "/machinematerial", icon: Warehouse },
+      { id: "locations", label: "Locations", path: "/locations", icon: MapPin },
+      { id: "categories", label: "Categories", path: "/categories", icon: Box },
+      { id: "suppliers", label: "Suppliers", path: "/suppliers", icon: Briefcase },
+    ],
+  },
+  {
+    id: "production",
+    label: "Production",
+    icon: Atom,
+    modules: [
+      { id: "masspd", label: "Mass Production", path: "/masspd", icon: Atom },
+      { id: "machine-dashboard", label: "Machine Dashboard", path: "/machine-dashboard", icon: BarChart3 },
+      { id: "pptuning", label: "P-P Tuning", path: "/pptuning", icon: Tool },
+      { id: "process-qualification", label: "Process Qualification", path: "/processQualification", icon: CheckSquare },
+    ],
+  },
+  {
+    id: "orders",
+    label: "Orders & Logistics",
+    icon: ShoppingCart,
+    modules: [
+      { id: "pedido", label: "Orders", path: "/pedido", icon: ShoppingCart },
+      { id: "call", label: "Calls", path: "/call", icon: Bell },
+      { id: "logistics", label: "Logistics", path: "/logistics", icon: Truck },
+    ],
+  },
+  {
+    id: "planning",
+    label: "Planning & Documentation",
+    icon: FileText,
+    modules: [
+      { id: "readiness", label: "Readiness", path: "/readiness", icon: ClipboardCheck },
+      { id: "feasibility", label: "Feasibility", path: "/Feasibility", icon: FileCheck },
+      { id: "pd", label: "Product Designation", path: "/pd", icon: Clipboard },
+      { id: "design", label: "Design", path: "/design", icon: Tool },
+      { id: "documentation", label: "Documentation", path: "/documentation", icon: FileText },
+    ],
+  },
+  {
+    id: "quality",
+    label: "Quality & Safety",
+    icon: Shield,
+    modules: [
+      {
+        id: "qualification",
+        label: "Qualification Confirmation",
+        path: "/qualificationconfirmation",
+        icon: CheckSquare,
+      },
+      { id: "safety", label: "Safety", path: "/safety", icon: Shield },
+      { id: "maintenance", label: "Maintenance", path: "/maintenance", icon: Tool },
+    ],
+  },
+  {
+    id: "admin",
+    label: "Administration",
+    icon: Settings,
+    modules: [
+      { id: "admin", label: "User Management", path: "/admin", icon: User },
+      { id: "settings", label: "Settings", path: "/settings", icon: Settings },
+    ],
+  },
+]
+
+// Define common actions for different modules
+const moduleActions = {
+  materials: [
+    { label: "Create Material", path: "/materials/create", icon: PlusCircle },
+    { label: "View Materials", path: "/materials", icon: Package },
+  ],
+  machines: [
+    { label: "Create Machine", path: "/machines/create", icon: PlusCircle },
+    { label: "View Machines", path: "/machines", icon: Wrench },
+    { label: "Machine Dashboard", path: "/machine-dashboard", icon: BarChart3 },
+  ],
+  masspd: [
+    { label: "Create Production", path: "/masspd/create", icon: PlusCircle },
+    { label: "View Productions", path: "/masspd", icon: Atom },
+  ],
+  pedido: [
+    { label: "Create Order", path: "/pedido/create", icon: PlusCircle },
+    { label: "View Orders", path: "/pedido", icon: ShoppingCart },
+  ],
+  readiness: [
+    { label: "Create Readiness", path: "/readiness/create", icon: PlusCircle },
+    { label: "View Readiness", path: "/readiness", icon: ClipboardCheck },
+  ],
+  default: [
+    { label: "Dashboard", path: "/", icon: Home },
+    { label: "Materials", path: "/materials", icon: Package },
+    { label: "Orders", path: "/pedido", icon: ShoppingCart },
+  ],
+}
 
 export const Navbar = ({ toggleSidebar, isSidebarOpen }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState([])
   const [showSearchResults, setShowSearchResults] = useState(false)
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem("favorites")
+    return saved ? JSON.parse(saved) : []
+  })
+  const [recentItems, setRecentItems] = useState(() => {
+    const saved = localStorage.getItem("recentItems")
+    return saved ? JSON.parse(saved) : []
+  })
+  const [activeTab, setActiveTab] = useState("recent")
   const searchRef = useRef(null)
   const location = useLocation()
   const navigate = useNavigate()
+  const params = useParams()
+  const { toast } = useToast()
+  const { user } = useAuth() || { user: { role: "user" } }
 
-  // Get current page title based on route
-  const getPageTitle = () => {
-    const path = location.pathname
+  // Get current module from path
+  const currentModule = useMemo(() => {
+    const path = location.pathname.split("/")[1]
 
-    if (path === "/") return "Dashboard"
-    if (path.startsWith("/materials")) return "Materials"
-    if (path.startsWith("/machines")) return "Machines"
-    if (path.startsWith("/machinematerial")) return "Material Allocations"
-    if (path.startsWith("/locations")) return "Locations"
-    if (path.startsWith("/categories")) return "Categories"
-    if (path.startsWith("/suppliers")) return "Suppliers"
-    if (path.startsWith("/masspd")) return "Mass Production"
-    if (path.startsWith("/pedido")) return "Orders"
-    if (path.startsWith("/settings")) return "Settings"
-
-    return "Dashboard"
-  }
-
-  const toggleSearch = () => {
-    setIsSearchOpen(!isSearchOpen)
-    if (!isSearchOpen) {
-      setTimeout(() => {
-        document.getElementById("search-input")?.focus()
-      }, 300)
-    } else {
-      setSearchQuery("")
-      setShowSearchResults(false)
+    // Find the module that matches the current path
+    for (const group of moduleGroups) {
+      const module = group.modules.find((m) => m.path === `/${path}` || (path && m.id === path))
+      if (module) return module
     }
-  }
 
-  // Mock search function - replace with actual search logic
+    return { id: "home", label: "Dashboard", path: "/", icon: Home }
+  }, [location.pathname])
+
+  // Get breadcrumbs based on current path
+  const breadcrumbs = useMemo(() => {
+    const paths = location.pathname.split("/").filter(Boolean)
+    if (paths.length === 0) return [{ label: "Dashboard", path: "/" }]
+
+    const crumbs = [{ label: "Dashboard", path: "/" }]
+    let currentPath = ""
+
+    paths.forEach((path, i) => {
+      currentPath += `/${path}`
+
+      // Skip IDs (paths that are numbers or have : in them)
+      if (/^\d+$/.test(path) || path.includes(":")) return
+
+      // Find module that matches this path
+      let label = path.charAt(0).toUpperCase() + path.slice(1)
+
+      // Check if this is a known module
+      for (const group of moduleGroups) {
+        const module = group.modules.find((m) => m.path === currentPath || m.id === path)
+        if (module) {
+          label = module.label
+          break
+        }
+      }
+
+      // Handle special cases for create, edit, detail pages
+      if (path === "create") label = "Create"
+      else if (path === "edit") label = "Edit"
+      else if (path === "detail" || path === "details") label = "Details"
+
+      crumbs.push({ label, path: currentPath })
+    })
+
+    return crumbs
+  }, [location.pathname])
+
+  // Get context-aware actions based on current module
+  const contextActions = useMemo(() => {
+    const moduleId = currentModule?.id
+    return moduleActions[moduleId] || moduleActions.default
+  }, [currentModule])
+
+  // Track recent items
+  useEffect(() => {
+    if (location.pathname === "/") return
+
+    const newItem = {
+      path: location.pathname,
+      label: breadcrumbs[breadcrumbs.length - 1]?.label || "Page",
+      timestamp: new Date().toISOString(),
+    }
+
+    setRecentItems((prev) => {
+      // Remove duplicates and keep only the last 10 items
+      const filtered = prev.filter((item) => item.path !== newItem.path)
+      const updated = [newItem, ...filtered].slice(0, 10)
+      localStorage.setItem("recentItems", JSON.stringify(updated))
+      return updated
+    })
+  }, [location.pathname, breadcrumbs])
+
+  // Handle search
   const handleSearch = (e) => {
     const query = e.target.value
     setSearchQuery(query)
 
     if (query.length > 1) {
-      // Mock search results - replace with actual API call
-      const results = [
-        { id: 1, title: "Material M-1001", type: "material", url: "/materials/details/1" },
-        { id: 2, title: "Machine CNC-01", type: "machine", url: "/machines/details/1" },
-        { id: 3, title: "Order #12345", type: "order", url: "/pedido/1" },
-      ].filter((item) => item.title.toLowerCase().includes(query.toLowerCase()))
+      // Search through all modules
+      const results = []
+
+      moduleGroups.forEach((group) => {
+        group.modules.forEach((module) => {
+          if (module.label.toLowerCase().includes(query.toLowerCase())) {
+            results.push({
+              id: module.id,
+              title: module.label,
+              type: group.label,
+              url: module.path,
+              icon: module.icon,
+            })
+          }
+        })
+      })
 
       setSearchResults(results)
       setShowSearchResults(true)
     } else {
       setShowSearchResults(false)
     }
+  }
+
+  // Toggle favorite
+  const toggleFavorite = (path, label, icon) => {
+    setFavorites((prev) => {
+      const exists = prev.some((item) => item.path === path)
+      let updated
+
+      if (exists) {
+        updated = prev.filter((item) => item.path !== path)
+        toast({
+          title: "Removed from favorites",
+          description: `${label} has been removed from your favorites`,
+        })
+      } else {
+        const newFavorite = { path, label, icon: icon?.name || "Bookmark" }
+        updated = [...prev, newFavorite]
+        toast({
+          title: "Added to favorites",
+          description: `${label} has been added to your favorites`,
+        })
+      }
+
+      localStorage.setItem("favorites", JSON.stringify(updated))
+      return updated
+    })
+  }
+
+  // Check if current page is favorited
+  const isFavorite = useMemo(() => {
+    return favorites.some((item) => item.path === location.pathname)
+  }, [favorites, location.pathname])
+
+  // Get icon component for a path
+  const getIconForPath = (path) => {
+    for (const group of moduleGroups) {
+      const module = group.modules.find((m) => m.path === path)
+      if (module) return module.icon
+    }
+    return Bookmark
   }
 
   // Close search results when clicking outside
@@ -110,218 +349,435 @@ export const Navbar = ({ toggleSidebar, isSidebarOpen }) => {
     }
   }, [])
 
-  // Quick actions for the navbar
-  const quickActions = [
-    { icon: Home, label: "Dashboard", path: "/" },
-    { icon: Package, label: "Materials", path: "/materials" },
-    { icon: Wrench, label: "Machines", path: "/machines" },
-    { icon: ShoppingCart, label: "Orders", path: "/pedido" },
-    { icon: FileText, label: "Reports", path: "/reports" },
-  ]
-
-  // Create actions for the dropdown
-  const createActions = [
-    { label: "New Material", path: "/materials/create", icon: Package },
-    { label: "New Machine", path: "/machines/create", icon: Wrench },
-    { label: "New Order", path: "/pedido/create", icon: ShoppingCart },
-    { label: "New Production", path: "/masspd/create", icon: BarChart3 },
-  ]
-
   return (
-    <header className="z-30 w-full h-16 bg-white border-b shadow-sm">
-      <div className="flex items-center justify-between h-full px-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={toggleSidebar}
-            aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
-          >
-            {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </Button>
+    <header className="z-30 w-full bg-white border-b shadow-sm">
+      <div className="flex flex-col">
+        {/* Main Navbar */}
+        <div className="flex items-center justify-between h-16 px-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={toggleSidebar}
+              aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
 
-          <Link to="/" className="flex items-center">
-            <img src="/novares-logo.webp" alt="Novares" className="w-auto h-8" />
-          </Link>
+            <Link to="/" className="flex items-center">
+              <img src="/novares-logo.webp" alt="Novares" className="w-auto h-8" />
+            </Link>
 
-          <Separator orientation="vertical" className="hidden h-6 md:block" />
+            <Separator orientation="vertical" className="hidden h-6 md:block" />
 
-          <h1 className="hidden text-lg font-medium md:block">{getPageTitle()}</h1>
-        </div>
+            {/* Module navigation dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="hidden gap-1 md:flex">
+                  {React.createElement(currentModule.icon, { className: "w-4 h-4 mr-1" })}
+                  <span>{currentModule.label}</span>
+                  <ChevronDown className="w-3 h-3 ml-1 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel>Navigation</DropdownMenuLabel>
+                <DropdownMenuSeparator />
 
-        <div className="flex items-center gap-2">
-          {/* Quick action buttons - visible on larger screens */}
-          <div className="items-center hidden gap-1 md:flex">
-            <TooltipProvider>
-              {quickActions.map((action) => (
-                <Tooltip key={action.label}>
+                {moduleGroups.map((group) => (
+                  <DropdownMenuSub key={group.id}>
+                    <DropdownMenuSubTrigger>
+                      <group.icon className="w-4 h-4 mr-2" />
+                      <span>{group.label}</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent className="min-w-[220px]">
+                        {group.modules.map((module) => (
+                          <DropdownMenuItem
+                            key={module.id}
+                            onClick={() => navigate(module.path)}
+                            className={location.pathname === module.path ? "bg-slate-100" : ""}
+                          >
+                            <module.icon className="w-4 h-4 mr-2" />
+                            <span>{module.label}</span>
+                            {location.pathname === module.path && (
+                              <div className="ml-auto w-1.5 h-1.5 rounded-full bg-slate-500"></div>
+                            )}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Context-aware actions */}
+            <div className="items-center hidden gap-1 md:flex">
+              <TooltipProvider>
+                {contextActions.map((action) => (
+                  <Tooltip key={action.label}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`${location.pathname === action.path ? "bg-slate-100" : ""}`}
+                        onClick={() => navigate(action.path)}
+                      >
+                        <action.icon className="w-5 h-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{action.label}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+
+                {/* Favorite toggle button */}
+                <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className={`${location.pathname === action.path ? "bg-slate-100" : ""}`}
-                      onClick={() => navigate(action.path)}
+                      onClick={() =>
+                        toggleFavorite(
+                          location.pathname,
+                          breadcrumbs[breadcrumbs.length - 1]?.label,
+                          currentModule.icon,
+                        )
+                      }
                     >
-                      <action.icon className="w-5 h-5" />
+                      <Star className={`w-5 h-5 ${isFavorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{action.label}</p>
+                    <p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
                   </TooltipContent>
                 </Tooltip>
-              ))}
-            </TooltipProvider>
+              </TooltipProvider>
 
-            <Separator orientation="vertical" className="h-6 mx-1" />
-          </div>
+              <Separator orientation="vertical" className="h-6 mx-1" />
+            </div>
 
-          {/* Create new dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1">
-                <PlusCircle className="w-4 h-4 mr-1" />
-                <span className="hidden sm:inline">Create</span>
-                <ChevronDown className="w-3 h-3 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Create New</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                {createActions.map((action) => (
-                  <DropdownMenuItem key={action.label} onClick={() => navigate(action.path)}>
-                    <action.icon className="w-4 h-4 mr-2" />
-                    <span>{action.label}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Search */}
-          <div ref={searchRef} className="relative">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-slate-600">
-                  <Search className="w-5 h-5" />
+            {/* Create new dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  <PlusCircle className="w-4 h-4 mr-1" />
+                  <span className="hidden sm:inline">Create</span>
+                  <ChevronDown className="w-3 h-3 ml-1" />
                 </Button>
-              </SheetTrigger>
-              <SheetContent side="top" className="h-auto max-h-[400px]">
-                <div className="py-6">
-                  <div className="relative mb-4">
-                    <Search className="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
-                    <Input
-                      id="search-input-sheet"
-                      type="search"
-                      placeholder="Search materials, machines, orders..."
-                      className="pl-10 pr-4"
-                      value={searchQuery}
-                      onChange={handleSearch}
-                      autoFocus
-                    />
-                  </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Create New</DropdownMenuLabel>
+                <DropdownMenuSeparator />
 
-                  {showSearchResults && searchResults.length > 0 ? (
-                    <div className="space-y-1">
-                      <h3 className="mb-2 text-sm font-medium">Results</h3>
-                      {searchResults.map((result) => (
-                        <SheetClose asChild key={result.id}>
-                          <Link to={result.url} className="flex items-center p-2 rounded-md hover:bg-slate-100">
-                            <div className="flex-1">
-                              <p className="text-sm font-medium">{result.title}</p>
-                              <p className="text-xs capitalize text-muted-foreground">{result.type}</p>
-                            </div>
-                            <ChevronDown className="w-4 h-4 rotate-270 text-muted-foreground" />
-                          </Link>
-                        </SheetClose>
-                      ))}
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={() => navigate("/materials/create")}>
+                    <Package className="w-4 h-4 mr-2" />
+                    <span>Material</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/machines/create")}>
+                    <Wrench className="w-4 h-4 mr-2" />
+                    <span>Machine</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/pedido/create")}>
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    <span>Order</span>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={() => navigate("/masspd/create")}>
+                    <Atom className="w-4 h-4 mr-2" />
+                    <span>Production</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/readiness/create")}>
+                    <ClipboardCheck className="w-4 h-4 mr-2" />
+                    <span>Readiness</span>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+
+                {user?.role === "admin" && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate("/admin/create-user")}>
+                      <User className="w-4 h-4 mr-2" />
+                      <span>User</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Search */}
+            <div ref={searchRef} className="relative">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-slate-600">
+                    <Search className="w-5 h-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="top" className="h-auto max-h-[80vh]">
+                  <div className="py-6">
+                    <div className="relative mb-4">
+                      <Search className="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
+                      <Input
+                        id="search-input-sheet"
+                        type="search"
+                        placeholder="Search modules, pages, items..."
+                        className="pl-10 pr-4"
+                        value={searchQuery}
+                        onChange={handleSearch}
+                        autoFocus
+                      />
                     </div>
-                  ) : searchQuery.length > 1 ? (
-                    <div className="py-4 text-center">
-                      <p className="text-sm text-muted-foreground">No results found</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="mb-2 text-sm font-medium">Recent Searches</h3>
-                        <div className="flex flex-wrap gap-2">
-                          <Button variant="outline" size="sm" className="rounded-full">
-                            Material M-1001
-                          </Button>
-                          <Button variant="outline" size="sm" className="rounded-full">
-                            Order #12345
-                          </Button>
-                          <Button variant="outline" size="sm" className="rounded-full">
-                            Machine CNC-01
-                          </Button>
-                        </div>
+
+                    {showSearchResults && searchResults.length > 0 ? (
+                      <div className="space-y-1">
+                        <h3 className="mb-2 text-sm font-medium">Results</h3>
+                        {searchResults.map((result) => (
+                          <SheetClose asChild key={result.id}>
+                            <Link to={result.url} className="flex items-center p-2 rounded-md hover:bg-slate-100">
+                              {result.icon && React.createElement(result.icon, { className: "w-4 h-4 mr-2" })}
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{result.title}</p>
+                                <p className="text-xs capitalize text-muted-foreground">{result.type}</p>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                            </Link>
+                          </SheetClose>
+                        ))}
                       </div>
+                    ) : searchQuery.length > 1 ? (
+                      <div className="py-4 text-center">
+                        <p className="text-sm text-muted-foreground">No results found</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+                          <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="recent">
+                              <Clock className="w-4 h-4 mr-2" />
+                              Recent
+                            </TabsTrigger>
+                            <TabsTrigger value="favorites">
+                              <Star className="w-4 h-4 mr-2" />
+                              Favorites
+                            </TabsTrigger>
+                          </TabsList>
+                        </Tabs>
 
-                      <div>
-                        <h3 className="mb-2 text-sm font-medium">Quick Access</h3>
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                          {quickActions.map((action) => (
-                            <SheetClose asChild key={action.label}>
-                              <Button variant="outline" className="justify-start" onClick={() => navigate(action.path)}>
-                                <action.icon className="w-4 h-4 mr-2" />
-                                {action.label}
+                        {activeTab === "recent" && (
+                          <div className="space-y-1">
+                            {recentItems.length > 0 ? (
+                              recentItems.map((item, index) => (
+                                <SheetClose asChild key={index}>
+                                  <Link to={item.path} className="flex items-center p-2 rounded-md hover:bg-slate-100">
+                                    {React.createElement(getIconForPath(item.path) || History, {
+                                      className: "w-4 h-4 mr-2 text-slate-500",
+                                    })}
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium">{item.label}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {new Date(item.timestamp).toLocaleString(undefined, {
+                                          month: "short",
+                                          day: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </p>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                  </Link>
+                                </SheetClose>
+                              ))
+                            ) : (
+                              <div className="py-4 text-center">
+                                <p className="text-sm text-muted-foreground">No recent items</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {activeTab === "favorites" && (
+                          <div className="space-y-1">
+                            {favorites.length > 0 ? (
+                              favorites.map((item, index) => (
+                                <SheetClose asChild key={index}>
+                                  <Link to={item.path} className="flex items-center p-2 rounded-md hover:bg-slate-100">
+                                    {React.createElement(getIconForPath(item.path) || Star, {
+                                      className: "w-4 h-4 mr-2 text-yellow-500",
+                                    })}
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium">{item.label}</p>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="w-8 h-8"
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        toggleFavorite(item.path, item.label)
+                                      }}
+                                    >
+                                      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                                    </Button>
+                                  </Link>
+                                </SheetClose>
+                              ))
+                            ) : (
+                              <div className="py-4 text-center">
+                                <p className="text-sm text-muted-foreground">No favorites yet</p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  Add pages to favorites by clicking the star icon
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div>
+                          <h3 className="mb-2 text-sm font-medium">Quick Access</h3>
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                            <SheetClose asChild>
+                              <Button variant="outline" className="justify-start" onClick={() => navigate("/")}>
+                                <Home className="w-4 h-4 mr-2" />
+                                Dashboard
                               </Button>
                             </SheetClose>
-                          ))}
+                            <SheetClose asChild>
+                              <Button
+                                variant="outline"
+                                className="justify-start"
+                                onClick={() => navigate("/materials")}
+                              >
+                                <Package className="w-4 h-4 mr-2" />
+                                Materials
+                              </Button>
+                            </SheetClose>
+                            <SheetClose asChild>
+                              <Button variant="outline" className="justify-start" onClick={() => navigate("/pedido")}>
+                                <ShoppingCart className="w-4 h-4 mr-2" />
+                                Orders
+                              </Button>
+                            </SheetClose>
+                            <SheetClose asChild>
+                              <Button variant="outline" className="justify-start" onClick={() => navigate("/masspd")}>
+                                <Atom className="w-4 h-4 mr-2" />
+                                Production
+                              </Button>
+                            </SheetClose>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+
+            {/* Call notifications */}
+            <CallNotifications />
+
+            {/* User dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
+                    <AvatarFallback className="bg-slate-100 text-slate-700">
+                      {user?.username ? user.username.substring(0, 2).toUpperCase() : "AD"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium">{user?.username || "Admin User"}</p>
+                    <p className="text-xs text-muted-foreground">{user?.email || "admin@example.com"}</p>
+                    {user?.role && (
+                      <Badge variant="outline" className="mt-1 w-fit">
+                        {user.role}
+                      </Badge>
+                    )}
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <User className="w-4 h-4 mr-2" />
+                  <span>Profile</span>
+                  <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="w-4 h-4 mr-2" />
+                  <span>Settings</span>
+                  <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <HelpCircle className="w-4 h-4 mr-2" />
+                  <span>Help</span>
+                  <DropdownMenuShortcut>⌘H</DropdownMenuShortcut>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-rose-600">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  <span>Log out</span>
+                  <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+        </div>
 
-          {/* Call notifications */}
-          <CallNotifications />
+        {/* Breadcrumbs navigation bar */}
+        <div className="flex items-center h-10 px-4 overflow-x-auto border-t scrollbar-hide">
+          <nav className="flex items-center text-sm">
+            {breadcrumbs.map((crumb, index) => (
+              <React.Fragment key={crumb.path}>
+                {index > 0 && <ChevronRight className="w-3 h-3 mx-1 text-muted-foreground" />}
+                {index === breadcrumbs.length - 1 ? (
+                  <span className="font-medium text-slate-900">{crumb.label}</span>
+                ) : (
+                  <Link to={crumb.path} className="text-muted-foreground hover:text-slate-900">
+                    {crumb.label}
+                  </Link>
+                )}
+              </React.Fragment>
+            ))}
+          </nav>
 
-          {/* User dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Avatar className="w-8 h-8">
-                  <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                  <AvatarFallback className="bg-slate-100 text-slate-700">AD</AvatarFallback>
-                </Avatar>
+          {/* Page actions - shown on detail pages */}
+          {location.pathname.includes("/detail") || location.pathname.includes("/edit") ? (
+            <div className="flex items-center gap-2 ml-auto">
+              {location.pathname.includes("/detail") && !location.pathname.includes("/edit") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(location.pathname.replace("/detail", "/edit"))}
+                >
+                  <Edit className="w-3.5 h-3.5 mr-1" />
+                  Edit
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  toggleFavorite(location.pathname, breadcrumbs[breadcrumbs.length - 1]?.label, currentModule.icon)
+                }
+              >
+                <Star className={`w-3.5 h-3.5 mr-1 ${isFavorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
+                {isFavorite ? "Favorited" : "Favorite"}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">Admin User</p>
-                  <p className="text-xs text-muted-foreground">admin@example.com</p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="w-4 h-4 mr-2" />
-                <span>Profile</span>
-                <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="w-4 h-4 mr-2" />
-                <span>Settings</span>
-                <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <HelpCircle className="w-4 h-4 mr-2" />
-                <span>Help</span>
-                <DropdownMenuShortcut>⌘H</DropdownMenuShortcut>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-rose-600">
-                <LogOut className="w-4 h-4 mr-2" />
-                <span>Log out</span>
-                <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </div>
+          ) : null}
         </div>
       </div>
     </header>
