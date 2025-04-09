@@ -887,7 +887,7 @@ const MachineDashboard = () => {
   const getStatusBgColor = (status) => {
     switch (status?.toLowerCase()) {
       case "active":
-        return "bg-green-50 dark:bg-green-900/20"
+        return "bg-gray-50 dark:bg-green-900/20"
       case "maintenance":
         return "bg-amber-50 dark:bg-amber-900/20"
       case "inactive":
@@ -1121,7 +1121,7 @@ const MachineDashboard = () => {
                   </Tooltip>
                 </TooltipProvider>
 
-                <Button asChild className="bg-cyan-500 hover:bg-cyan-600">
+                <Button asChild className="bg-blue-500 hover:bg-blue-600">
                   <Link to="/machinematerial/create">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Allocation

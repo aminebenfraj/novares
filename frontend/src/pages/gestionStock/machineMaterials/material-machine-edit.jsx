@@ -1,7 +1,8 @@
+"use client"
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { getMaterialById } from "@/apis/gestionStockApi/materialApi"
 import { getAllAllocations, updateAllocation } from "@/apis/gestionStockApi/materialMachineApi"
 import { Button } from "@/components/ui/button"
@@ -9,7 +10,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Save, ArrowLeft, AlertCircle } from "lucide-react"
+import { Slider } from "@/components/ui/slider"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import {
+  Save,
+  ArrowLeft,
+  AlertCircle,
+  Plus,
+  Minus,
+  RefreshCw,
+  CheckCircle2,
+  Package,
+  Settings,
+  TrendingUp,
+  TrendingDown,
+  History,
+  Calculator,
+} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -24,13 +42,51 @@ const MaterialMachineEdit = () => {
   const [material, setMaterial] = useState(null)
   const [machine, setMachine] = useState(null)
   const [allocatedStock, setAllocatedStock] = useState(0)
+  const [adjustmentMode, setAdjustmentMode] = useState("absolute") // "absolute" or "relative"
+  const [adjustmentAmount, setAdjustmentAmount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [originalStock, setOriginalStock] = useState(0)
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false)
+  const [activeTab, setActiveTab] = useState("edit")
+  const [comment, setComment] = useState("")
+  const [maxAvailableStock, setMaxAvailableStock] = useState(0)
+
+  // Calculate new values based on adjustment mode
+  const calculatedNewStock =
+    adjustmentMode === "absolute" ? allocatedStock : Math.max(0, originalStock + adjustmentAmount)
+
+  // Calculate the difference for display
+  const stockDifference = calculatedNewStock - originalStock
+
+  // Calculate available material stock after adjustment (more accurate calculation)
+  const availableAfterAdjustment = maxAvailableStock - calculatedNewStock
 
   useEffect(() => {
     fetchAllocationDetails()
   }, [id])
+
+  useEffect(() => {
+    if (material && material.currentStock !== undefined) {
+      // Calculate max available stock (current material stock + what's already allocated to this machine)
+      const max = material.currentStock + originalStock
+      setMaxAvailableStock(max)
+    }
+  }, [material, originalStock])
+
+  // Update allocated stock when adjustment amount changes in relative mode
+  useEffect(() => {
+    if (adjustmentMode === "relative") {
+      setAllocatedStock(Math.max(0, originalStock + adjustmentAmount))
+    }
+  }, [adjustmentAmount, adjustmentMode, originalStock])
+
+  // Update adjustment amount when allocated stock changes in absolute mode
+  useEffect(() => {
+    if (adjustmentMode === "absolute") {
+      setAdjustmentAmount(allocatedStock - originalStock)
+    }
+  }, [allocatedStock, adjustmentMode, originalStock])
 
   const fetchAllocationDetails = async () => {
     try {
@@ -75,7 +131,7 @@ const MaterialMachineEdit = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (allocatedStock < 0) {
+    if (calculatedNewStock < 0) {
       toast({
         title: "Error",
         description: "Allocated stock cannot be negative",
@@ -83,9 +139,6 @@ const MaterialMachineEdit = () => {
       })
       return
     }
-
-    // Calculate the difference between new and original allocation
-    const stockDifference = allocatedStock - originalStock
 
     // Check if there's enough stock available if we're increasing the allocation
     if (stockDifference > 0 && material && material.currentStock < stockDifference) {
@@ -105,8 +158,8 @@ const MaterialMachineEdit = () => {
       // Important: Don't pass userId if it's not available
       // Let the server handle the default value
       const updateData = {
-        allocatedStock: allocatedStock,
-        comment: `Stock updated from ${originalStock} to ${allocatedStock}`,
+        allocatedStock: calculatedNewStock,
+        comment: comment || `Stock updated from ${originalStock} to ${calculatedNewStock}`,
       }
 
       // Only add userId if it exists and is valid
@@ -116,6 +169,10 @@ const MaterialMachineEdit = () => {
 
       // Use the update endpoint with the allocation ID
       const response = await updateAllocation(id, updateData)
+
+      // Show success animation
+      setShowSuccessAnimation(true)
+      setTimeout(() => setShowSuccessAnimation(false), 2000)
 
       toast({
         title: "Success",
@@ -133,8 +190,9 @@ const MaterialMachineEdit = () => {
       // Refresh allocation details to get updated history
       await fetchAllocationDetails()
 
-      // Update the original stock value
-      setOriginalStock(allocatedStock)
+      // Reset adjustment amount after successful update
+      setAdjustmentAmount(0)
+      setComment("")
     } catch (error) {
       console.error("Update error:", error)
       toast({
@@ -147,150 +205,595 @@ const MaterialMachineEdit = () => {
     }
   }
 
+  const handleQuickAdjustment = (amount) => {
+    if (adjustmentMode === "absolute") {
+      setAllocatedStock(Math.max(0, allocatedStock + amount))
+    } else {
+      setAdjustmentAmount(Math.max(-originalStock, adjustmentAmount + amount))
+    }
+  }
+
+  const resetToOriginal = () => {
+    setAllocatedStock(originalStock)
+    setAdjustmentAmount(0)
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 rounded-full animate-spin border-primary border-t-transparent"></div>
-      </div>
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 border-4 rounded-full animate-spin border-violet-500 border-t-transparent"></div>
+        </div>
+      </MainLayout>
     )
   }
 
   return (
     <MainLayout>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="container py-8 mx-auto"
+      >
+        <Toaster />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={() => navigate("/machinematerial")}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to List
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="px-3 py-1">
+              Material: {material?.reference}
+            </Badge>
+            <Badge variant="outline" className="px-3 py-1">
+              Machine: {machine?.name}
+            </Badge>
+          </div>
+        </div>
 
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="container py-8 mx-auto"
-    >
-      <Toaster />
-      <Button variant="ghost" className="mb-4" onClick={() => navigate("/machinematerial")}>
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to List
-      </Button>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="edit" className="flex items-center gap-2">
+              <Calculator className="w-4 h-4" />
+              Stock Adjustment
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <History className="w-4 h-4" />
+              Allocation History
+            </TabsTrigger>
+          </TabsList>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Edit Material Allocation</CardTitle>
-          <CardDescription>Update the stock allocation for this machine</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-2">
-                  <h3 className="font-medium">Material Information</h3>
-                  <div className="p-4 border rounded-md bg-muted">
-                    <div className="grid gap-2">
-                      <div>
-                        <Label className="text-sm text-muted-foreground">Reference</Label>
-                        <p className="font-medium">{material?.reference}</p>
+          <TabsContent value="edit">
+            <Card className="border-violet-500/20">
+              <CardHeader>
+                <CardTitle>Edit Material Allocation</CardTitle>
+                <CardDescription>Update the stock allocation for this machine</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit}>
+                  <div className="space-y-6">
+                    <div className="grid gap-6 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <h3 className="font-medium flex items-center gap-2">
+                          <Package className="w-4 h-4 text-violet-500" />
+                          Material Information
+                        </h3>
+                        <div className="p-4 border rounded-md bg-muted/50">
+                          <div className="grid gap-2">
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Reference</Label>
+                              <p className="font-medium">{material?.reference}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Description</Label>
+                              <p className="font-medium">{material?.description}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Current Stock</Label>
+                              <p className="font-medium">{material?.currentStock}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Manufacturer</Label>
+                              <p className="font-medium">{material?.manufacturer}</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <Label className="text-sm text-muted-foreground">Description</Label>
-                        <p className="font-medium">{material?.description}</p>
+
+                      <div className="space-y-2">
+                        <h3 className="font-medium flex items-center gap-2">
+                          <Settings className="w-4 h-4 text-violet-500" />
+                          Machine Information
+                        </h3>
+                        <div className="p-4 border rounded-md bg-muted/50">
+                          <div className="grid gap-2">
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Name</Label>
+                              <p className="font-medium">{machine?.name}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Description</Label>
+                              <p className="font-medium">{machine?.description}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Status</Label>
+                              <p className="font-medium capitalize">{machine?.status}</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <Label className="text-sm text-muted-foreground">Current Stock</Label>
-                        <p className="font-medium">{material?.currentStock}</p>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">Stock Adjustment</h3>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={resetToOriginal}
+                            className="h-8 px-2 text-xs"
+                          >
+                            <RefreshCw className="w-3 h-3 mr-1" />
+                            Reset
+                          </Button>
+                          <div className="flex items-center border rounded-md overflow-hidden">
+                            <Button
+                              type="button"
+                              variant={adjustmentMode === "absolute" ? "default" : "ghost"}
+                              size="sm"
+                              onClick={() => setAdjustmentMode("absolute")}
+                              className={`h-8 px-3 rounded-none ${
+                                adjustmentMode === "absolute" ? "bg-violet-600 hover:bg-violet-700 text-white" : ""
+                              }`}
+                            >
+                              Set Value
+                            </Button>
+                            <Button
+                              type="button"
+                              variant={adjustmentMode === "relative" ? "default" : "ghost"}
+                              size="sm"
+                              onClick={() => setAdjustmentMode("relative")}
+                              className={`h-8 px-3 rounded-none ${
+                                adjustmentMode === "relative" ? "bg-violet-600 hover:bg-violet-700 text-white" : ""
+                              }`}
+                            >
+                              Add/Remove
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <Label className="text-sm text-muted-foreground">Manufacturer</Label>
-                        <p className="font-medium">{material?.manufacturer}</p>
+
+                      {/* Current allocation display */}
+                      <div className="p-4 border rounded-md bg-muted/30">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-muted-foreground">Current Allocation</span>
+                          <span className="font-medium text-lg">{originalStock}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">New Allocation</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-lg">{calculatedNewStock}</span>
+                            {stockDifference !== 0 && (
+                              <Badge
+                                variant={stockDifference > 0 ? "default" : "destructive"}
+                                className="flex items-center gap-1"
+                              >
+                                {stockDifference > 0 ? (
+                                  <>
+                                    <TrendingUp className="w-3 h-3" />+{stockDifference}
+                                  </>
+                                ) : (
+                                  <>
+                                    <TrendingDown className="w-3 h-3" />
+                                    {stockDifference}
+                                  </>
+                                )}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Adjustment controls */}
+                      <div className="space-y-4">
+                        {adjustmentMode === "absolute" ? (
+                          <div className="space-y-2">
+                            <Label htmlFor="allocatedStock">Set Exact Stock Value</Label>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleQuickAdjustment(-1)}
+                                disabled={allocatedStock <= 0}
+                                className="h-10 w-10"
+                              >
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                              <Input
+                                id="allocatedStock"
+                                type="number"
+                                min="0"
+                                value={allocatedStock}
+                                onChange={(e) => setAllocatedStock(Math.max(0, Number.parseInt(e.target.value) || 0))}
+                                className="text-center text-lg font-medium h-10"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleQuickAdjustment(1)}
+                                className="h-10 w-10"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <div className="flex justify-between pt-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleQuickAdjustment(-5)}
+                                disabled={allocatedStock < 5}
+                                className="h-8"
+                              >
+                                -5
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleQuickAdjustment(-10)}
+                                disabled={allocatedStock < 10}
+                                className="h-8"
+                              >
+                                -10
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleQuickAdjustment(5)}
+                                className="h-8"
+                              >
+                                +5
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleQuickAdjustment(10)}
+                                className="h-8"
+                              >
+                                +10
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Label htmlFor="adjustmentAmount">Adjust Stock By</Label>
+                                <span
+                                  className={`font-medium ${adjustmentAmount > 0 ? "text-green-600" : adjustmentAmount < 0 ? "text-red-600" : ""}`}
+                                >
+                                  {adjustmentAmount > 0 ? `+${adjustmentAmount}` : adjustmentAmount}
+                                </span>
+                              </div>
+                              <div className="pt-4">
+                                <Slider
+                                  id="adjustmentAmount"
+                                  min={-Math.min(50, originalStock)}
+                                  max={50}
+                                  step={1}
+                                  value={[adjustmentAmount]}
+                                  onValueChange={(value) => setAdjustmentAmount(value[0])}
+                                  className="py-2"
+                                />
+                              </div>
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>-{Math.min(50, originalStock)}</span>
+                                <span>0</span>
+                                <span>+50</span>
+                              </div>
+                            </div>
+                            <div className="flex justify-between">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAdjustmentAmount(Math.max(-originalStock, adjustmentAmount - 5))}
+                                className="h-8"
+                              >
+                                -5
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAdjustmentAmount(Math.max(-originalStock, adjustmentAmount - 1))}
+                                className="h-8"
+                              >
+                                -1
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAdjustmentAmount(0)}
+                                className="h-8"
+                              >
+                                0
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAdjustmentAmount(adjustmentAmount + 1)}
+                                className="h-8"
+                              >
+                                +1
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAdjustmentAmount(adjustmentAmount + 5)}
+                                className="h-8"
+                              >
+                                +5
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Quick allocation presets */}
+                      <div className="space-y-2">
+                        <Label>Quick Allocation Presets</Label>
+                        <div className="grid grid-cols-4 gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (adjustmentMode === "absolute") {
+                                setAllocatedStock(Math.floor(maxAvailableStock * 0.25))
+                              } else {
+                                setAdjustmentAmount(Math.floor(maxAvailableStock * 0.25) - originalStock)
+                              }
+                            }}
+                            className="h-10"
+                          >
+                            25%
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (adjustmentMode === "absolute") {
+                                setAllocatedStock(Math.floor(maxAvailableStock * 0.5))
+                              } else {
+                                setAdjustmentAmount(Math.floor(maxAvailableStock * 0.5) - originalStock)
+                              }
+                            }}
+                            className="h-10"
+                          >
+                            50%
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (adjustmentMode === "absolute") {
+                                setAllocatedStock(Math.floor(maxAvailableStock * 0.75))
+                              } else {
+                                setAdjustmentAmount(Math.floor(maxAvailableStock * 0.75) - originalStock)
+                              }
+                            }}
+                            className="h-10"
+                          >
+                            75%
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (adjustmentMode === "absolute") {
+                                setAllocatedStock(maxAvailableStock)
+                              } else {
+                                setAdjustmentAmount(maxAvailableStock - originalStock)
+                              }
+                            }}
+                            className="h-10"
+                          >
+                            100%
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Stock impact visualization */}
+                      {stockDifference !== 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          className="p-4 border rounded-md bg-muted/30"
+                        >
+                          <h4 className="mb-2 font-medium">Stock Impact</h4>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Total Available Stock</span>
+                              <span className="font-medium">{maxAvailableStock}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Currently Allocated</span>
+                              <span className="font-medium">{originalStock}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">New Allocation</span>
+                              <span className="font-medium">{calculatedNewStock}</span>
+                            </div>
+                            <Separator />
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Remaining Available Stock</span>
+                              <span className={`font-medium ${availableAfterAdjustment < 0 ? "text-red-600" : ""}`}>
+                                {availableAfterAdjustment}
+                              </span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* Warning alerts */}
+                      <AnimatePresence>
+                        {availableAfterAdjustment < 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                          >
+                            <Alert variant="destructive">
+                              <AlertCircle className="w-4 h-4" />
+                              <AlertTitle>Not enough stock available</AlertTitle>
+                              <AlertDescription>
+                                You're trying to allocate {calculatedNewStock} units, but only {maxAvailableStock} are
+                                available in total.
+                              </AlertDescription>
+                            </Alert>
+                          </motion.div>
+                        )}
+
+                        {stockDifference !== 0 && availableAfterAdjustment >= 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                          >
+                            <Alert
+                              variant={stockDifference > 0 ? "warning" : "default"}
+                              className={
+                                stockDifference > 0 ? "bg-amber-50 border-amber-200" : "bg-blue-50 border-blue-200"
+                              }
+                            >
+                              <AlertCircle
+                                className={`w-4 h-4 ${stockDifference > 0 ? "text-amber-600" : "text-blue-600"}`}
+                              />
+                              <AlertTitle className={stockDifference > 0 ? "text-amber-800" : "text-blue-800"}>
+                                {stockDifference > 0 ? "Adding Stock" : "Removing Stock"}
+                              </AlertTitle>
+                              <AlertDescription className={stockDifference > 0 ? "text-amber-700" : "text-blue-700"}>
+                                {stockDifference > 0
+                                  ? `You're adding ${stockDifference} units to this machine. This will reduce the material's available stock by the same amount.`
+                                  : `You're removing ${-stockDifference} units from this machine. This will return stock to the material's inventory.`}
+                              </AlertDescription>
+                            </Alert>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Comment field */}
+                      <div className="space-y-2">
+                        <Label htmlFor="comment">Comment (Optional)</Label>
+                        <Input
+                          id="comment"
+                          placeholder="Reason for adjustment..."
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          If left empty, a default comment will be generated.
+                        </p>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <h3 className="font-medium">Machine Information</h3>
-                  <div className="p-4 border rounded-md bg-muted">
-                    <div className="grid gap-2">
-                      <div>
-                        <Label className="text-sm text-muted-foreground">Name</Label>
-                        <p className="font-medium">{machine?.name}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm text-muted-foreground">Description</Label>
-                        <p className="font-medium">{machine?.description}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm text-muted-foreground">Status</Label>
-                        <p className="font-medium capitalize">{machine?.status}</p>
-                      </div>
-                    </div>
+                  <div className="mt-6">
+                    <Button
+                      type="submit"
+                      disabled={saving || stockDifference === 0 || availableAfterAdjustment < 0}
+                      className="w-full bg-violet-600 hover:bg-violet-700"
+                    >
+                      {saving ? (
+                        <div className="flex items-center">
+                          <div className="w-4 h-4 mr-2 border-2 border-current rounded-full animate-spin border-t-transparent"></div>
+                          Saving...
+                        </div>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Update Allocation
+                        </>
+                      )}
+                    </Button>
                   </div>
-                </div>
-              </div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              <Alert variant="warning" className="bg-amber-50 border-amber-200">
-                <AlertCircle className="w-4 h-4 text-amber-600" />
-                <AlertTitle className="text-amber-800">Important</AlertTitle>
-                <AlertDescription className="text-amber-700">
-                  {allocatedStock > originalStock
-                    ? "Increasing allocation will reduce the material's current stock by the difference."
-                    : "Decreasing allocation will return stock to the material's inventory."}
-                </AlertDescription>
-              </Alert>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <Label htmlFor="allocatedStock">Allocated Stock</Label>
-                <div className="flex items-center gap-4">
-                  <Input
-                    id="allocatedStock"
-                    type="number"
-                    min="0"
-                    value={allocatedStock}
-                    onChange={(e) => setAllocatedStock(Number.parseInt(e.target.value) || 0)}
-                    className="max-w-[200px]"
-                  />
-                  <div className="text-sm text-muted-foreground">
-                    Original allocation: <span className="font-medium">{originalStock}</span>
-                  </div>
-                </div>
-                {allocatedStock !== originalStock && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="text-sm"
-                  >
-                    {allocatedStock > originalStock ? (
-                      <p className="text-amber-600">Adding {allocatedStock - originalStock} units to this machine</p>
-                    ) : (
-                      <p className="text-blue-600">Removing {originalStock - allocatedStock} units from this machine</p>
-                    )}
-                  </motion.div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-medium">Allocation History</h3>
+          <TabsContent value="history">
+            <Card className="border-violet-500/20">
+              <CardHeader>
+                <CardTitle>Allocation History</CardTitle>
+                <CardDescription>Track changes to this material allocation over time</CardDescription>
+              </CardHeader>
+              <CardContent>
                 <div className="overflow-hidden border rounded-md">
                   <table className="min-w-full divide-y divide-border">
                     <thead className="bg-muted">
                       <tr>
-                        <th className="px-4 py-2 text-xs font-medium text-left text-muted-foreground">Date</th>
-                        <th className="px-4 py-2 text-xs font-medium text-left text-muted-foreground">Previous</th>
-                        <th className="px-4 py-2 text-xs font-medium text-left text-muted-foreground">New</th>
-                        <th className="px-4 py-2 text-xs font-medium text-left text-muted-foreground">Comment</th>
+                        <th className="px-4 py-3 text-xs font-medium text-left text-muted-foreground">Date</th>
+                        <th className="px-4 py-3 text-xs font-medium text-left text-muted-foreground">Previous</th>
+                        <th className="px-4 py-3 text-xs font-medium text-left text-muted-foreground">New</th>
+                        <th className="px-4 py-3 text-xs font-medium text-left text-muted-foreground">Change</th>
+                        <th className="px-4 py-3 text-xs font-medium text-left text-muted-foreground">Comment</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
                       {allocation?.history?.length > 0 ? (
-                        allocation.history.map((entry, index) => (
-                          <tr key={index} className="hover:bg-muted/50">
-                            <td className="px-4 py-2 text-sm">{new Date(entry.date).toLocaleDateString()}</td>
-                            <td className="px-4 py-2 text-sm">{entry.previousStock}</td>
-                            <td className="px-4 py-2 text-sm">{entry.newStock}</td>
-                            <td className="px-4 py-2 text-sm">{entry.comment}</td>
-                          </tr>
-                        ))
+                        allocation.history.map((entry, index) => {
+                          const change = entry.newStock - entry.previousStock
+                          return (
+                            <tr key={index} className="hover:bg-muted/50">
+                              <td className="px-4 py-3 text-sm">{new Date(entry.date).toLocaleString()}</td>
+                              <td className="px-4 py-3 text-sm">{entry.previousStock}</td>
+                              <td className="px-4 py-3 text-sm">{entry.newStock}</td>
+                              <td className="px-4 py-3 text-sm">
+                                <Badge
+                                  variant={change > 0 ? "default" : change < 0 ? "destructive" : "outline"}
+                                  className="flex items-center gap-1 w-fit"
+                                >
+                                  {change > 0 ? (
+                                    <>
+                                      <TrendingUp className="w-3 h-3" />+{change}
+                                    </>
+                                  ) : change < 0 ? (
+                                    <>
+                                      <TrendingDown className="w-3 h-3" />
+                                      {change}
+                                    </>
+                                  ) : (
+                                    "No change"
+                                  )}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3 text-sm">{entry.comment}</td>
+                            </tr>
+                          )
+                        })
                       ) : (
                         <tr>
-                          <td colSpan={4} className="px-4 py-2 text-sm text-center text-muted-foreground">
+                          <td colSpan={5} className="px-4 py-4 text-sm text-center text-muted-foreground">
                             No history available
                           </td>
                         </tr>
@@ -298,32 +801,33 @@ const MaterialMachineEdit = () => {
                     </tbody>
                   </table>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
-            <div className="mt-6">
-              <Button type="submit" disabled={saving} className="w-full">
-                {saving ? (
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 mr-2 border-2 border-current rounded-full animate-spin border-t-transparent"></div>
-                    Saving...
-                  </div>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Update Allocation
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </motion.div>
-        </MainLayout>
-
+        {/* Success animation overlay */}
+        {showSuccessAnimation && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              className="flex flex-col items-center p-8 bg-white rounded-lg dark:bg-gray-800"
+            >
+              <CheckCircle2 className="w-16 h-16 mb-4 text-green-500" />
+              <h2 className="text-xl font-bold">Stock Updated!</h2>
+              <p className="mt-2 text-center text-muted-foreground">
+                {stockDifference > 0
+                  ? `Added ${stockDifference} units to this machine`
+                  : `Removed ${-stockDifference} units from this machine`}
+              </p>
+            </motion.div>
+          </div>
+        )}
+      </motion.div>
+    </MainLayout>
   )
 }
 
 export default MaterialMachineEdit
-
