@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { getMaterialById } from "../../../apis/gestionStockApi/materialApi"
 import PedidLayout from "@/components/PedidLayout"
+import MainLayout from "@/components/MainLayout"
 
 
 const MaterialDetails = () => {
@@ -96,6 +97,8 @@ const MaterialDetails = () => {
   }
 
   return (
+    <MainLayout>
+
         <PedidLayout>
     
     <div className="min-h-screen bg-gray-100 dark:bg-zinc-900">
@@ -337,7 +340,8 @@ const MaterialDetails = () => {
         </div>
       </div>
     </div>
-    </PedidLayout>
+        </PedidLayout>
+    </MainLayout>
   )
 }
 
