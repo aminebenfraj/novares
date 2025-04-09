@@ -18,6 +18,7 @@ import {
   List,
   Edit,
   Wrench,
+  CircleGauge,
   ShoppingCart,
   Warehouse,
   Search,
@@ -159,6 +160,12 @@ const initialMenuItems = [
     icon: Settings,
     label: "Settings",
     path: "/settings",
+    noDropdown: true,
+  },
+  {
+    icon: CircleGauge,
+    label: "machine Dashboard",
+    path: "/machine-dashboard",
     noDropdown: true,
   },
 ]

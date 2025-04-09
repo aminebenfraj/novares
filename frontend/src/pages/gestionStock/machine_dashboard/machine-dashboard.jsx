@@ -68,26 +68,6 @@ import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import MainLayout from "@/components/MainLayout"
 
-// Mock function to simulate chart data
-const generateChartData = (machine) => {
-  if (!machine) return null
-
-  // Generate random data for demonstration
-  const materialCategories = {}
-  machine.materials.forEach((material) => {
-    const category = material.category || "Uncategorized"
-    if (!materialCategories[category]) {
-      materialCategories[category] = 0
-    }
-    materialCategories[category] += material.allocatedStock
-  })
-
-  return {
-    labels: Object.keys(materialCategories),
-    values: Object.values(materialCategories),
-  }
-}
-
 // Simple chart component
 const PieChartComponent = ({ data }) => {
   const canvasRef = useRef(null)
@@ -106,13 +86,13 @@ const PieChartComponent = ({ data }) => {
 
     // Colors for the pie slices
     const colors = [
-      "#3b82f6", // blue-500
-      "#10b981", // emerald-500
+      "#06b6d4", // cyan-500
+      "#22c55e", // green-500
       "#f59e0b", // amber-500
       "#ef4444", // red-500
       "#8b5cf6", // violet-500
       "#ec4899", // pink-500
-      "#06b6d4", // cyan-500
+      "#3b82f6", // blue-500
     ]
 
     // Draw the pie chart
@@ -159,7 +139,7 @@ const PieChartComponent = ({ data }) => {
               <div
                 className="w-3 h-3 mr-2 rounded-full"
                 style={{
-                  backgroundColor: ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"][
+                  backgroundColor: ["#06b6d4", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#3b82f6"][
                     index % 7
                   ],
                 }}
@@ -244,7 +224,7 @@ const StockHistoryChart = ({ history }) => {
     }
 
     // Draw bars for each material (up to 3 materials)
-    const colors = ["#3b82f6", "#10b981", "#ef4444"]
+    const colors = ["#06b6d4", "#22c55e", "#ef4444"]
 
     history.slice(0, 3).forEach((item, materialIndex) => {
       if (!item.history) return
@@ -303,7 +283,27 @@ const StockHistoryChart = ({ history }) => {
   )
 }
 
-const UnifiedMachineDashboard = () => {
+// Mock function to simulate chart data
+const generateChartData = (machine) => {
+  if (!machine) return null
+
+  // Generate random data for demonstration
+  const materialCategories = {}
+  machine.materials.forEach((material) => {
+    const category = material.category || "Uncategorized"
+    if (!materialCategories[category]) {
+      materialCategories[category] = 0
+    }
+    materialCategories[category] += material.allocatedStock
+  })
+
+  return {
+    labels: Object.keys(materialCategories),
+    values: Object.values(materialCategories),
+  }
+}
+
+const MachineDashboard = () => {
   const { toast } = useToast()
 
   // Global state
@@ -333,8 +333,7 @@ const UnifiedMachineDashboard = () => {
   const [filteredAllocations, setFilteredAllocations] = useState([])
   const [machineHistory, setMachineHistory] = useState([])
   const [materialSearchTerm, setMaterialSearchTerm] = useState("")
-  const [activeTab, setActiveTab] = useState("overview") // Changed default to overview
-  const [showAllMaterials, setShowAllMaterials] = useState(false)
+  const [activeTab, setActiveTab] = useState("overview")
   const [selectedMaterialDetails, setSelectedMaterialDetails] = useState(null)
   const [isMaterialDetailsOpen, setIsMaterialDetailsOpen] = useState(false)
 
@@ -398,7 +397,7 @@ const UnifiedMachineDashboard = () => {
       filterMachineAllocations()
       calculateSelectedMachineStats()
     }
-  }, [selectedMachine, materialSearchTerm, allocations, materials, showAllMaterials])
+  }, [selectedMachine, materialSearchTerm, allocations, materials])
 
   // Handle print mode
   useEffect(() => {
@@ -583,8 +582,7 @@ const UnifiedMachineDashboard = () => {
   const selectMachine = async (machine) => {
     setSelectedMachine(machine)
     setActiveView("details")
-    setActiveTab("overview") // Changed to overview
-    setShowAllMaterials(false)
+    setActiveTab("overview")
 
     // Filter allocations for this machine
     const machineAllocations = allocations.filter(
@@ -973,7 +971,7 @@ const UnifiedMachineDashboard = () => {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <HelpCircle className="w-5 h-5 text-primary" />
+                <HelpCircle className="w-5 h-5 text-cyan-500" />
                 Machine Dashboard Help
               </DialogTitle>
               <DialogDescription>Learn how to use the machine dashboard effectively</DialogDescription>
@@ -1042,7 +1040,7 @@ const UnifiedMachineDashboard = () => {
           className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between"
         >
           <div>
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               {activeView === "machines" ? "Machine Dashboard" : selectedMachine?.name}
             </h1>
             <p className="text-muted-foreground">
@@ -1057,7 +1055,7 @@ const UnifiedMachineDashboard = () => {
               <Button
                 variant="outline"
                 onClick={() => setActiveView("machines")}
-                className="border-primary/20 bg-primary/5 hover:bg-primary/10"
+                className="border-cyan-500/20 bg-cyan-500/5 hover:bg-cyan-500/10"
               >
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Back to Machines
@@ -1123,7 +1121,7 @@ const UnifiedMachineDashboard = () => {
                   </Tooltip>
                 </TooltipProvider>
 
-                <Button asChild className="bg-primary hover:bg-primary/90">
+                <Button asChild className="bg-cyan-500 hover:bg-cyan-600">
                   <Link to="/machinematerial/create">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Allocation
@@ -1152,11 +1150,11 @@ const UnifiedMachineDashboard = () => {
           {activeView === "machines" ? (
             // Machine Dashboard Stats
             <>
-              <Card className="overflow-hidden transition-all hover:shadow-md border-primary/20">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent dark:from-blue-950/20 dark:to-transparent -z-10" />
+              <Card className="overflow-hidden transition-all hover:shadow-md border-cyan-500/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 to-transparent dark:from-cyan-950/20 dark:to-transparent -z-10" />
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Total Machines</CardTitle>
-                  <Settings className="w-4 h-4 text-blue-500" />
+                  <Settings className="w-4 h-4 text-cyan-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{machineStats.totalMachines}</div>
@@ -1164,7 +1162,7 @@ const UnifiedMachineDashboard = () => {
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden transition-all hover:shadow-md border-primary/20">
+              <Card className="overflow-hidden transition-all hover:shadow-md border-cyan-500/20">
                 <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent dark:from-green-950/20 dark:to-transparent -z-10" />
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Total Materials</CardTitle>
@@ -1176,7 +1174,7 @@ const UnifiedMachineDashboard = () => {
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden transition-all hover:shadow-md border-primary/20">
+              <Card className="overflow-hidden transition-all hover:shadow-md border-cyan-500/20">
                 <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-transparent dark:from-red-950/20 dark:to-transparent -z-10" />
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Critical Materials</CardTitle>
@@ -1188,7 +1186,7 @@ const UnifiedMachineDashboard = () => {
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden transition-all hover:shadow-md border-primary/20">
+              <Card className="overflow-hidden transition-all hover:shadow-md border-cyan-500/20">
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-transparent dark:from-amber-950/20 dark:to-transparent -z-10" />
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Low Stock Materials</CardTitle>
@@ -1203,11 +1201,11 @@ const UnifiedMachineDashboard = () => {
           ) : (
             // Selected Machine Stats
             <>
-              <Card className="overflow-hidden transition-all hover:shadow-md border-primary/20">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent dark:from-blue-950/20 dark:to-transparent -z-10" />
+              <Card className="overflow-hidden transition-all hover:shadow-md border-cyan-500/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 to-transparent dark:from-cyan-950/20 dark:to-transparent -z-10" />
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Total Materials</CardTitle>
-                  <Package className="w-4 h-4 text-blue-500" />
+                  <Package className="w-4 h-4 text-cyan-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{selectedMachineStats.totalMaterials}</div>
@@ -1215,7 +1213,7 @@ const UnifiedMachineDashboard = () => {
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden transition-all hover:shadow-md border-primary/20">
+              <Card className="overflow-hidden transition-all hover:shadow-md border-cyan-500/20">
                 <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-transparent dark:from-red-950/20 dark:to-transparent -z-10" />
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Critical Materials</CardTitle>
@@ -1246,7 +1244,7 @@ const UnifiedMachineDashboard = () => {
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden transition-all hover:shadow-md border-primary/20">
+              <Card className="overflow-hidden transition-all hover:shadow-md border-cyan-500/20">
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-transparent dark:from-amber-950/20 dark:to-transparent -z-10" />
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Low Stock Materials</CardTitle>
@@ -1277,7 +1275,7 @@ const UnifiedMachineDashboard = () => {
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden transition-all hover:shadow-md border-primary/20">
+              <Card className="overflow-hidden transition-all hover:shadow-md border-cyan-500/20">
                 <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent dark:from-green-950/20 dark:to-transparent -z-10" />
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Total Allocated Stock</CardTitle>
@@ -1296,7 +1294,7 @@ const UnifiedMachineDashboard = () => {
         {activeView === "machines" ? (
           // Machines List View
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 0.3 }}>
-            <Card>
+            <Card className="border-cyan-500/20">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle>Machines</CardTitle>
@@ -1322,13 +1320,13 @@ const UnifiedMachineDashboard = () => {
                         variant="outline"
                         size="sm"
                         className={
-                          Object.values(machineFilters).some((v) => v !== "") ? "border-primary bg-primary/5" : ""
+                          Object.values(machineFilters).some((v) => v !== "") ? "border-cyan-500 bg-cyan-500/5" : ""
                         }
                       >
                         <Filter className="w-4 h-4 mr-2" />
                         Filters
                         {Object.values(machineFilters).some((v) => v !== "") && (
-                          <Badge variant="secondary" className="ml-1 bg-primary/20">
+                          <Badge variant="secondary" className="ml-1 bg-cyan-500/20">
                             {Object.values(machineFilters).filter((v) => v !== "").length}
                           </Badge>
                         )}
@@ -1404,7 +1402,9 @@ const UnifiedMachineDashboard = () => {
                         <Button variant="ghost" onClick={() => setIsFilterOpen(false)}>
                           Cancel
                         </Button>
-                        <Button onClick={() => setIsFilterOpen(false)}>Apply Filters</Button>
+                        <Button onClick={() => setIsFilterOpen(false)} className="bg-cyan-500 hover:bg-cyan-600">
+                          Apply Filters
+                        </Button>
                       </div>
                     </PopoverContent>
                   </Popover>
@@ -1447,7 +1447,7 @@ const UnifiedMachineDashboard = () => {
                 {isLoading ? (
                   <div className="flex items-center justify-center h-64">
                     <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                      <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
                       <p className="text-sm text-muted-foreground">Loading machine data...</p>
                     </div>
                   </div>
@@ -1504,7 +1504,7 @@ const UnifiedMachineDashboard = () => {
                                 <div className="p-4 border rounded-md bg-background/80">
                                   <div className="flex items-center justify-between">
                                     <div className="text-sm text-muted-foreground">Total Materials</div>
-                                    <Package className="w-4 h-4 text-muted-foreground" />
+                                    <Package className="w-4 h-4 text-cyan-500" />
                                   </div>
                                   <div className="text-2xl font-bold">{machine.totalMaterials}</div>
                                 </div>
@@ -1530,7 +1530,7 @@ const UnifiedMachineDashboard = () => {
                                   variant="link"
                                   size="sm"
                                   onClick={() => selectMachine(machine)}
-                                  className="h-auto p-0"
+                                  className="h-auto p-0 text-cyan-500"
                                 >
                                   View all
                                   <ArrowUpRight className="w-3 h-3 ml-1" />
@@ -1570,7 +1570,12 @@ const UnifiedMachineDashboard = () => {
                                     {machine.materials.length > 3 && (
                                       <TableRow>
                                         <TableCell colSpan={5} className="text-center">
-                                          <Button variant="link" size="sm" onClick={() => selectMachine(machine)}>
+                                          <Button
+                                            variant="link"
+                                            size="sm"
+                                            onClick={() => selectMachine(machine)}
+                                            className="text-cyan-500"
+                                          >
                                             View all {machine.materials.length} materials
                                           </Button>
                                         </TableCell>
@@ -1593,7 +1598,12 @@ const UnifiedMachineDashboard = () => {
                                 <Clock className="w-3 h-3 mr-1" />
                                 Last updated: {getTimeSince(machine.lastUpdated)}
                               </div>
-                              <Button onClick={() => selectMachine(machine)} variant="outline" size="sm">
+                              <Button
+                                onClick={() => selectMachine(machine)}
+                                variant="outline"
+                                size="sm"
+                                className="border-cyan-500/20 hover:bg-cyan-500/10"
+                              >
                                 <Eye className="w-4 h-4 mr-2" />
                                 View Details
                               </Button>
@@ -1610,38 +1620,38 @@ const UnifiedMachineDashboard = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead
-                            className="cursor-pointer hover:text-primary"
+                            className="cursor-pointer hover:text-cyan-500"
                             onClick={() => handleSortChange("name")}
                           >
                             Machine Name {sortConfig.field === "name" && (sortConfig.order === 1 ? "↑" : "↓")}
                           </TableHead>
                           <TableHead>Description</TableHead>
                           <TableHead
-                            className="cursor-pointer hover:text-primary"
+                            className="cursor-pointer hover:text-cyan-500"
                             onClick={() => handleSortChange("status")}
                           >
                             Status {sortConfig.field === "status" && (sortConfig.order === 1 ? "↑" : "↓")}
                           </TableHead>
                           <TableHead
-                            className="text-right cursor-pointer hover:text-primary"
+                            className="text-right cursor-pointer hover:text-cyan-500"
                             onClick={() => handleSortChange("totalMaterials")}
                           >
                             Materials {sortConfig.field === "totalMaterials" && (sortConfig.order === 1 ? "↑" : "↓")}
                           </TableHead>
                           <TableHead
-                            className="text-right cursor-pointer hover:text-primary"
+                            className="text-right cursor-pointer hover:text-cyan-500"
                             onClick={() => handleSortChange("criticalMaterials")}
                           >
                             Critical {sortConfig.field === "criticalMaterials" && (sortConfig.order === 1 ? "↑" : "↓")}
                           </TableHead>
                           <TableHead
-                            className="text-right cursor-pointer hover:text-primary"
+                            className="text-right cursor-pointer hover:text-cyan-500"
                             onClick={() => handleSortChange("lowStockMaterials")}
                           >
                             Low Stock {sortConfig.field === "lowStockMaterials" && (sortConfig.order === 1 ? "↑" : "↓")}
                           </TableHead>
                           <TableHead
-                            className="text-right cursor-pointer hover:text-primary"
+                            className="text-right cursor-pointer hover:text-cyan-500"
                             onClick={() => handleSortChange("lastUpdated")}
                           >
                             Last Updated {sortConfig.field === "lastUpdated" && (sortConfig.order === 1 ? "↑" : "↓")}
@@ -1694,7 +1704,7 @@ const UnifiedMachineDashboard = () => {
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button variant="ghost" size="icon" onClick={() => selectMachine(machine)}>
-                                          <Eye className="w-4 h-4" />
+                                          <Eye className="w-4 h-4 text-cyan-500" />
                                         </Button>
                                       </TooltipTrigger>
                                       <TooltipContent>
@@ -1708,7 +1718,7 @@ const UnifiedMachineDashboard = () => {
                                       <TooltipTrigger asChild>
                                         <Button variant="ghost" size="icon" asChild>
                                           <Link to={`/machine/edit/${machine._id}`}>
-                                            <Edit className="w-4 h-4" />
+                                            <Edit className="w-4 h-4 text-cyan-500" />
                                           </Link>
                                         </Button>
                                       </TooltipTrigger>
@@ -1769,7 +1779,7 @@ const UnifiedMachineDashboard = () => {
 
               <TabsContent value="overview">
                 <div className="grid gap-6 mt-6 md:grid-cols-2">
-                  <Card>
+                  <Card className="border-cyan-500/20">
                     <CardHeader>
                       <CardTitle>Material Distribution</CardTitle>
                       <CardDescription>Breakdown of materials by category</CardDescription>
@@ -1779,7 +1789,7 @@ const UnifiedMachineDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="border-cyan-500/20">
                     <CardHeader>
                       <CardTitle>Stock Status</CardTitle>
                       <CardDescription>Overview of material stock levels</CardDescription>
@@ -1851,7 +1861,7 @@ const UnifiedMachineDashboard = () => {
                         <div className="p-4 border rounded-md">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm text-muted-foreground">Total Allocated</span>
-                            <Layers className="w-4 h-4 text-muted-foreground" />
+                            <Layers className="w-4 h-4 text-cyan-500" />
                           </div>
                           <div className="text-2xl font-bold">{selectedMachineStats.totalAllocatedStock}</div>
                         </div>
@@ -1859,7 +1869,7 @@ const UnifiedMachineDashboard = () => {
                         <div className="p-4 border rounded-md">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm text-muted-foreground">Status</span>
-                            <Settings className="w-4 h-4 text-muted-foreground" />
+                            <Settings className="w-4 h-4 text-cyan-500" />
                           </div>
                           <Badge variant={getStatusColor(selectedMachine?.status)} className="px-3 py-1">
                             {selectedMachine?.status || "Unknown"}
@@ -1869,7 +1879,7 @@ const UnifiedMachineDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="md:col-span-2">
+                  <Card className="md:col-span-2 border-cyan-500/20">
                     <CardHeader>
                       <CardTitle>Recent Materials</CardTitle>
                       <CardDescription>Materials allocated to this machine</CardDescription>
@@ -1919,7 +1929,7 @@ const UnifiedMachineDashboard = () => {
                                               size="icon"
                                               onClick={() => openUpdateDialog(allocation)}
                                             >
-                                              <Edit className="w-4 h-4" />
+                                              <Edit className="w-4 h-4 text-cyan-500" />
                                             </Button>
                                           </TooltipTrigger>
                                           <TooltipContent>
@@ -1936,7 +1946,7 @@ const UnifiedMachineDashboard = () => {
                                               size="icon"
                                               onClick={() => openMaterialDetails(allocation)}
                                             >
-                                              <Eye className="w-4 h-4" />
+                                              <Eye className="w-4 h-4 text-cyan-500" />
                                             </Button>
                                           </TooltipTrigger>
                                           <TooltipContent>
@@ -1953,7 +1963,11 @@ const UnifiedMachineDashboard = () => {
                             {machineAllocations.length > 5 && (
                               <TableRow>
                                 <TableCell colSpan={7} className="text-center">
-                                  <Button variant="link" onClick={() => setActiveTab("materials")}>
+                                  <Button
+                                    variant="link"
+                                    onClick={() => setActiveTab("materials")}
+                                    className="text-cyan-500"
+                                  >
                                     View all {machineAllocations.length} materials
                                   </Button>
                                 </TableCell>
@@ -1976,7 +1990,7 @@ const UnifiedMachineDashboard = () => {
               </TabsContent>
 
               <TabsContent value="materials">
-                <Card>
+                <Card className="border-cyan-500/20">
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                       <CardTitle>Machine Materials</CardTitle>
@@ -1997,7 +2011,7 @@ const UnifiedMachineDashboard = () => {
                         <Download className="w-4 h-4 mr-2" />
                         Export
                       </Button>
-                      <Button asChild>
+                      <Button asChild className="bg-cyan-500 hover:bg-cyan-600">
                         <Link to="/machinematerial/create">
                           <Plus className="w-4 h-4 mr-2" />
                           Add Material
@@ -2066,7 +2080,7 @@ const UnifiedMachineDashboard = () => {
                                                   size="icon"
                                                   onClick={() => openUpdateDialog(allocation)}
                                                 >
-                                                  <Edit className="w-4 h-4" />
+                                                  <Edit className="w-4 h-4 text-cyan-500" />
                                                 </Button>
                                               </TooltipTrigger>
                                               <TooltipContent>
@@ -2083,7 +2097,7 @@ const UnifiedMachineDashboard = () => {
                                                   size="icon"
                                                   onClick={() => openMaterialDetails(allocation)}
                                                 >
-                                                  <Eye className="w-4 h-4" />
+                                                  <Eye className="w-4 h-4 text-cyan-500" />
                                                 </Button>
                                               </TooltipTrigger>
                                               <TooltipContent>
@@ -2097,7 +2111,7 @@ const UnifiedMachineDashboard = () => {
                                               <TooltipTrigger asChild>
                                                 <Button variant="ghost" size="icon" asChild>
                                                   <Link to={`/machinematerial/detail/${allocation._id}`}>
-                                                    <Settings className="w-4 h-4" />
+                                                    <Settings className="w-4 h-4 text-cyan-500" />
                                                   </Link>
                                                 </Button>
                                               </TooltipTrigger>
@@ -2123,7 +2137,7 @@ const UnifiedMachineDashboard = () => {
 
               <TabsContent value="history">
                 <div className="grid gap-6 mt-6 md:grid-cols-3">
-                  <Card className="md:col-span-2">
+                  <Card className="md:col-span-2 border-cyan-500/20">
                     <CardHeader>
                       <CardTitle>Stock History</CardTitle>
                       <CardDescription>History of material stock changes for this machine</CardDescription>
@@ -2210,7 +2224,7 @@ const UnifiedMachineDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="border-cyan-500/20">
                     <CardHeader>
                       <CardTitle>Stock Trends</CardTitle>
                       <CardDescription>Visual representation of stock changes</CardDescription>
@@ -2278,7 +2292,7 @@ const UnifiedMachineDashboard = () => {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleUpdateAllocation} disabled={isUpdating}>
+              <Button onClick={handleUpdateAllocation} disabled={isUpdating} className="bg-cyan-500 hover:bg-cyan-600">
                 {isUpdating ? (
                   <>
                     <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -2372,11 +2386,12 @@ const UnifiedMachineDashboard = () => {
                     setIsMaterialDetailsOpen(false)
                     openUpdateDialog(selectedMaterialDetails)
                   }}
+                  className="border-cyan-500/20 hover:bg-cyan-500/10"
                 >
                   <Edit className="w-4 h-4 mr-2" />
                   Update Stock
                 </Button>
-                <Button asChild>
+                <Button asChild className="bg-cyan-500 hover:bg-cyan-600">
                   <Link to={`/machinematerial/detail/${selectedMaterialDetails?._id}`}>
                     <Settings className="w-4 h-4 mr-2" />
                     Advanced Settings
@@ -2430,7 +2445,7 @@ const UnifiedMachineDashboard = () => {
                 <Button
                   variant="outline"
                   size="icon"
-                  className="rounded-full shadow-md bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="rounded-full shadow-md bg-cyan-500 text-primary-foreground hover:bg-cyan-600"
                   onClick={() => setShowHelp(true)}
                 >
                   <HelpCircle className="w-5 h-5" />
@@ -2468,5 +2483,4 @@ const UnifiedMachineDashboard = () => {
   )
 }
 
-export default UnifiedMachineDashboard
-
+export default MachineDashboard
