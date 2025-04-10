@@ -194,32 +194,6 @@ const ProfilePage = () => {
                             ))}
                         </div>
                       </div>
-
-                      <Separator />
-
-                      <div>
-                        <h3 className="mb-2 text-lg font-medium">Account Security</h3>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                            <div>
-                              <p className="font-medium">Password</p>
-                              <p className="text-sm text-muted-foreground">Last changed: 30 days ago</p>
-                            </div>
-                            <Button variant="outline" size="sm" onClick={() => navigate("/settings")}>
-                              Change
-                            </Button>
-                          </div>
-                          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                            <div>
-                              <p className="font-medium">Two-Factor Authentication</p>
-                              <p className="text-sm text-muted-foreground">Not enabled</p>
-                            </div>
-                            <Button variant="outline" size="sm" onClick={() => navigate("/settings")}>
-                              Enable
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
                     </CardContent>
                   </Card>
                 </div>

@@ -27,7 +27,7 @@ exports.createPedido = async (req, res) => {
       aceptado,
       date_receiving,
       direccion,
-      weeks,
+      days,
       table_status,
       recepcionado,
       qrCode,
@@ -68,12 +68,20 @@ exports.createPedido = async (req, res) => {
       }
     }
 
-    // Calculate date_receiving if aceptado is provided but date_receiving is not
+    // Calculate date_receiving if aceptado is provided
     let calculatedDateReceiving = date_receiving
-    if (aceptado && !date_receiving) {
+    if (aceptado) {
       const acceptanceDate = new Date(aceptado)
-      calculatedDateReceiving = new Date(acceptanceDate)
-      calculatedDateReceiving.setDate(acceptanceDate.getDate() + 14) // Add 2 weeks (14 days)
+
+      // If date_receiving is not provided but days is specified
+      if (!date_receiving && days && days > 0) {
+        calculatedDateReceiving = new Date(acceptanceDate)
+        calculatedDateReceiving.setDate(acceptanceDate.getDate() + days)
+      }
+      // If neither date_receiving nor days is provided, use acceptance date
+      else if (!date_receiving) {
+        calculatedDateReceiving = new Date(acceptanceDate)
+      }
     }
 
     // Set default values
@@ -90,12 +98,13 @@ exports.createPedido = async (req, res) => {
       fechaSolicitud: fechaSolicitud || new Date(),
       proveedor,
       comentario,
-      pedir,
+      // pedir field is now optional and will be omitted if not provided
+      ...(pedir && { pedir }),
       introducidaSAP,
       aceptado,
       date_receiving: calculatedDateReceiving,
       direccion,
-      weeks,
+      days,
       table_status,
       recepcionado,
       qrCode,
@@ -364,6 +373,7 @@ exports.getAllPedidos = async (req, res) => {
 
     // These filters are always applied regardless of search
     if (recepcionado) filter.recepcionado = recepcionado
+    // pedir field is now optional for filtering
     if (pedir) filter.pedir = pedir
 
     // Date and year range filters
@@ -507,11 +517,21 @@ exports.updatePedido = async (req, res) => {
       }
     }
 
-    // Calculate date_receiving if aceptado is updated but date_receiving is not provided
-    if (req.body.aceptado && req.body.aceptado !== existingPedido.aceptado?.toString() && !req.body.date_receiving) {
+    // Calculate date_receiving if aceptado is updated
+    if (req.body.aceptado && req.body.aceptado !== existingPedido.aceptado?.toString()) {
       const acceptanceDate = new Date(req.body.aceptado)
-      req.body.date_receiving = new Date(acceptanceDate)
-      req.body.date_receiving.setDate(acceptanceDate.getDate() + 14) // Add 2 weeks (14 days)
+
+      // If days is specified in the request or exists in the pedido
+      const days = req.body.days !== undefined ? req.body.days : existingPedido.days
+
+      if (days && days > 0 && !req.body.date_receiving) {
+        req.body.date_receiving = new Date(acceptanceDate)
+        req.body.date_receiving.setDate(acceptanceDate.getDate() + days)
+      }
+      // If no days specified and no date_receiving provided, use acceptance date
+      else if (!req.body.date_receiving) {
+        req.body.date_receiving = new Date(acceptanceDate)
+      }
     }
 
     // Update the pedido fields
@@ -757,11 +777,16 @@ exports.bulkUpdatePedidos = async (req, res) => {
       }
     }
 
-    // Calculate date_receiving if aceptado is updated but date_receiving is not provided
-    if (updates.aceptado && !updates.date_receiving) {
+    // Calculate date_receiving if aceptado is updated
+    if (updates.aceptado) {
       const acceptanceDate = new Date(updates.aceptado)
-      updates.date_receiving = new Date(acceptanceDate)
-      updates.date_receiving.setDate(acceptanceDate.getDate() + 14) // Add 2 weeks (14 days)
+
+      if (updates.days && updates.days > 0 && !updates.date_receiving) {
+        updates.date_receiving = new Date(acceptanceDate)
+        updates.date_receiving.setDate(acceptanceDate.getDate() + updates.days)
+      } else if (!updates.date_receiving) {
+        updates.date_receiving = new Date(acceptanceDate)
+      }
     }
 
     // For bulk updates, we'll use updateMany for efficiency
@@ -839,7 +864,7 @@ exports.exportPedidos = async (req, res) => {
       "Aceptado",
       "Fecha Recepción",
       "Dirección",
-      "Semanas",
+      "Días",
       "Estado",
       "Recepcionado",
       "QR Code",
@@ -869,7 +894,7 @@ exports.exportPedidos = async (req, res) => {
         pedido.aceptado ? new Date(pedido.aceptado).toISOString().split("T")[0] : "",
         pedido.date_receiving ? new Date(pedido.date_receiving).toISOString().split("T")[0] : "",
         (pedido.direccion || "").replace(/,/g, ";"), // Replace commas
-        pedido.weeks || "",
+        pedido.days || "",
         pedido.table_status ? pedido.table_status.name : "",
         pedido.recepcionado || "",
         pedido.qrCode || "",
@@ -970,4 +995,3 @@ exports.getPedidoByQRCode = async (req, res) => {
     res.status(500).json({ message: "Error fetching pedido", error: error.message })
   }
 }
-

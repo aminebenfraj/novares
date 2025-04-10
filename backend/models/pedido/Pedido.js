@@ -13,12 +13,12 @@ const PedidoSchema = new mongoose.Schema({
   fechaSolicitud: { type: Date, index: true },
   proveedor: { type: mongoose.Schema.Types.ObjectId, ref: "Supplier" }, // Auto-filled from Material supplier
   comentario: String,
-  pedir: { type: String, index: true },
+  pedir: { type: String, index: true, deprecated: true }, // Marked as deprecated, will be removed in future versions
   introducidaSAP: Date,
   aceptado: Date,
   date_receiving: Date, // New field for receiving date (2 weeks after acceptance)
   direccion: String,
-  weeks: { type: Number },
+  days: { type: Number },
   table_status: { type: mongoose.Schema.Types.ObjectId, ref: "TableStatus" },
   recepcionado: { type: String, index: true },
   qrCode: { type: String }, // Will contain a QR code representing the Pedido ID
@@ -56,16 +56,22 @@ PedidoSchema.pre("save", async function (next) {
     this.importePedido = this.cantidad * this.precioUnidad
   }
 
-  // Calculate date_receiving when aceptado is set
-  if (this.aceptado && !this.date_receiving) {
+  // Calculate date_receiving when aceptado is set and days is specified
+  if (this.aceptado) {
     const acceptanceDate = new Date(this.aceptado)
     const receivingDate = new Date(acceptanceDate)
-    receivingDate.setDate(acceptanceDate.getDate() + 14) // Add 2 weeks (14 days)
-    this.date_receiving = receivingDate
+
+    // Only add days if days is specified and is a positive number
+    if (this.days && this.days > 0) {
+      receivingDate.setDate(acceptanceDate.getDate() + this.days)
+      this.date_receiving = receivingDate
+    } else if (!this.date_receiving) {
+      // If days is not specified but we need a default receiving date
+      this.date_receiving = acceptanceDate
+    }
   }
 
   next()
 })
 
 module.exports = mongoose.model("Pedido", PedidoSchema)
-

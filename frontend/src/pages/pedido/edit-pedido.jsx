@@ -59,7 +59,7 @@ function EditPedido() {
     date_receiving: null,
     direccion: "",
     table_status: "",
-    weeks: 0,
+    days: 0,
     recepcionado: "",
     ano: new Date().getFullYear(),
   })
@@ -172,7 +172,7 @@ function EditPedido() {
     const { name, value } = e.target
 
     // Handle numeric fields
-    if (["cantidad", "precioUnidad", "importePedido", "ano"].includes(name)) {
+    if (["cantidad", "precioUnidad", "importePedido", "ano", "days"].includes(name)) {
       const numValue = name === "ano" ? Number.parseInt(value) : Number.parseFloat(value)
       setPedido((prev) => ({ ...prev, [name]: isNaN(numValue) ? 0 : numValue }))
     } else {
@@ -200,6 +200,7 @@ function EditPedido() {
           descripcionProveedor: material.description || "",
           proveedor: material.supplier?._id || "",
           precioUnidad: material.price || 0,
+          cantidad: material.orderLot || 1, // Auto-fill quantity with orderLot
         }))
 
         // Fetch machines that have this material
@@ -234,10 +235,10 @@ function EditPedido() {
     setPedido((prev) => {
       const updatedPedido = { ...prev, [name]: date }
 
-      // If acceptance date changes, calculate receiving date (2 weeks later)
-      if (name === "aceptado" && date) {
+      // If acceptance date changes, calculate receiving date based on days
+      if (name === "aceptado" && date && prev.days) {
         const receivingDate = new Date(date)
-        receivingDate.setDate(receivingDate.getDate() + 14) // Add 2 weeks (14 days)
+        receivingDate.setDate(receivingDate.getDate() + prev.days)
         updatedPedido.date_receiving = receivingDate
       }
 
@@ -254,6 +255,15 @@ function EditPedido() {
   useEffect(() => {
     calculateImporte()
   }, [pedido.cantidad, pedido.precioUnidad])
+
+  // Recalculate receiving date when days change
+  useEffect(() => {
+    if (pedido.aceptado && pedido.days) {
+      const receivingDate = new Date(pedido.aceptado)
+      receivingDate.setDate(receivingDate.getDate() + pedido.days)
+      setPedido((prev) => ({ ...prev, date_receiving: receivingDate }))
+    }
+  }, [pedido.days, pedido.aceptado])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -391,27 +401,31 @@ function EditPedido() {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="ano">Year</Label>
-                          <Input
-                            id="ano"
-                            name="ano"
-                            type="number"
-                            value={pedido.ano}
-                            onChange={handleInputChange}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="pedir">Order Status</Label>
-                          <Select value={pedido.pedir} onValueChange={(value) => handleSelectChange("pedir", value)}>
+                          <Select
+                            value={pedido.ano.toString()}
+                            onValueChange={(value) => handleSelectChange("ano", Number.parseInt(value))}
+                          >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select order status" />
+                              <SelectValue placeholder="Select year" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="si">Yes</SelectItem>
-                              <SelectItem value="no">No</SelectItem>
-                              <SelectItem value="pendiente">Pending</SelectItem>
+                              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((year) => (
+                                <SelectItem key={year} value={year.toString()}>
+                                  {year}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="descripcionInterna">Internal Description</Label>
+                          <Textarea
+                            id="descripcionInterna"
+                            name="descripcionInterna"
+                            value={pedido.descripcionInterna}
+                            onChange={handleInputChange}
+                            rows={3}
+                          />
                         </div>
                       </div>
                     </CardContent>
@@ -502,25 +516,6 @@ function EditPedido() {
                             className={pedido.referencia ? "bg-muted" : ""}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="direccion">Address</Label>
-                          <Input
-                            id="direccion"
-                            name="direccion"
-                            value={pedido.direccion}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="descripcionInterna">Internal Description</Label>
-                        <Textarea
-                          id="descripcionInterna"
-                          name="descripcionInterna"
-                          value={pedido.descripcionInterna}
-                          onChange={handleInputChange}
-                          rows={3}
-                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="descripcionProveedor">Provider Description</Label>
@@ -555,17 +550,6 @@ function EditPedido() {
                             value={pedido.cantidad}
                             onChange={handleInputChange}
                             required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="weeks">Weeks</Label>
-                          <Input
-                            id="weeks"
-                            name="weeks"
-                            type="number"
-                            value={pedido.weeks || ""}
-                            onChange={handleInputChange}
-                            min="1"
                           />
                         </div>
                         <div className="space-y-2">
@@ -697,6 +681,30 @@ function EditPedido() {
                           </Popover>
                         </div>
                         <div className="space-y-2">
+                          <Label htmlFor="days">Days</Label>
+                          <Input
+                            id="days"
+                            name="days"
+                            type="number"
+                            value={pedido.days || ""}
+                            onChange={handleInputChange}
+                            min="1"
+                          />
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Number of days for delivery after acceptance
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="direccion">Delivery Address</Label>
+                          <Input
+                            id="direccion"
+                            name="direccion"
+                            value={pedido.direccion}
+                            onChange={handleInputChange}
+                            placeholder="Enter delivery address"
+                          />
+                        </div>
+                        <div className="space-y-2">
                           <Label htmlFor="date_receiving">Receiving Date (Auto-calculated)</Label>
                           <Input
                             id="date_receiving"
@@ -710,7 +718,7 @@ function EditPedido() {
                             className="bg-muted"
                           />
                           <p className="mt-1 text-xs text-muted-foreground">
-                            This date is automatically set to 2 weeks after the acceptance date
+                            This date is calculated as acceptance date + delivery days
                           </p>
                         </div>
                         <div className="space-y-2">
@@ -743,4 +751,3 @@ function EditPedido() {
 }
 
 export default EditPedido
-

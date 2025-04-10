@@ -24,6 +24,9 @@ import {
   Truck,
   Info,
   User,
+  MapPin,
+  Tag,
+  Hash,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import MainLayout from "@/components/MainLayout"
@@ -200,7 +203,8 @@ export default function PedidoDetails() {
   return (
     <MainLayout>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="container px-4 py-8 mx-auto">
-        <div className="flex flex-col justify-between gap-4 mb-6 md:flex-row md:items-center">
+        {/* Header with back button, title and actions */}
+        <div className="flex flex-col justify-between gap-4 mb-8 md:flex-row md:items-center">
           <motion.div
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -212,9 +216,17 @@ export default function PedidoDetails() {
             </Button>
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Order Details</h1>
-              <p className="text-muted-foreground">
-                Reference: <span className="font-medium">{pedido.referencia}</span>
-              </p>
+              <div className="flex items-center mt-1 text-muted-foreground">
+                <Tag className="w-4 h-4 mr-1" />
+                <span className="font-medium">{pedido.referencia}</span>
+                {pedido._id && (
+                  <>
+                    <span className="mx-2">•</span>
+                    <Hash className="w-4 h-4 mr-1" />
+                    <span className="font-mono text-xs">{pedido._id}</span>
+                  </>
+                )}
+              </div>
             </div>
           </motion.div>
 
@@ -222,7 +234,7 @@ export default function PedidoDetails() {
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="flex space-x-2"
+            className="flex space-x-3"
           >
             <Button onClick={handleEdit} variant="outline">
               <Edit className="w-4 h-4 mr-2" /> Edit
@@ -250,78 +262,92 @@ export default function PedidoDetails() {
           </motion.div>
         </div>
 
+        {/* Status card */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="mb-6"
+          className="mb-8"
         >
-          <Card>
+          <Card className="border-2 border-muted">
             <CardContent className="p-6">
-              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                <div className="flex items-center space-x-4">
-                  <div className={`p-3 rounded-full ${statusDetails.className}`}>
-                    <StatusIcon className="w-6 h-6" />
+              <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+                <div className="flex items-center space-x-5">
+                  <div className={`p-4 rounded-full ${statusDetails.className}`}>
+                    <StatusIcon className="w-7 h-7" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold">{pedido.tipo}</h2>
-                    <Badge variant="secondary" className={statusDetails.className}>
-                      {statusDetails.label}
-                    </Badge>
+                    <div className="flex items-center mb-1 space-x-2">
+                      <h2 className="text-2xl font-bold">{pedido.tipo}</h2>
+                      <Badge variant="secondary" className={statusDetails.className}>
+                        {statusDetails.label}
+                      </Badge>
+                    </div>
+                    <p className="text-muted-foreground">{statusDetails.description}</p>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end">
+                <div className="flex flex-col items-end p-4 border rounded-lg bg-muted/30">
                   <span className="text-sm text-muted-foreground">Total Amount</span>
-                  <span className="text-2xl font-bold">{formatCurrency(pedido.importePedido)}</span>
+                  <span className="text-3xl font-bold">{formatCurrency(pedido.importePedido)}</span>
+                  <div className="flex items-center mt-1 text-xs text-muted-foreground">
+                    <span>{pedido.cantidad} units</span>
+                    <span className="mx-1">×</span>
+                    <span>{formatCurrency(pedido.precioUnidad)}</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
+        {/* Tabs content */}
         <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.4 }}>
           <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsList className="grid w-full grid-cols-3 mb-8">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="details">Order Details</TabsTrigger>
               <TabsTrigger value="status">Status & Tracking</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <Card>
-                  <CardHeader className="pb-2">
+            <TabsContent value="overview" className="space-y-8">
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                <Card className="overflow-hidden border-2 border-muted">
+                  <CardHeader className="pb-2 bg-muted/30">
                     <CardTitle className="flex items-center text-lg">
                       <Info className="w-5 h-5 mr-2 text-primary" />
                       Basic Information
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <dl className="grid grid-cols-1 gap-4">
-                      <div className="flex justify-between py-2 border-b">
+                  <CardContent className="p-0">
+                    <dl className="divide-y">
+                      <div className="flex justify-between p-4">
                         <dt className="font-medium text-muted-foreground">Reference</dt>
                         <dd className="font-semibold">{pedido.referencia}</dd>
                       </div>
-                      <div className="flex justify-between py-2 border-b">
+                      <div className="flex justify-between p-4">
                         <dt className="font-medium text-muted-foreground">Type</dt>
                         <dd className="flex items-center">
                           <Package className="w-4 h-4 mr-1 text-muted-foreground" />
                           {pedido.tipo}
                         </dd>
                       </div>
-                      <div className="flex justify-between py-2 border-b">
+                      <div className="flex justify-between p-4">
                         <dt className="font-medium text-muted-foreground">Requester</dt>
                         <dd className="flex items-center">
                           <User className="w-4 h-4 mr-1 text-muted-foreground" />
                           {pedido.solicitante}
                         </dd>
                       </div>
-                      <div className="flex justify-between py-2 border-b">
+                      <div className="flex justify-between p-4">
                         <dt className="font-medium text-muted-foreground">Year</dt>
                         <dd>{pedido.ano}</dd>
                       </div>
-                      <div className="flex justify-between py-2">
+                      <div className="p-4">
+                        <dt className="mb-1 font-medium text-muted-foreground">Internal Description</dt>
+                        <dd className="mt-1 text-sm">{pedido.descripcionInterna || "N/A"}</dd>
+                      </div>
+                      <div className="flex justify-between p-4">
                         <dt className="font-medium text-muted-foreground">Table Status</dt>
                         <dd>{pedido.table_status}</dd>
                       </div>
@@ -329,26 +355,33 @@ export default function PedidoDetails() {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
+                <Card className="overflow-hidden border-2 border-muted">
+                  <CardHeader className="pb-2 bg-muted/30">
                     <CardTitle className="flex items-center text-lg">
                       <Box className="w-5 h-5 mr-2 text-primary" />
                       Product Details
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <dl className="grid grid-cols-1 gap-4">
-                      <div className="flex justify-between py-2 border-b">
+                  <CardContent className="p-0">
+                    <dl className="divide-y">
+                      <div className="flex justify-between p-4">
                         <dt className="font-medium text-muted-foreground">Manufacturer</dt>
                         <dd>{pedido.fabricante || "N/A"}</dd>
                       </div>
-                      <div className="flex justify-between py-2 border-b">
+                      <div className="flex justify-between p-4">
                         <dt className="font-medium text-muted-foreground">Provider</dt>
                         <dd>{pedido.proveedor}</dd>
                       </div>
-                      <div className="py-2">
-                        <dt className="mb-1 font-medium text-muted-foreground">Internal Description</dt>
-                        <dd className="text-sm">{pedido.descripcionInterna || "N/A"}</dd>
+                      <div className="p-4">
+                        <dt className="mb-1 font-medium text-muted-foreground">Provider Description</dt>
+                        <dd className="mt-1 text-sm">{pedido.descripcionProveedor || "N/A"}</dd>
+                      </div>
+                      <div className="flex justify-between p-4">
+                        <dt className="font-medium text-muted-foreground">Delivery Address</dt>
+                        <dd className="flex items-center">
+                          <MapPin className="w-4 h-4 mr-1 text-muted-foreground" />
+                          {pedido.direccion || "Not specified"}
+                        </dd>
                       </div>
                     </dl>
                   </CardContent>
@@ -356,87 +389,60 @@ export default function PedidoDetails() {
               </div>
 
               {pedido.comentario && (
-                <Card>
-                  <CardHeader className="pb-2">
+                <Card className="border-2 border-muted">
+                  <CardHeader className="pb-2 bg-muted/30">
                     <CardTitle className="flex items-center text-lg">
                       <FileText className="w-5 h-5 mr-2 text-primary" />
                       Comments
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-4">
                     <p className="text-sm whitespace-pre-line">{pedido.comentario}</p>
                   </CardContent>
                 </Card>
               )}
             </TabsContent>
 
-            <TabsContent value="details" className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center text-lg">
-                      <DollarSign className="w-5 h-5 mr-2 text-primary" />
-                      Financial Details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <dl className="grid grid-cols-1 gap-4">
-                      <div className="flex justify-between py-2 border-b">
-                        <dt className="font-medium text-muted-foreground">Quantity</dt>
-                        <dd className="font-semibold">{pedido.cantidad}</dd>
-                      </div>
-                      <div className="flex justify-between py-2 border-b">
-                        <dt className="font-medium text-muted-foreground">Weeks</dt>
-                        <dd className="font-semibold">{pedido.weeks ? `${pedido.weeks} S` : "N/A"}</dd>
-                      </div>
-                      <div className="flex justify-between py-2 border-b">
-                        <dt className="font-medium text-muted-foreground">Unit Price</dt>
-                        <dd>{formatCurrency(pedido.precioUnidad)}</dd>
-                      </div>
-                      <div className="flex justify-between py-2">
-                        <dt className="font-medium text-muted-foreground">Total Amount</dt>
-                        <dd className="font-bold">{formatCurrency(pedido.importePedido)}</dd>
-                      </div>
-                    </dl>
-                  </CardContent>
-                </Card>
+            <TabsContent value="details" className="space-y-8">
+              <Card className="overflow-hidden border-2 border-muted">
+                <CardHeader className="pb-2 bg-muted/30">
+                  <CardTitle className="flex items-center text-lg">
+                    <DollarSign className="w-5 h-5 mr-2 text-primary" />
+                    Financial Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <dl className="divide-y">
+                    <div className="flex justify-between p-4">
+                      <dt className="font-medium text-muted-foreground">Quantity</dt>
+                      <dd className="font-semibold">{pedido.cantidad}</dd>
+                    </div>
+                    <div className="flex justify-between p-4">
+                      <dt className="font-medium text-muted-foreground">Unit Price</dt>
+                      <dd>{formatCurrency(pedido.precioUnidad)}</dd>
+                    </div>
+                    <div className="flex justify-between p-4 bg-muted/30">
+                      <dt className="font-medium text-muted-foreground">Total Amount</dt>
+                      <dd className="text-lg font-bold">{formatCurrency(pedido.importePedido)}</dd>
+                    </div>
+                  </dl>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center text-lg">
-                      <Truck className="w-5 h-5 mr-2 text-primary" />
-                      Delivery Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <dl className="grid grid-cols-1 gap-4">
-                      <div className="flex justify-between py-2 border-b">
-                        <dt className="font-medium text-muted-foreground">Order</dt>
-                        <dd>{pedido.pedir}</dd>
-                      </div>
-                      <div className="py-2">
-                        <dt className="mb-1 font-medium text-muted-foreground">Delivery Address</dt>
-                        <dd className="text-sm">{pedido.direccion || "N/A"}</dd>
-                      </div>
-                    </dl>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card>
-                <CardHeader className="pb-2">
+              <Card className="overflow-hidden border-2 border-muted">
+                <CardHeader className="pb-2 bg-muted/30">
                   <CardTitle className="flex items-center text-lg">
                     <Briefcase className="w-5 h-5 mr-2 text-primary" />
                     Provider Details
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <dl className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="py-2">
+                <CardContent className="p-0">
+                  <dl className="divide-y">
+                    <div className="p-4">
                       <dt className="mb-1 font-medium text-muted-foreground">Provider</dt>
-                      <dd>{pedido.proveedor}</dd>
+                      <dd className="font-semibold">{pedido.proveedor}</dd>
                     </div>
-                    <div className="py-2">
+                    <div className="p-4">
                       <dt className="mb-1 font-medium text-muted-foreground">Provider Description</dt>
                       <dd className="text-sm">{pedido.descripcionProveedor || "N/A"}</dd>
                     </div>
@@ -445,16 +451,16 @@ export default function PedidoDetails() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="status" className="space-y-6">
-              <Card>
-                <CardHeader>
+            <TabsContent value="status" className="space-y-8">
+              <Card className="border-2 border-muted">
+                <CardHeader className="pb-4 bg-muted/30">
                   <CardTitle className="flex items-center">
                     <StatusIcon className="w-5 h-5 mr-2" />
                     Current Status: {statusDetails.label}
                   </CardTitle>
                   <CardDescription>{statusDetails.description}</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="relative">
                     <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-muted"></div>
 
@@ -492,6 +498,26 @@ export default function PedidoDetails() {
 
                     <div className="relative pb-8 pl-12">
                       <div
+                        className={`absolute left-0 rounded-full w-10 h-10 bg-primary flex items-center justify-center`}
+                      >
+                        <Truck className="w-5 h-5 text-primary-foreground" />
+                      </div>
+                      <h3 className="font-semibold">Delivery Days</h3>
+                      <p className="text-muted-foreground">{pedido.days ? `${pedido.days} days` : "Not specified"}</p>
+                    </div>
+
+                    <div className="relative pb-8 pl-12">
+                      <div
+                        className={`absolute left-0 rounded-full w-10 h-10 bg-primary flex items-center justify-center`}
+                      >
+                        <MapPin className="w-5 h-5 text-primary-foreground" />
+                      </div>
+                      <h3 className="font-semibold">Delivery Address</h3>
+                      <p className="text-muted-foreground">{pedido.direccion || "Not specified"}</p>
+                    </div>
+
+                    <div className="relative pb-8 pl-12">
+                      <div
                         className={`absolute left-0 rounded-full w-10 h-10 ${pedido.date_receiving ? "bg-primary" : "bg-muted"} flex items-center justify-center`}
                       >
                         <Calendar
@@ -500,7 +526,11 @@ export default function PedidoDetails() {
                       </div>
                       <h3 className="font-semibold">Receiving Date</h3>
                       <p className="text-muted-foreground">{formatDate(pedido.date_receiving) || "Pending"}</p>
-                      <p className="text-xs text-muted-foreground">Automatically set to 2 weeks after acceptance</p>
+                      <p className="text-xs text-muted-foreground">
+                        {pedido.days
+                          ? `Calculated as ${pedido.days} days after acceptance date`
+                          : "Will be calculated when delivery days are specified"}
+                      </p>
                     </div>
 
                     <div className="relative pl-12">
@@ -517,13 +547,21 @@ export default function PedidoDetails() {
                   </div>
                 </CardContent>
               </Card>
-              <div className="pt-6 mt-6 border-t">
-                <h3 className="mb-2 font-semibold">Table Status</h3>
-                <div className="flex items-center">
-                  <Badge className="mr-2">{pedido.table_status}</Badge>
-                  <span className="text-sm text-muted-foreground">Current status in the system</span>
-                </div>
-              </div>
+
+              <Card className="border-2 border-muted">
+                <CardHeader className="pb-2 bg-muted/30">
+                  <CardTitle className="flex items-center text-lg">
+                    <Info className="w-5 h-5 mr-2 text-primary" />
+                    System Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="flex items-center">
+                    <Badge className="mr-3 text-sm">{pedido.table_status}</Badge>
+                    <span className="text-sm text-muted-foreground">Current status in the system</span>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </motion.div>
@@ -531,4 +569,3 @@ export default function PedidoDetails() {
     </MainLayout>
   )
 }
-
