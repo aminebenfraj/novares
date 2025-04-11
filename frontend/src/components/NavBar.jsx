@@ -728,48 +728,7 @@ export const Navbar = ({ toggleSidebar, isSidebarOpen }) => {
         </div>
 
         {/* Breadcrumbs navigation bar */}
-        <div className="flex items-center h-10 px-4 overflow-x-auto border-t scrollbar-hide">
-          <nav className="flex items-center text-sm">
-            {breadcrumbs.map((crumb, index) => (
-              <React.Fragment key={crumb.path}>
-                {index > 0 && <ChevronRight className="w-3 h-3 mx-1 text-muted-foreground" />}
-                {index === breadcrumbs.length - 1 ? (
-                  <span className="font-medium text-slate-900">{crumb.label}</span>
-                ) : (
-                  <Link to={crumb.path} className="text-muted-foreground hover:text-slate-900">
-                    {crumb.label}
-                  </Link>
-                )}
-              </React.Fragment>
-            ))}
-          </nav>
-
-          {/* Page actions - shown on detail pages */}
-          {location.pathname.includes("/detail") || location.pathname.includes("/edit") ? (
-            <div className="flex items-center gap-2 ml-auto">
-              {location.pathname.includes("/detail") && !location.pathname.includes("/edit") && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate(location.pathname.replace("/detail", "/edit"))}
-                >
-                  <Edit className="w-3.5 h-3.5 mr-1" />
-                  Edit
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  toggleFavorite(location.pathname, breadcrumbs[breadcrumbs.length - 1]?.label, currentModule.icon)
-                }
-              >
-                <Star className={`w-3.5 h-3.5 mr-1 ${isFavorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
-                {isFavorite ? "Favorited" : "Favorite"}
-              </Button>
-            </div>
-          ) : null}
-        </div>
+      
       </div>
     </header>
   )
