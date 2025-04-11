@@ -59,10 +59,10 @@ import { getAllReadiness } from "../apis/readiness/readinessApi"
 // Navigation structure based on user's grouping
 const navigationItems = [
   {
-    id: "usersManagement",
-    label: "users management",
+    id: "machine-dashboard",
+    label: "machine dashboard",
     icon: LayoutDashboard,
-    path: "/admin",
+    path: "/machine-dashboard",
     isMainPage: true,
   },
   {
