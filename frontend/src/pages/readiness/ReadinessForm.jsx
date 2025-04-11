@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
+import MainLayout from "@/components/MainLayout"
 
 // Import API functions
 import { createDocumentation } from "../../apis/readiness/documentationApi"
@@ -591,376 +592,383 @@ function ReadinessForm() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container py-8 mx-auto">
-        <div className="flex items-center mb-6">
-          <Button variant="outline" onClick={() => navigate("/readiness")} className="mr-4">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
-          </Button>
-          <h1 className="text-3xl font-bold">Create Readiness Entry</h1>
-        </div>
+    <MainLayout>
+      <div className="min-h-screen bg-background">
+        <div className="container py-8 mx-auto">
+          <div className="flex items-center mb-6">
+            <Button variant="outline" onClick={() => navigate("/readiness")} className="mr-4">
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
+            </Button>
+            <h1 className="text-3xl font-bold">Create Readiness Entry</h1>
+          </div>
 
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="w-4 h-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="w-4 h-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-        {successMessage && (
-          <Alert className="mb-6 text-green-800 border-green-200 bg-green-50">
-            <CheckCircle className="w-4 h-4 text-green-600" />
-            <AlertTitle>Success</AlertTitle>
-            <AlertDescription>{successMessage}</AlertDescription>
-          </Alert>
-        )}
+          {successMessage && (
+            <Alert className="mb-6 text-green-800 border-green-200 bg-green-50">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              <AlertTitle>Success</AlertTitle>
+              <AlertDescription>{successMessage}</AlertDescription>
+            </Alert>
+          )}
 
-        <form onSubmit={handleSubmit}>
-          <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="basic">Basic Info</TabsTrigger>
-              <TabsTrigger value="sections">Validation Sections</TabsTrigger>
-              <TabsTrigger value="details">Additional Details</TabsTrigger>
-              <TabsTrigger value="submit">Review & Submit</TabsTrigger>
-            </TabsList>
+          <form onSubmit={handleSubmit}>
+            <Tabs defaultValue="basic" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                <TabsTrigger value="sections">Validation Sections</TabsTrigger>
+                <TabsTrigger value="details">Additional Details</TabsTrigger>
+                <TabsTrigger value="submit">Review & Submit</TabsTrigger>
+              </TabsList>
 
-            {/* Basic Information Tab */}
-            <TabsContent value="basic">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Basic Information</CardTitle>
-                  <CardDescription>Enter the basic information for the readiness entry.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="id">ID</Label>
-                      <Input
-                        id="id"
-                        name="id"
-                        value={formData.id}
-                        onChange={handleInputChange}
-                        disabled
-                        className="bg-gray-100"
-                      />
-                      <p className="text-xs text-muted-foreground">Auto-generated ID</p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Status</Label>
-                      <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="on-going">On-going</SelectItem>
-                          <SelectItem value="stand-by">Stand-by</SelectItem>
-                          <SelectItem value="closed">Closed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="project_name">Project Name</Label>
-                    <Input
-                      id="project_name"
-                      name="project_name"
-                      value={formData.project_name}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="assignedEmail">Assigned Email</Label>
-                      <Input
-                        id="assignedEmail"
-                        name="assignedEmail"
-                        type="email"
-                        value={formData.assignedEmail}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="assignedRole">Assigned Role</Label>
-                      <Input
-                        id="assignedRole"
-                        name="assignedRole"
-                        value={formData.assignedRole}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Validation Sections Tab */}
-            <TabsContent value="sections">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Validation Sections</CardTitle>
-                  <CardDescription>Configure validation requirements for this readiness entry.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue={sectionTab} onValueChange={setSectionTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 mb-4">
-                      <TabsTrigger value="documentation">Documentation</TabsTrigger>
-                      <TabsTrigger value="logistics">Logistics</TabsTrigger>
-                      <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-                      <TabsTrigger value="packaging">Packaging</TabsTrigger>
-                    </TabsList>
-                    <TabsList className="grid w-full grid-cols-4 mb-4">
-                      <TabsTrigger value="process">Process Status</TabsTrigger>
-                      <TabsTrigger value="product">Product Process</TabsTrigger>
-                      <TabsTrigger value="production">Production</TabsTrigger>
-                      <TabsTrigger value="safety">Safety</TabsTrigger>
-                    </TabsList>
-                    <TabsList className="grid w-full grid-cols-3 mb-6">
-                      <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
-                      <TabsTrigger value="tooling">Tooling Status</TabsTrigger>
-                      <TabsTrigger value="training">Training</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="documentation">
-                      <Card className="border-none shadow-sm">
-                        <CardHeader className="bg-gray-50">
-                          <CardTitle className="text-lg">Documentation</CardTitle>
-                          <CardDescription>
-                            Configure documentation requirements for this readiness entry.
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>{renderSectionFields("Documentation")}</CardContent>
-                      </Card>
-                    </TabsContent>
-
-                    <TabsContent value="logistics">
-                      <Card className="border-none shadow-sm">
-                        <CardHeader className="bg-gray-50">
-                          <CardTitle className="text-lg">Logistics</CardTitle>
-                          <CardDescription>Configure logistics requirements for this readiness entry.</CardDescription>
-                        </CardHeader>
-                        <CardContent>{renderSectionFields("Logistics")}</CardContent>
-                      </Card>
-                    </TabsContent>
-
-                    <TabsContent value="maintenance">
-                      <Card className="border-none shadow-sm">
-                        <CardHeader className="bg-gray-50">
-                          <CardTitle className="text-lg">Maintenance</CardTitle>
-                          <CardDescription>
-                            Configure maintenance requirements for this readiness entry.
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>{renderSectionFields("Maintenance")}</CardContent>
-                      </Card>
-                    </TabsContent>
-
-                    <TabsContent value="packaging">
-                      <Card className="border-none shadow-sm">
-                        <CardHeader className="bg-gray-50">
-                          <CardTitle className="text-lg">Packaging</CardTitle>
-                          <CardDescription>Configure packaging requirements for this readiness entry.</CardDescription>
-                        </CardHeader>
-                        <CardContent>{renderSectionFields("Packaging")}</CardContent>
-                      </Card>
-                    </TabsContent>
-
-                    <TabsContent value="process">
-                      <Card className="border-none shadow-sm">
-                        <CardHeader className="bg-gray-50">
-                          <CardTitle className="text-lg">Process Status Industrials</CardTitle>
-                          <CardDescription>
-                            Configure process status requirements for this readiness entry.
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>{renderSectionFields("ProcessStatusIndustrials")}</CardContent>
-                      </Card>
-                    </TabsContent>
-
-                    <TabsContent value="product">
-                      <Card className="border-none shadow-sm">
-                        <CardHeader className="bg-gray-50">
-                          <CardTitle className="text-lg">Product Process</CardTitle>
-                          <CardDescription>
-                            Configure product process requirements for this readiness entry.
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>{renderSectionFields("ProductProcess")}</CardContent>
-                      </Card>
-                    </TabsContent>
-
-                    <TabsContent value="production">
-                      <Card className="border-none shadow-sm">
-                        <CardHeader className="bg-gray-50">
-                          <CardTitle className="text-lg">Run At Rate Production</CardTitle>
-                          <CardDescription>Configure production requirements for this readiness entry.</CardDescription>
-                        </CardHeader>
-                        <CardContent>{renderSectionFields("RunAtRateProduction")}</CardContent>
-                      </Card>
-                    </TabsContent>
-
-                    <TabsContent value="safety">
-                      <Card className="border-none shadow-sm">
-                        <CardHeader className="bg-gray-50">
-                          <CardTitle className="text-lg">Safety</CardTitle>
-                          <CardDescription>Configure safety requirements for this readiness entry.</CardDescription>
-                        </CardHeader>
-                        <CardContent>{renderSectionFields("Safety")}</CardContent>
-                      </Card>
-                    </TabsContent>
-
-                    <TabsContent value="suppliers">
-                      <Card className="border-none shadow-sm">
-                        <CardHeader className="bg-gray-50">
-                          <CardTitle className="text-lg">Suppliers</CardTitle>
-                          <CardDescription>Configure supplier requirements for this readiness entry.</CardDescription>
-                        </CardHeader>
-                        <CardContent>{renderSectionFields("Supp")}</CardContent>
-                      </Card>
-                    </TabsContent>
-
-                    <TabsContent value="tooling">
-                      <Card className="border-none shadow-sm">
-                        <CardHeader className="bg-gray-50">
-                          <CardTitle className="text-lg">Tooling Status</CardTitle>
-                          <CardDescription>Configure tooling requirements for this readiness entry.</CardDescription>
-                        </CardHeader>
-                        <CardContent>{renderSectionFields("ToolingStatus")}</CardContent>
-                      </Card>
-                    </TabsContent>
-
-                    <TabsContent value="training">
-                      <Card className="border-none shadow-sm">
-                        <CardHeader className="bg-gray-50">
-                          <CardTitle className="text-lg">Training</CardTitle>
-                          <CardDescription>Configure training requirements for this readiness entry.</CardDescription>
-                        </CardHeader>
-                        <CardContent>{renderSectionFields("Training")}</CardContent>
-                      </Card>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Additional Details Tab */}
-            <TabsContent value="details">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Additional Details</CardTitle>
-                  <CardDescription>Add any additional information for this readiness entry.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="additional-notes">Additional Notes</Label>
-                    <Textarea
-                      id="additional-notes"
-                      placeholder="Enter any additional notes or comments here..."
-                      rows={6}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Review & Submit Tab */}
-            <TabsContent value="submit">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Review & Submit</CardTitle>
-                  <CardDescription>Review your readiness entry before submission.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="p-4 border rounded-lg bg-gray-50">
-                    <h3 className="mb-2 text-lg font-medium">Basic Information</h3>
+              {/* Basic Information Tab */}
+              <TabsContent value="basic">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Basic Information</CardTitle>
+                    <CardDescription>Enter the basic information for the readiness entry.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">ID</p>
-                        <p>{formData.id}</p>
+                      <div className="space-y-2">
+                        <Label htmlFor="id">ID</Label>
+                        <Input
+                          id="id"
+                          name="id"
+                          value={formData.id}
+                          onChange={handleInputChange}
+                          disabled
+                          className="bg-gray-100"
+                        />
+                        <p className="text-xs text-muted-foreground">Auto-generated ID</p>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Status</p>
-                        <p>{formData.status}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Project Name</p>
-                        <p>{formData.project_name || "Not specified"}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Assigned To</p>
-                        <p>{formData.assignedEmail || "Not specified"}</p>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="status">Status</Label>
+                        <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="on-going">On-going</SelectItem>
+                            <SelectItem value="stand-by">Stand-by</SelectItem>
+                            <SelectItem value="closed">Closed</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="p-4 border rounded-lg bg-gray-50">
-                    <h3 className="mb-2 text-lg font-medium">Validation Sections Summary</h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                      {Object.keys(fieldDefinitions).map((section) => {
-                        const sectionData = getSectionData(section)
-                        const totalFields = Object.keys(fieldDefinitions[section]).length
-                        const completedFields = Object.values(sectionData).filter((field) => field.value).length
-                        const percentage = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0
-
-                        return (
-                          <div key={section} className="p-3 border rounded-md">
-                            <div className="flex items-center justify-between mb-2">
-                              <p className="font-medium">{section}</p>
-                              <span className="text-sm">{percentage}%</span>
-                            </div>
-                            <div className="w-full h-2 bg-gray-200 rounded-full">
-                              <div
-                                className={`h-2 rounded-full ${
-                                  percentage > 70 ? "bg-green-500" : percentage > 30 ? "bg-amber-500" : "bg-red-500"
-                                }`}
-                                style={{ width: `${percentage}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        )
-                      })}
+                    <div className="space-y-2">
+                      <Label htmlFor="project_name">Project Name</Label>
+                      <Input
+                        id="project_name"
+                        name="project_name"
+                        value={formData.project_name}
+                        onChange={handleInputChange}
+                      />
                     </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Button type="button" variant="outline" onClick={() => setActiveTab("basic")}>
-                    Back to Edit
-                  </Button>
-                  <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      "Create Readiness Entry"
-                    )}
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </form>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="assignedEmail">Assigned Email</Label>
+                        <Input
+                          id="assignedEmail"
+                          name="assignedEmail"
+                          type="email"
+                          value={formData.assignedEmail}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="assignedRole">Assigned Role</Label>
+                        <Input
+                          id="assignedRole"
+                          name="assignedRole"
+                          value={formData.assignedRole}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Validation Sections Tab */}
+              <TabsContent value="sections">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Validation Sections</CardTitle>
+                    <CardDescription>Configure validation requirements for this readiness entry.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue={sectionTab} onValueChange={setSectionTab} className="w-full">
+                      <TabsList className="grid w-full grid-cols-4 mb-4">
+                        <TabsTrigger value="documentation">Documentation</TabsTrigger>
+                        <TabsTrigger value="logistics">Logistics</TabsTrigger>
+                        <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+                        <TabsTrigger value="packaging">Packaging</TabsTrigger>
+                      </TabsList>
+                      <TabsList className="grid w-full grid-cols-4 mb-4">
+                        <TabsTrigger value="process">Process Status</TabsTrigger>
+                        <TabsTrigger value="product">Product Process</TabsTrigger>
+                        <TabsTrigger value="production">Production</TabsTrigger>
+                        <TabsTrigger value="safety">Safety</TabsTrigger>
+                      </TabsList>
+                      <TabsList className="grid w-full grid-cols-3 mb-6">
+                        <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
+                        <TabsTrigger value="tooling">Tooling Status</TabsTrigger>
+                        <TabsTrigger value="training">Training</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="documentation">
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="bg-gray-50">
+                            <CardTitle className="text-lg">Documentation</CardTitle>
+                            <CardDescription>
+                              Configure documentation requirements for this readiness entry.
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>{renderSectionFields("Documentation")}</CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      <TabsContent value="logistics">
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="bg-gray-50">
+                            <CardTitle className="text-lg">Logistics</CardTitle>
+                            <CardDescription>
+                              Configure logistics requirements for this readiness entry.
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>{renderSectionFields("Logistics")}</CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      <TabsContent value="maintenance">
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="bg-gray-50">
+                            <CardTitle className="text-lg">Maintenance</CardTitle>
+                            <CardDescription>
+                              Configure maintenance requirements for this readiness entry.
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>{renderSectionFields("Maintenance")}</CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      <TabsContent value="packaging">
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="bg-gray-50">
+                            <CardTitle className="text-lg">Packaging</CardTitle>
+                            <CardDescription>
+                              Configure packaging requirements for this readiness entry.
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>{renderSectionFields("Packaging")}</CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      <TabsContent value="process">
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="bg-gray-50">
+                            <CardTitle className="text-lg">Process Status Industrials</CardTitle>
+                            <CardDescription>
+                              Configure process status requirements for this readiness entry.
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>{renderSectionFields("ProcessStatusIndustrials")}</CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      <TabsContent value="product">
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="bg-gray-50">
+                            <CardTitle className="text-lg">Product Process</CardTitle>
+                            <CardDescription>
+                              Configure product process requirements for this readiness entry.
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>{renderSectionFields("ProductProcess")}</CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      <TabsContent value="production">
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="bg-gray-50">
+                            <CardTitle className="text-lg">Run At Rate Production</CardTitle>
+                            <CardDescription>
+                              Configure production requirements for this readiness entry.
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>{renderSectionFields("RunAtRateProduction")}</CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      <TabsContent value="safety">
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="bg-gray-50">
+                            <CardTitle className="text-lg">Safety</CardTitle>
+                            <CardDescription>Configure safety requirements for this readiness entry.</CardDescription>
+                          </CardHeader>
+                          <CardContent>{renderSectionFields("Safety")}</CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      <TabsContent value="suppliers">
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="bg-gray-50">
+                            <CardTitle className="text-lg">Suppliers</CardTitle>
+                            <CardDescription>Configure supplier requirements for this readiness entry.</CardDescription>
+                          </CardHeader>
+                          <CardContent>{renderSectionFields("Supp")}</CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      <TabsContent value="tooling">
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="bg-gray-50">
+                            <CardTitle className="text-lg">Tooling Status</CardTitle>
+                            <CardDescription>Configure tooling requirements for this readiness entry.</CardDescription>
+                          </CardHeader>
+                          <CardContent>{renderSectionFields("ToolingStatus")}</CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      <TabsContent value="training">
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="bg-gray-50">
+                            <CardTitle className="text-lg">Training</CardTitle>
+                            <CardDescription>Configure training requirements for this readiness entry.</CardDescription>
+                          </CardHeader>
+                          <CardContent>{renderSectionFields("Training")}</CardContent>
+                        </Card>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Additional Details Tab */}
+              <TabsContent value="details">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Additional Details</CardTitle>
+                    <CardDescription>Add any additional information for this readiness entry.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="additional-notes">Additional Notes</Label>
+                      <Textarea
+                        id="additional-notes"
+                        placeholder="Enter any additional notes or comments here..."
+                        rows={6}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Review & Submit Tab */}
+              <TabsContent value="submit">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Review & Submit</CardTitle>
+                    <CardDescription>Review your readiness entry before submission.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="p-4 border rounded-lg bg-gray-50">
+                      <h3 className="mb-2 text-lg font-medium">Basic Information</h3>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">ID</p>
+                          <p>{formData.id}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Status</p>
+                          <p>{formData.status}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Project Name</p>
+                          <p>{formData.project_name || "Not specified"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Assigned To</p>
+                          <p>{formData.assignedEmail || "Not specified"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 border rounded-lg bg-gray-50">
+                      <h3 className="mb-2 text-lg font-medium">Validation Sections Summary</h3>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        {Object.keys(fieldDefinitions).map((section) => {
+                          const sectionData = getSectionData(section)
+                          const totalFields = Object.keys(fieldDefinitions[section]).length
+                          const completedFields = Object.values(sectionData).filter((field) => field.value).length
+                          const percentage = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0
+
+                          return (
+                            <div key={section} className="p-3 border rounded-md">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="font-medium">{section}</p>
+                                <span className="text-sm">{percentage}%</span>
+                              </div>
+                              <div className="w-full h-2 bg-gray-200 rounded-full">
+                                <div
+                                  className={`h-2 rounded-full ${
+                                    percentage > 70 ? "bg-green-500" : percentage > 30 ? "bg-amber-500" : "bg-red-500"
+                                  }`}
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <Button type="button" variant="outline" onClick={() => setActiveTab("basic")}>
+                      Back to Edit
+                    </Button>
+                    <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        "Create Readiness Entry"
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </form>
+        </div>
       </div>
-    </div>
+    </MainLayout>
   )
 }
 
 export default ReadinessForm
-

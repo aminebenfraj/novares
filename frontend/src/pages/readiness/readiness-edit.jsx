@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
+import MainLayout from "@/components/MainLayout"
 
 // Import API functions
 import { getReadinessById, updateReadiness } from "../../apis/readiness/readinessApi"
@@ -523,256 +524,259 @@ function ReadinessEdit() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <span className="ml-2 text-lg">Loading readiness data...</span>
-      </div>
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="ml-2 text-lg">Loading readiness data...</span>
+        </div>
+      </MainLayout>
     )
   }
 
   return (
-    <motion.div className="container py-6 mx-auto" initial="hidden" animate="visible" variants={fadeIn}>
-      <div className="flex items-center mb-6">
-        <Button variant="ghost" onClick={() => navigate(`/readiness/detail/${id}`)} className="mr-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-2xl font-bold">Edit Readiness Entry</h1>
-      </div>
-
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="w-4 h-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {successMessage && (
-        <Alert className="mb-6 text-green-800 border-green-200 bg-green-50">
-          <CheckCircle className="w-4 h-4 text-green-600" />
-          <AlertTitle>Success</AlertTitle>
-          <AlertDescription>{successMessage}</AlertDescription>
-        </Alert>
-      )}
-
-      {saving && (
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Updating readiness entry...</span>
-                <span className="text-sm font-medium">{progress}%</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="flex flex-wrap mb-6">
-            <TabsTrigger value="general" className="flex-grow">
-              General Information
-            </TabsTrigger>
-            <TabsTrigger value="documentation" className="flex-grow">
-              Documentation
-            </TabsTrigger>
-            <TabsTrigger value="logistics" className="flex-grow">
-              Logistics
-            </TabsTrigger>
-            <TabsTrigger value="maintenance" className="flex-grow">
-              Maintenance
-            </TabsTrigger>
-            <TabsTrigger value="packaging" className="flex-grow">
-              Packaging
-            </TabsTrigger>
-          </TabsList>
-
-          <motion.div key={activeTab} initial="hidden" animate="visible" variants={slideUp} exit={{ opacity: 0 }}>
-            <TabsContent value="general">
-              <Card>
-                <CardHeader>
-                  <CardTitle>General Information</CardTitle>
-                  <CardDescription>Edit the basic information for this readiness entry.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="id">ID</Label>
-                      <Input
-                        id="id"
-                        name="id"
-                        value={formData.id}
-                        onChange={handleInputChange}
-                        disabled
-                        className="bg-gray-100"
-                      />
-                      <p className="text-xs text-muted-foreground">Auto-generated ID</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Status</Label>
-                      <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="on-going">On-going</SelectItem>
-                          <SelectItem value="stand-by">Stand-by</SelectItem>
-                          <SelectItem value="closed">Closed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="project_name" className="flex items-center">
-                      Project Name <span className="ml-1 text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="project_name"
-                      name="project_name"
-                      value={formData.project_name}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="assignedEmail" className="flex items-center">
-                      Assigned Email <span className="ml-1 text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="assignedEmail"
-                      name="assignedEmail"
-                      type="email"
-                      value={formData.assignedEmail}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="assignedRole">Assigned Role</Label>
-                    <Input
-                      id="assignedRole"
-                      name="assignedRole"
-                      value={formData.assignedRole}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      rows={4}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="documentation">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Documentation</CardTitle>
-                  <CardDescription>Edit documentation requirements for this readiness entry.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ValidationSection
-                    title="Documentation"
-                    fields={fieldDefinitions.Documentation}
-                    data={documentationData}
-                    setData={setDocumentationData}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="logistics">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Logistics</CardTitle>
-                  <CardDescription>Edit logistics requirements for this readiness entry.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ValidationSection
-                    title="Logistics"
-                    fields={fieldDefinitions.Logistics}
-                    data={logisticsData}
-                    setData={setLogisticsData}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="maintenance">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Maintenance</CardTitle>
-                  <CardDescription>Edit maintenance requirements for this readiness entry.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ValidationSection
-                    title="Maintenance"
-                    fields={fieldDefinitions.Maintenance}
-                    data={maintenanceData}
-                    setData={setMaintenanceData}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="packaging">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Packaging</CardTitle>
-                  <CardDescription>Edit packaging requirements for this readiness entry.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ValidationSection
-                    title="Packaging"
-                    fields={fieldDefinitions.Packaging}
-                    data={packagingData}
-                    setData={setPackagingData}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </motion.div>
-        </Tabs>
-
-        <div className="flex items-center justify-between mt-6">
-          <div className="flex items-center">
-            <span className="mr-2 text-sm text-muted-foreground">Form completion:</span>
-            <Progress value={calculateProgress()} className="w-32 h-2" />
-            <span className="ml-2 text-sm text-muted-foreground">{calculateProgress()}%</span>
-          </div>
-          <div className="flex space-x-2">
-            <Button type="button" variant="outline" onClick={() => navigate(`/readiness/detail/${id}`)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          </div>
+    <MainLayout>
+      <motion.div className="container py-6 mx-auto" initial="hidden" animate="visible" variants={fadeIn}>
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" onClick={() => navigate(`/readiness/detail/${id}`)} className="mr-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-2xl font-bold">Edit Readiness Entry</h1>
         </div>
-      </form>
-    </motion.div>
+
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="w-4 h-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {successMessage && (
+          <Alert className="mb-6 text-green-800 border-green-200 bg-green-50">
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription>{successMessage}</AlertDescription>
+          </Alert>
+        )}
+
+        {saving && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Updating readiness entry...</span>
+                  <span className="text-sm font-medium">{progress}%</span>
+                </div>
+                <Progress value={progress} className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="flex flex-wrap mb-6">
+              <TabsTrigger value="general" className="flex-grow">
+                General Information
+              </TabsTrigger>
+              <TabsTrigger value="documentation" className="flex-grow">
+                Documentation
+              </TabsTrigger>
+              <TabsTrigger value="logistics" className="flex-grow">
+                Logistics
+              </TabsTrigger>
+              <TabsTrigger value="maintenance" className="flex-grow">
+                Maintenance
+              </TabsTrigger>
+              <TabsTrigger value="packaging" className="flex-grow">
+                Packaging
+              </TabsTrigger>
+            </TabsList>
+
+            <motion.div key={activeTab} initial="hidden" animate="visible" variants={slideUp} exit={{ opacity: 0 }}>
+              <TabsContent value="general">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>General Information</CardTitle>
+                    <CardDescription>Edit the basic information for this readiness entry.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="id">ID</Label>
+                        <Input
+                          id="id"
+                          name="id"
+                          value={formData.id}
+                          onChange={handleInputChange}
+                          disabled
+                          className="bg-gray-100"
+                        />
+                        <p className="text-xs text-muted-foreground">Auto-generated ID</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="status">Status</Label>
+                        <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="on-going">On-going</SelectItem>
+                            <SelectItem value="stand-by">Stand-by</SelectItem>
+                            <SelectItem value="closed">Closed</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="project_name" className="flex items-center">
+                        Project Name <span className="ml-1 text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="project_name"
+                        name="project_name"
+                        value={formData.project_name}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="assignedEmail" className="flex items-center">
+                        Assigned Email <span className="ml-1 text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="assignedEmail"
+                        name="assignedEmail"
+                        type="email"
+                        value={formData.assignedEmail}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="assignedRole">Assigned Role</Label>
+                      <Input
+                        id="assignedRole"
+                        name="assignedRole"
+                        value={formData.assignedRole}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows={4}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="documentation">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Documentation</CardTitle>
+                    <CardDescription>Edit documentation requirements for this readiness entry.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ValidationSection
+                      title="Documentation"
+                      fields={fieldDefinitions.Documentation}
+                      data={documentationData}
+                      setData={setDocumentationData}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="logistics">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Logistics</CardTitle>
+                    <CardDescription>Edit logistics requirements for this readiness entry.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ValidationSection
+                      title="Logistics"
+                      fields={fieldDefinitions.Logistics}
+                      data={logisticsData}
+                      setData={setLogisticsData}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="maintenance">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Maintenance</CardTitle>
+                    <CardDescription>Edit maintenance requirements for this readiness entry.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ValidationSection
+                      title="Maintenance"
+                      fields={fieldDefinitions.Maintenance}
+                      data={maintenanceData}
+                      setData={setMaintenanceData}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="packaging">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Packaging</CardTitle>
+                    <CardDescription>Edit packaging requirements for this readiness entry.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ValidationSection
+                      title="Packaging"
+                      fields={fieldDefinitions.Packaging}
+                      data={packagingData}
+                      setData={setPackagingData}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </motion.div>
+          </Tabs>
+
+          <div className="flex items-center justify-between mt-6">
+            <div className="flex items-center">
+              <span className="mr-2 text-sm text-muted-foreground">Form completion:</span>
+              <Progress value={calculateProgress()} className="w-32 h-2" />
+              <span className="ml-2 text-sm text-muted-foreground">{calculateProgress()}%</span>
+            </div>
+            <div className="flex space-x-2">
+              <Button type="button" variant="outline" onClick={() => navigate(`/readiness/detail/${id}`)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </form>
+      </motion.div>
+    </MainLayout>
   )
 }
 
 export default ReadinessEdit
-
