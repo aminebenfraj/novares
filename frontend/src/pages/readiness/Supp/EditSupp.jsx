@@ -65,14 +65,39 @@ function EditSuppPage() {
   const [supp, setSupp] = useState(null)
   const [readinessId, setReadinessId] = useState(null)
 
-  // Add useEffect to extract readinessId from URL query parameters after the existing useState declarations
-  useEffect(() => {
-    // Get the readinessId from the URL query parameters
-    const queryParams = new URLSearchParams(window.location.search)
-    const id = queryParams.get("readinessId")
-    console.log("Extracted readinessId from URL:", id)
-    setReadinessId(id)
-  }, [])
+  // Fetch all readiness entries to find the one containing this supp
+  const findReadinessIdForSupp = async (suppId) => {
+    try {
+      console.log("Fetching all readiness entries to find the one containing supp ID:", suppId)
+      const entries = await getAllReadiness()
+      console.log("Fetched readiness entries:", entries)
+
+      // Loop through all entries to find the one containing our supp
+      for (const entry of entries) {
+        console.log("Checking entry:", entry._id)
+
+        // Check if this entry has a Suppliers object
+        if (entry.Suppliers && entry.Suppliers._id === suppId) {
+          console.log("Found matching readiness entry via Suppliers object:", entry._id)
+          setReadinessId(entry._id)
+          return entry._id
+        }
+
+        // Some entries might have the Suppliers directly as a property
+        if (entry.Supp === suppId || (entry.Supp && entry.Supp._id === suppId)) {
+          console.log("Found matching readiness entry via direct Supp reference:", entry._id)
+          setReadinessId(entry._id)
+          return entry._id
+        }
+      }
+
+      console.log("No matching readiness entry found for supp:", suppId)
+      return null
+    } catch (error) {
+      console.error("Error finding readiness entry for supp:", error)
+      return null
+    }
+  }
 
   // Fetch supp data
   const fetchSupp = async () => {
@@ -80,62 +105,10 @@ function EditSuppPage() {
       setIsLoading(true)
       const data = await getSuppById(params.id)
       setSupp(data)
+      console.log("Supply data loaded successfully:", data)
 
-      // Extract readinessId from the supply object
-      console.log("Supply data:", data)
-      console.log("Supplier ID:", params.id)
-      console.log("Extracting readiness ID from supplier data...")
-
-      let extractedReadinessId = null
-
-      // Check for possible readiness reference fields
-      if (data._readinessId) {
-        extractedReadinessId = typeof data._readinessId === "object" ? data._readinessId._id : data._readinessId
-        console.log("Found readinessId in _readinessId:", extractedReadinessId)
-      } else if (data.readinessId) {
-        extractedReadinessId = typeof data.readinessId === "object" ? data.readinessId._id : data.readinessId
-        console.log("Found readinessId in readinessId:", extractedReadinessId)
-      } else if (data.readiness) {
-        extractedReadinessId = typeof data.readiness === "object" ? data.readiness._id : data.readiness
-        console.log("Found readinessId in readiness:", extractedReadinessId)
-      } else if (data.Readiness) {
-        extractedReadinessId = typeof data.Readiness === "object" ? data.Readiness._id : data.Readiness
-        console.log("Found readinessId in Readiness:", extractedReadinessId)
-      } else {
-        console.log("No direct readinessId reference found in data object")
-
-        // Try to extract from ID format (if ID follows pattern readinessId-entityId)
-        const idParts = params.id.split("-")
-        if (idParts.length > 1) {
-          extractedReadinessId = idParts[0]
-          console.log("Extracted potential readinessId from ID format:", extractedReadinessId)
-        }
-      }
-
-      // If we found a readiness ID, set it
-      if (extractedReadinessId) {
-        console.log("FINAL EXTRACTED READINESS ID:", extractedReadinessId)
-        setReadinessId(extractedReadinessId)
-      } else {
-        console.log("WARNING: Could not extract readiness ID from supplier data")
-      }
-
-      // Additional debugging - log all keys in the data object
-      console.log("All keys in supplier data:", Object.keys(data))
-
-      // Check if there are any keys that might contain "readiness"
-      const potentialReadinessKeys = Object.keys(data).filter(
-        (key) =>
-          key.toLowerCase().includes("readiness") ||
-          (typeof data[key] === "object" && data[key] !== null && data[key]._id),
-      )
-
-      if (potentialReadinessKeys.length > 0) {
-        console.log("Potential readiness reference keys:", potentialReadinessKeys)
-        potentialReadinessKeys.forEach((key) => {
-          console.log(`Key ${key} value:`, data[key])
-        })
-      }
+      // Try to find the readiness ID for this supp
+      await findReadinessIdForSupp(params.id)
     } catch (error) {
       console.error("Error fetching supply record:", error)
       toast({
@@ -152,13 +125,12 @@ function EditSuppPage() {
     if (params.id) {
       fetchSupp()
     }
-  }, [params.id, toast])
+  }, [params.id])
 
   // Handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    if (e) e.preventDefault()
     setIsSaving(true)
-    console.log("Submitting supplier data with readiness ID:", readinessId || "unknown")
 
     try {
       await updateSupp(params.id, supp)
@@ -173,28 +145,17 @@ function EditSuppPage() {
         console.log("Navigating to readiness detail:", readinessId)
         navigate(`/readiness/detail/${readinessId}`)
       } else {
-        // If we couldn't extract the readinessId, try to get it from the API response
-        try {
-          // Make an API call to get all readiness entries
-          const readinessEntries = await getAllReadiness()
+        // If we couldn't extract the readinessId, try to find it one more time
+        const foundReadinessId = await findReadinessIdForSupp(params.id)
 
-          // Find the readiness entry that references this supply
-          const readinessEntry = readinessEntries.find(
-            (entry) => entry.Supp === params.id || (entry.Supp && entry.Supp._id === params.id),
-          )
-
-          if (readinessEntry) {
-            console.log("Found readiness entry:", readinessEntry)
-            navigate(`/readiness/detail/${readinessEntry._id}`)
-            return
-          }
-        } catch (error) {
-          console.error("Error finding readiness entry:", error)
+        if (foundReadinessId) {
+          console.log("Found readiness ID at submit time:", foundReadinessId)
+          navigate(`/readiness/detail/${foundReadinessId}`)
+        } else {
+          // Fallback to supply details page if readinessId is not available
+          console.log("No readinessId found, navigating to supply detail")
+          navigate(`/supply/${params.id}`)
         }
-
-        // Fallback to supply details page if readinessId is not available
-        console.log("No readinessId found, navigating to supply detail")
-        navigate(`/supply/${params.id}`)
       }
     } catch (error) {
       console.error("Error updating supply record:", error)
@@ -203,7 +164,6 @@ function EditSuppPage() {
         title: "Error",
         description: "Failed to update supply record",
       })
-    } finally {
       setIsSaving(false)
     }
   }
@@ -250,8 +210,17 @@ function EditSuppPage() {
             <CardDescription>Supply record not found</CardDescription>
           </CardHeader>
           <CardFooter>
-            <Button onClick={() => navigate("/supply")}>
-              <ArrowLeft className="w-4 h-4 mr-2" /> Back to Supply Records
+            <Button
+              onClick={() => {
+                if (readinessId) {
+                  navigate(`/readiness/detail/${readinessId}`)
+                } else {
+                  navigate("/supply")
+                }
+              }}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              {readinessId ? "Back to Readiness" : "Back to Supply Records"}
             </Button>
           </CardFooter>
         </Card>
@@ -283,7 +252,7 @@ function EditSuppPage() {
               <p className="text-muted-foreground">Update supply chain and procurement details</p>
             </div>
           </div>
-          <Button onClick={handleSubmit} disabled={isSaving}>
+          <Button onClick={() => handleSubmit()} disabled={isSaving}>
             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Save Changes
           </Button>
@@ -492,7 +461,7 @@ function EditSuppPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSaving}>
+                <Button onClick={() => handleSubmit()} disabled={isSaving}>
                   {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                   Save Changes
                 </Button>
@@ -501,9 +470,8 @@ function EditSuppPage() {
           </div>
         </form>
       </motion.div>
-  </div>
+    </div>
   )
 }
 
 export default EditSuppPage
-

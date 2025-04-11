@@ -81,14 +81,52 @@ function EditProductProcessPage() {
   const [productProcess, setProductProcess] = useState(null)
   const [readinessId, setReadinessId] = useState(null)
 
-  // Add useEffect to extract readinessId from URL query parameters after the existing useState declarations
-  useEffect(() => {
-    // Get the readinessId from the URL query parameters
-    const queryParams = new URLSearchParams(window.location.search)
-    const id = queryParams.get("readinessId")
-    console.log("Extracted readinessId from URL:", id)
-    setReadinessId(id)
-  }, [])
+  // Fetch all readiness entries to find the one containing this product process
+  const findReadinessIdForProductProcess = async (productProcessId) => {
+    try {
+      console.log("Fetching all readiness entries to find the one containing product process ID:", productProcessId)
+      const entries = await getAllReadiness()
+      console.log("Fetched readiness entries:", entries)
+
+      // Loop through all entries to find the one containing our product process
+      for (const entry of entries) {
+        console.log("Checking entry:", entry._id)
+
+        // Check if this entry has a ProductProcess object
+        if (entry.ProductProcess && entry.ProductProcess._id === productProcessId) {
+          console.log("Found matching readiness entry via ProductProcess object:", entry._id)
+          setReadinessId(entry._id)
+          return entry._id
+        }
+
+        // Some entries might have the ProductProcesses directly as a property
+        if (
+          entry.ProductProcesses === productProcessId ||
+          (entry.ProductProcesses && entry.ProductProcesses._id === productProcessId)
+        ) {
+          console.log("Found matching readiness entry via direct ProductProcesses reference:", entry._id)
+          setReadinessId(entry._id)
+          return entry._id
+        }
+
+        // Check for other possible property names
+        if (
+          entry.productProcesses === productProcessId ||
+          (entry.productProcesses && entry.productProcesses._id === productProcessId)
+        ) {
+          console.log("Found matching readiness entry via direct productProcesses reference:", entry._id)
+          setReadinessId(entry._id)
+          return entry._id
+        }
+      }
+
+      console.log("No matching readiness entry found for product process:", productProcessId)
+      return null
+    } catch (error) {
+      console.error("Error finding readiness entry for product process:", error)
+      return null
+    }
+  }
 
   // Fetch product process data
   const fetchProductProcess = async () => {
@@ -96,62 +134,10 @@ function EditProductProcessPage() {
       setIsLoading(true)
       const data = await getProductProcessesById(params.id)
       setProductProcess(data)
+      console.log("Product process data loaded successfully:", data)
 
-      // Extract readinessId from the product process object
-      console.log("Product process data:", data)
-      console.log("Product Process ID:", params.id)
-      console.log("Extracting readiness ID from product process data...")
-
-      let extractedReadinessId = null
-
-      // Check for possible readiness reference fields
-      if (data._readinessId) {
-        extractedReadinessId = typeof data._readinessId === "object" ? data._readinessId._id : data._readinessId
-        console.log("Found readinessId in _readinessId:", extractedReadinessId)
-      } else if (data.readinessId) {
-        extractedReadinessId = typeof data.readinessId === "object" ? data.readinessId._id : data.readinessId
-        console.log("Found readinessId in readinessId:", extractedReadinessId)
-      } else if (data.readiness) {
-        extractedReadinessId = typeof data.readiness === "object" ? data.readiness._id : data.readiness
-        console.log("Found readinessId in readiness:", extractedReadinessId)
-      } else if (data.Readiness) {
-        extractedReadinessId = typeof data.Readiness === "object" ? data.Readiness._id : data.Readiness
-        console.log("Found readinessId in Readiness:", extractedReadinessId)
-      } else {
-        console.log("No direct readinessId reference found in data object")
-
-        // Try to extract from ID format (if ID follows pattern readinessId-entityId)
-        const idParts = params.id.split("-")
-        if (idParts.length > 1) {
-          extractedReadinessId = idParts[0]
-          console.log("Extracted potential readinessId from ID format:", extractedReadinessId)
-        }
-      }
-
-      // If we found a readiness ID, set it
-      if (extractedReadinessId) {
-        console.log("FINAL EXTRACTED READINESS ID:", extractedReadinessId)
-        setReadinessId(extractedReadinessId)
-      } else {
-        console.log("WARNING: Could not extract readiness ID from product process data")
-      }
-
-      // Additional debugging - log all keys in the data object
-      console.log("All keys in product process data:", Object.keys(data))
-
-      // Check if there are any keys that might contain "readiness"
-      const potentialReadinessKeys = Object.keys(data).filter(
-        (key) =>
-          key.toLowerCase().includes("readiness") ||
-          (typeof data[key] === "object" && data[key] !== null && data[key]._id),
-      )
-
-      if (potentialReadinessKeys.length > 0) {
-        console.log("Potential readiness reference keys:", potentialReadinessKeys)
-        potentialReadinessKeys.forEach((key) => {
-          console.log(`Key ${key} value:`, data[key])
-        })
-      }
+      // Try to find the readiness ID for this product process
+      await findReadinessIdForProductProcess(params.id)
     } catch (error) {
       console.error("Error fetching product process:", error)
       toast({
@@ -168,13 +154,12 @@ function EditProductProcessPage() {
     if (params.id) {
       fetchProductProcess()
     }
-  }, [params.id, toast])
+  }, [params.id])
 
   // Handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    if (e) e.preventDefault()
     setIsSaving(true)
-    console.log("Submitting product process with readiness ID:", readinessId || "unknown")
 
     try {
       await updateProductProcesses(params.id, productProcess)
@@ -189,30 +174,17 @@ function EditProductProcessPage() {
         console.log("Navigating to readiness detail:", readinessId)
         navigate(`/readiness/detail/${readinessId}`)
       } else {
-        // If we couldn't extract the readinessId, try to get it from the API response
-        try {
-          // Make an API call to get all readiness entries
-          const readinessEntries = await getAllReadiness()
+        // If we couldn't extract the readinessId, try to find it one more time
+        const foundReadinessId = await findReadinessIdForProductProcess(params.id)
 
-          // Find the readiness entry that references this product process
-          const readinessEntry = readinessEntries.find(
-            (entry) =>
-              entry.ProductProcesses === params.id ||
-              (entry.ProductProcesses && entry.ProductProcesses._id === params.id),
-          )
-
-          if (readinessEntry) {
-            console.log("Found readiness entry:", readinessEntry)
-            navigate(`/readiness/detail/${readinessEntry._id}`)
-            return
-          }
-        } catch (error) {
-          console.error("Error finding readiness entry:", error)
+        if (foundReadinessId) {
+          console.log("Found readiness ID at submit time:", foundReadinessId)
+          navigate(`/readiness/detail/${foundReadinessId}`)
+        } else {
+          // Fallback to product process details page if readinessId is not available
+          console.log("No readinessId found, navigating to product process detail")
+          navigate(`/product-process/${params.id}`)
         }
-
-        // Fallback to product process details page if readinessId is not available
-        console.log("No readinessId found, navigating to product process detail")
-        navigate(`/product-process/${params.id}`)
       }
     } catch (error) {
       console.error("Error updating product process:", error)
@@ -221,7 +193,6 @@ function EditProductProcessPage() {
         title: "Error",
         description: "Failed to update product process",
       })
-    } finally {
       setIsSaving(false)
     }
   }
@@ -268,8 +239,17 @@ function EditProductProcessPage() {
             <CardDescription>Product process not found</CardDescription>
           </CardHeader>
           <CardFooter>
-            <Button onClick={() => navigate("/product-process")}>
-              <ArrowLeft className="w-4 h-4 mr-2" /> Back to Product Process
+            <Button
+              onClick={() => {
+                if (readinessId) {
+                  navigate(`/readiness/detail/${readinessId}`)
+                } else {
+                  navigate("/product-process")
+                }
+              }}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              {readinessId ? "Back to Readiness" : "Back to Product Processes"}
             </Button>
           </CardFooter>
         </Card>
@@ -301,7 +281,7 @@ function EditProductProcessPage() {
               <p className="text-muted-foreground">Update product process details and validation information</p>
             </div>
           </div>
-          <Button onClick={handleSubmit} disabled={isSaving}>
+          <Button onClick={() => handleSubmit()} disabled={isSaving}>
             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Save Changes
           </Button>
@@ -510,7 +490,7 @@ function EditProductProcessPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSaving}>
+                <Button onClick={() => handleSubmit()} disabled={isSaving}>
                   {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                   Save Changes
                 </Button>
@@ -524,4 +504,3 @@ function EditProductProcessPage() {
 }
 
 export default EditProductProcessPage
-
