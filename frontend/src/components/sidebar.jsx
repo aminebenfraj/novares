@@ -9,19 +9,37 @@ import {
   Atom,
   Settings,
   MapPin,
-  LogOut,
   HelpCircle,
   Briefcase,
   PenToolIcon as Tool,
   ChevronDown,
-  Plus,
-  List,
-  Edit,
   Wrench,
   CircleGauge,
   ShoppingCart,
   Warehouse,
   Search,
+  FileText,
+  ClipboardCheck,
+  FileCheck,
+  Clipboard,
+  CheckSquare,
+  Shield,
+  Truck,
+  Package,
+  BarChart3,
+  User,
+  Layers,
+  Database,
+  Phone,
+  FileSpreadsheet,
+  ListChecks,
+  Cog,
+  Hammer,
+  Workflow,
+  Lightbulb,
+  Rocket,
+  CheckCircle,
+  BookOpen,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -31,7 +49,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { getCurrentUser } from "../apis/userApi"
-import { CallNotifications } from "../components/call-notifications"
 import { getAllMassProductions } from "../apis/massProductionApi"
 import { getAllPedidos } from "../apis/pedido/pedidoApi"
 import { getCalls } from "../apis/logistic/callApi"
@@ -39,141 +56,366 @@ import { getAllMaterials } from "../apis/gestionStockApi/materialApi"
 import { getAllAllocations } from "../apis/gestionStockApi/materialMachineApi"
 import { getAllReadiness } from "../apis/readiness/readinessApi"
 
-// Initial menu items structure
-const initialMenuItems = [
+// Navigation structure based on user's grouping
+const navigationItems = [
   {
+    id: "usersManagement",
+    label: "users management",
     icon: LayoutDashboard,
-    label: "Dashboard",
-    path: "/",
-    noDropdown: true,
+    path: "/admin",
+    isMainPage: true,
   },
   {
-    icon: Tool,
-    label: "Materials",
-    path: "/materials",
-    badge: "0",
-    badgeKey: "materials",
-    actions: [
-      { label: "List", path: "/materials", icon: List },
-      { label: "Create", path: "/materials/create", icon: Plus },
+    id: "gestionStocks",
+    label: "Inventory Management",
+    icon: Database,
+    children: [
       {
-        label: "Details",
-        path: "/materials/details",
-        icon: Edit,
-        disabled: true,
-        tooltip: "Select from list to view details",
+        id: "materials",
+        label: "Materials",
+        icon: Package,
+        path: "/materials",
+        badgeKey: "materials",
+        isMainPage: true,
+      },
+      {
+        id: "machines",
+        label: "Machines",
+        icon: Wrench,
+        path: "/machines",
+      },
+      {
+        id: "machineMaterial",
+        label: "Machine Material",
+        icon: Layers,
+        path: "/machinematerial",
+        badgeKey: "allocations",
+        isMainPage: true,
+      },
+      {
+        id: "locations",
+        label: "Locations",
+        icon: MapPin,
+        path: "/locations",
+      },
+      {
+        id: "categories",
+        label: "Categories",
+        icon: Box,
+        path: "/categories",
+      },
+      {
+        id: "suppliers",
+        label: "Suppliers",
+        icon: Briefcase,
+        path: "/suppliers",
       },
     ],
   },
   {
-    icon: Wrench,
-    label: "Machines",
-    path: "/machines",
-    actions: [
-      { label: "List", path: "/machines", icon: List },
-      { label: "Create", path: "/machines/create", icon: Plus },
-      { label: "Edit", path: "/machines/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ],
-  },
-  {
-    icon: Warehouse,
-    label: "Material Allocations",
-    path: "/machinematerial",
-    badge: "0",
-    badgeKey: "allocations",
-    badgeColor: "bg-slate-500",
-    actions: [
-      { label: "List", path: "/machinematerial", icon: List },
-      { label: "Create", path: "/machinematerial/create", icon: Plus },
+    id: "logistic",
+    label: "Logistics",
+    icon: Truck,
+    children: [
       {
-        label: "Details",
-        path: "/machinematerial/detail",
-        icon: Edit,
-        disabled: true,
-        tooltip: "Select from list to view details",
+        id: "call",
+        label: "Call",
+        icon: Phone,
+        path: "/call",
+        badgeKey: "calls",
+        isMainPage: true,
       },
     ],
   },
   {
-    icon: MapPin,
-    label: "Locations",
-    path: "/locations",
-    actions: [
-      { label: "List", path: "/locations", icon: List },
-      { label: "Create", path: "/locations/create", icon: Plus },
-      { label: "Edit", path: "/locations/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ],
-  },
-  {
-    icon: Box,
-    label: "Categories",
-    path: "/categories",
-    actions: [
-      { label: "List", path: "/categories", icon: List },
-      { label: "Create", path: "/categories/create", icon: Plus },
-      { label: "Edit", path: "/categories/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ],
-  },
-  {
-    icon: Briefcase,
-    label: "Suppliers",
-    path: "/suppliers",
-    actions: [
-      { label: "List", path: "/suppliers", icon: List },
-      { label: "Create", path: "/suppliers/create", icon: Plus },
-      { label: "Edit", path: "/suppliers/edit", icon: Edit, disabled: true, tooltip: "Select from list to edit" },
-    ],
-  },
-  {
-    icon: Atom,
-    label: "Mass Production",
-    path: "/masspd",
-    badge: "0",
-    badgeKey: "massProductions",
-    badgeColor: "bg-slate-500",
-    actions: [
-      { label: "List", path: "/masspd", icon: List },
-      { label: "Create", path: "/masspd/create", icon: Plus },
-      {
-        label: "Details",
-        path: "/masspd/detail",
-        icon: Edit,
-        disabled: true,
-        tooltip: "Select from list to view details",
-      },
-    ],
-  },
-  {
-    icon: ShoppingCart,
+    id: "pedido",
     label: "Orders",
-    path: "/pedido",
-    badge: "0",
-    badgeKey: "orders",
-    badgeColor: "bg-slate-500",
-    actions: [
-      { label: "List", path: "/pedido", icon: List },
-      { label: "Create", path: "/pedido/create", icon: Plus },
-      { label: "Details", path: "/pedido", icon: Edit, disabled: true, tooltip: "Select from list to view details" },
+    icon: ShoppingCart,
+    children: [
+      {
+        id: "pedido",
+        label: "Orders",
+        icon: ShoppingCart,
+        path: "/pedido",
+        badgeKey: "orders",
+        isMainPage: true,
+      },
+      {
+        id: "solicitanteModel",
+        label: "Requesters",
+        icon: User,
+        path: "/solicitante",
+      },
+      {
+        id: "tableStatus",
+        label: "Order Status",
+        icon: FileSpreadsheet,
+        path: "/table-status",
+      },
+      {
+        id: "tipoModel",
+        label: "Order Types",
+        icon: ListChecks,
+        path: "/tipo",
+      },
     ],
   },
   {
-    icon: Settings,
-    label: "Settings",
-    path: "/settings",
-    noDropdown: true,
+    id: "massProduction",
+    label: "Mass Production",
+    icon: Atom,
+    children: [
+      {
+        id: "massProduction",
+        label: "Mass Production",
+        icon: Atom,
+        path: "/masspd",
+        badgeKey: "massProductions",
+        isMainPage: true,
+      },
+      {
+        id: "checkIn",
+        label: "Check In",
+        icon: CheckCircle,
+        path: "/checkins",
+      },
+      {
+        id: "design",
+        label: "Design",
+        icon: Tool,
+        path: "/design",
+      },
+      {
+        id: "facilities",
+        label: "Facilities",
+        icon: Warehouse,
+        path: "/facilities",
+      },
+      {
+        id: "feasabilityDetail",
+        label: "Feasibility Detail",
+        icon: Lightbulb,
+        path: "/feasibility-detail",
+      },
+      {
+        id: "feasability",
+        label: "Feasibility",
+        icon: Lightbulb,
+        path: "/Feasibility",
+      },
+      {
+        id: "kickoff",
+        label: "Kick Off",
+        icon: Rocket,
+        path: "/kickoff",
+      },
+      {
+        id: "okForLunch",
+        label: "OK For Lunch",
+        icon: CheckCircle,
+        path: "/okforlunch",
+      },
+      {
+        id: "pPTuning",
+        label: "P-P Tuning",
+        icon: Tool,
+        path: "/pptuning",
+      },
+      {
+        id: "process_qualif",
+        label: "Process Qualification",
+        icon: CheckSquare,
+        path: "/processQualification",
+      },
+      {
+        id: "productDesignation",
+        label: "Product Designation",
+        icon: Clipboard,
+        path: "/pd",
+      },
+      {
+        id: "qualification_confirmation",
+        label: "Qualification Confirmation",
+        icon: FileCheck,
+        path: "/qualificationconfirmation",
+      },
+      {
+        id: "task",
+        label: "Tasks",
+        icon: CheckSquare,
+        path: "/tasklist",
+      },
+      {
+        id: "validation_for_offer",
+        label: "Validation For Offer",
+        icon: CheckSquare,
+        path: "/validationforoffer",
+      },
+      {
+        id: "machineDashboard",
+        label: "Machine Dashboard",
+        icon: BarChart3,
+        path: "/machine-dashboard",
+      },
+    ],
   },
   {
-    icon: CircleGauge,
-    label: "machine Dashboard",
-    path: "/machine-dashboard",
-    noDropdown: true,
+    id: "readiness",
+    label: "Readiness",
+    icon: ClipboardCheck,
+    children: [
+      {
+        id: "readiness",
+        label: "Readiness",
+        icon: ClipboardCheck,
+        path: "/readiness",
+        badgeKey: "readiness",
+        isMainPage: true,
+      },
+      {
+        id: "documentation",
+        label: "Documentation",
+        icon: FileText,
+        path: "/documentation",
+      },
+      {
+        id: "logistics",
+        label: "Logistics",
+        icon: Truck,
+        path: "/logistics",
+      },
+      {
+        id: "maintenance",
+        label: "Maintenance",
+        icon: Tool,
+        path: "/maintenance",
+      },
+      {
+        id: "packaging",
+        label: "Packaging",
+        icon: Box,
+        path: "/packaging",
+      },
+      {
+        id: "processStatusIndustrials",
+        label: "Process Status",
+        icon: CircleGauge,
+        path: "/process-status-industrials",
+      },
+      {
+        id: "productProcess",
+        label: "Product Process",
+        icon: Workflow,
+        path: "/product-process",
+      },
+      {
+        id: "runAtRateProduction",
+        label: "Run At Rate",
+        icon: BarChart3,
+        path: "/run-at-rate",
+      },
+      {
+        id: "safety",
+        label: "Safety",
+        icon: Shield,
+        path: "/safety",
+      },
+      {
+        id: "supp",
+        label: "Supply",
+        icon: Truck,
+        path: "/supply",
+      },
+      {
+        id: "toolingStatus",
+        label: "Tooling Status",
+        icon: Hammer,
+        path: "/tooling-status",
+      },
+      {
+        id: "training",
+        label: "Training",
+        icon: BookOpen,
+        path: "/training",
+      },
+      {
+        id: "validation",
+        label: "Validation",
+        icon: CheckSquare,
+        path: "/validation",
+      },
+    ],
+  },
+  {
+    id: "admin",
+    label: "Admin",
+    icon: Settings,
+    children: [
+      {
+        id: "userManagement",
+        label: "User Management",
+        icon: User,
+        path: "/admin",
+      },
+      {
+        id: "settings",
+        label: "Settings",
+        icon: Cog,
+        path: "/settings",
+      },
+    ],
+  },
+]
+
+// Quick access to main pages
+const mainPages = [
+  {
+    id: "massProduction",
+    label: "Mass Production",
+    icon: Atom,
+    path: "/masspd",
+    badgeKey: "massProductions",
+  },
+  {
+    id: "readiness",
+    label: "Readiness",
+    icon: ClipboardCheck,
+    path: "/readiness",
+    badgeKey: "readiness",
+  },
+  {
+    id: "pedido",
+    label: "Orders",
+    icon: ShoppingCart,
+    path: "/pedido",
+    badgeKey: "orders",
+  },
+  {
+    id: "call",
+    label: "Calls",
+    icon: Phone,
+    path: "/call",
+    badgeKey: "calls",
+  },
+  {
+    id: "machineMaterial",
+    label: "Machine Material",
+    icon: Layers,
+    path: "/machinematerial",
+    badgeKey: "allocations",
+  },
+  {
+    id: "materials",
+    label: "Materials",
+    icon: Package,
+    path: "/materials",
+    badgeKey: "materials",
   },
 ]
 
 export const Sidebar = ({ isOpen, toggleSidebar }) => {
-  const [openItems, setOpenItems] = useState({})
+  const [expandedItems, setExpandedItems] = useState({})
   const [user, setUser] = useState({ username: "Loading...", email: "..." })
-  const [menuItems, setMenuItems] = useState(initialMenuItems)
   const [counts, setCounts] = useState({
     materials: 0,
     allocations: 0,
@@ -185,19 +427,6 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const location = useLocation()
-
-  // Auto-expand the menu item that matches the current path
-  useEffect(() => {
-    menuItems.forEach((item) => {
-      if (
-        !item.noDropdown &&
-        (location.pathname.startsWith(item.path) ||
-          item.actions?.some((action) => location.pathname.startsWith(action.path)))
-      ) {
-        setOpenItems((prev) => ({ ...prev, [item.label]: true }))
-      }
-    })
-  }, [location.pathname, menuItems])
 
   // Fetch user data
   useEffect(() => {
@@ -290,38 +519,19 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
         }
 
         // Update counts state
-        const newCounts = {
+        setCounts({
           materials: materialsCount,
           allocations: allocationsCount,
           massProductions: massProductionsCount,
           orders: ordersCount,
           calls: callsCount,
           readiness: readinessCount,
-        }
-
-        setCounts(newCounts)
-
-        // Update menu items with new badge counts
-        updateMenuItemBadges(newCounts)
+        })
       } catch (error) {
         console.error("Failed to fetch counts:", error)
       } finally {
         setLoading(false)
       }
-    }
-
-    // Function to update menu items with badge counts
-    const updateMenuItemBadges = (newCounts) => {
-      const updatedMenuItems = initialMenuItems.map((item) => {
-        if (item.badgeKey && newCounts[item.badgeKey] !== undefined) {
-          return {
-            ...item,
-            badge: newCounts[item.badgeKey] > 0 ? newCounts[item.badgeKey].toString() : "0",
-          }
-        }
-        return item
-      })
-      setMenuItems(updatedMenuItems)
     }
 
     // Fetch counts initially
@@ -334,33 +544,46 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
     return () => clearInterval(intervalId)
   }, [])
 
-  const toggleItem = (label) => {
-    setOpenItems((prev) => ({
+  // Auto-expand the menu item that matches the current path
+  useEffect(() => {
+    navigationItems.forEach((item) => {
+      if (item.children) {
+        const shouldExpand = item.children.some(
+          (child) => location.pathname === child.path || location.pathname.startsWith(`${child.path}/`),
+        )
+        if (shouldExpand) {
+          setExpandedItems((prev) => ({ ...prev, [item.id]: true }))
+        }
+      }
+    })
+  }, [location.pathname])
+
+  const toggleItem = (itemId) => {
+    setExpandedItems((prev) => ({
       ...prev,
-      [label]: !prev[label],
+      [itemId]: !prev[itemId],
     }))
   }
 
-  // Check if a menu item or its children are active
-  const isActive = (item) => {
-    if (item.noDropdown) {
-      return location.pathname === item.path
-    }
-
-    return (
-      location.pathname.startsWith(item.path) ||
-      item.actions?.some((action) => location.pathname.startsWith(action.path))
-    )
-  }
-
-  // Filter menu items based on search term
-  const filteredMenuItems = searchTerm
-    ? menuItems.filter(
-        (item) =>
-          item.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.actions?.some((action) => action.label.toLowerCase().includes(searchTerm.toLowerCase())),
-      )
-    : menuItems
+  // Filter navigation items based on search term
+  const filteredItems = searchTerm
+    ? navigationItems
+        .map((item) => {
+          if (item.label.toLowerCase().includes(searchTerm.toLowerCase())) {
+            return item
+          }
+          if (item.children) {
+            const filteredChildren = item.children.filter((child) =>
+              child.label.toLowerCase().includes(searchTerm.toLowerCase()),
+            )
+            if (filteredChildren.length > 0) {
+              return { ...item, children: filteredChildren }
+            }
+          }
+          return null
+        })
+        .filter(Boolean)
+    : navigationItems
 
   return (
     <>
@@ -384,40 +607,80 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
           opacity: isOpen ? 1 : 0,
           transition: { duration: 0.3 },
         }}
-        className={`h-full bg-white border-r overflow-hidden ${isOpen ? "block" : "hidden md:block"} shadow-sm`}
+        className={`h-full bg-white dark:bg-zinc-900 border-r dark:border-zinc-800 overflow-hidden ${
+          isOpen ? "block" : "hidden md:block"
+        } shadow-sm`}
       >
         <div className="flex flex-col h-full">
           {/* User profile section */}
-          <div className="px-4 py-3 border-b">
+          <div className="px-4 py-3 border-b dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <Avatar className="w-10 h-10 border-2 border-slate-100">
+              <Avatar className="w-10 h-10 border-2 border-slate-100 dark:border-zinc-800">
                 <AvatarImage src="/placeholder.svg?height=40&width=40" alt="User" />
-                <AvatarFallback className="bg-slate-100 text-slate-700">
+                <AvatarFallback className="bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300">
                   {user.username ? user.username.substring(0, 2).toUpperCase() : "AD"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{user.username || "User"}</p>
+                <p className="text-sm font-medium truncate dark:text-zinc-200">{user.username || "User"}</p>
                 <p className="text-xs truncate text-muted-foreground">{user.email || "user@example.com"}</p>
               </div>
-              {/* Call notifications with count */}
-              <CallNotifications count={counts.calls} />
             </div>
           </div>
 
           {/* Search bar */}
-          <div className="px-4 py-2 border-b">
+          <div className="px-4 py-2 border-b dark:border-zinc-800">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search..."
-                className="pl-8 h-9"
+                placeholder="Search menu..."
+                className="pl-8 h-9 bg-slate-50 dark:bg-zinc-800 border-slate-200 dark:border-zinc-700"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
+
+          {/* Quick access to main pages */}
+          {!searchTerm && (
+            <div className="px-4 py-2 border-b dark:border-zinc-800">
+              <h3 className="mb-2 text-xs font-medium tracking-wider uppercase text-slate-500 dark:text-zinc-400">
+                Main Pages
+              </h3>
+              <div className="grid grid-cols-3 gap-1">
+                {mainPages.map((page) => (
+                  <Link
+                    key={page.id}
+                    to={page.path}
+                    className={`flex flex-col items-center justify-center p-2 rounded-md transition-colors text-center ${
+                      location.pathname === page.path
+                        ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
+                        : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/50"
+                    }`}
+                    onClick={() => window.innerWidth < 768 && toggleSidebar()}
+                  >
+                    <page.icon
+                      className={`w-5 h-5 mb-1 ${
+                        location.pathname === page.path
+                          ? "text-slate-900 dark:text-zinc-100"
+                          : "text-slate-500 dark:text-zinc-400"
+                      }`}
+                    />
+                    <span className="text-xs">{page.label}</span>
+                    {page.badgeKey && counts[page.badgeKey] > 0 && (
+                      <Badge
+                        className="mt-1 text-[10px] h-4 min-w-4 bg-slate-500 dark:bg-zinc-700 text-white"
+                        variant="secondary"
+                      >
+                        {counts[page.badgeKey]}
+                      </Badge>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Menu items */}
           <ScrollArea className="flex-1">
@@ -426,10 +689,10 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
                 // Show loading indicators for menu items
                 <div className="flex flex-col px-2 space-y-2">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="h-10 rounded-md bg-slate-100 animate-pulse"></div>
+                    <div key={i} className="h-10 rounded-md bg-slate-100 dark:bg-zinc-800 animate-pulse"></div>
                   ))}
                 </div>
-              ) : filteredMenuItems.length === 0 ? (
+              ) : filteredItems.length === 0 ? (
                 <div className="px-4 py-8 text-center text-muted-foreground">
                   <p>No menu items found</p>
                   <Button variant="link" onClick={() => setSearchTerm("")} className="mt-2">
@@ -438,96 +701,93 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
                 </div>
               ) : (
                 // Render actual menu items
-                filteredMenuItems.map((item, index) => (
-                  <React.Fragment key={item.label}>
-                    {index === 7 && <Separator className="mx-2 my-2" />}
+                filteredItems.map((item, index) => (
+                  <React.Fragment key={item.id}>
+                    {index > 0 && <Separator className="mx-2 my-2 dark:bg-zinc-800" />}
 
-                    {item.noDropdown ? (
+                    {!item.children ? (
                       <Link
                         to={item.path}
                         className={`flex items-center gap-3 px-3 py-2 mx-1 my-0.5 text-sm rounded-md transition-colors ${
-                          isActive(item)
-                            ? "bg-slate-100 text-slate-900 font-medium"
-                            : "text-slate-700 hover:bg-slate-50"
+                          location.pathname === item.path
+                            ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-medium"
+                            : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/50"
                         }`}
                         onClick={() => window.innerWidth < 768 && toggleSidebar()}
                       >
-                        <item.icon className={`w-5 h-5 ${isActive(item) ? "text-slate-900" : "text-slate-500"}`} />
+                        <item.icon
+                          className={`w-5 h-5 ${
+                            location.pathname === item.path
+                              ? "text-slate-900 dark:text-zinc-100"
+                              : "text-slate-500 dark:text-zinc-400"
+                          }`}
+                        />
                         <span>{item.label}</span>
-                        {item.badge && Number.parseInt(item.badge) > 0 && (
-                          <Badge
-                            className={`ml-auto ${item.badgeColor || "bg-slate-500"} text-white`}
-                            variant="secondary"
-                          >
-                            {item.badge}
-                          </Badge>
-                        )}
                       </Link>
                     ) : (
                       <Collapsible
-                        open={openItems[item.label]}
-                        onOpenChange={() => toggleItem(item.label)}
+                        open={expandedItems[item.id]}
+                        onOpenChange={() => toggleItem(item.id)}
                         className="mx-1 my-0.5"
                       >
                         <CollapsibleTrigger asChild>
                           <button
-                            className={`flex items-center justify-between w-full gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
-                              isActive(item)
-                                ? "bg-slate-100 text-slate-900 font-medium"
-                                : "text-slate-700 hover:bg-slate-50"
+                            className={`flex items-center justify-between w-full gap-3 px-3 py-2 text-sm rounded-md transition-colors 
+                            ${
+                              expandedItems[item.id]
+                                ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-medium"
+                                : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/50"
                             }`}
                           >
                             <div className="flex items-center gap-3">
                               <item.icon
-                                className={`w-5 h-5 ${isActive(item) ? "text-slate-900" : "text-slate-500"}`}
+                                className={`w-5 h-5 ${
+                                  expandedItems[item.id]
+                                    ? "text-slate-900 dark:text-zinc-100"
+                                    : "text-slate-500 dark:text-zinc-400"
+                                }`}
                               />
                               <span>{item.label}</span>
                             </div>
-                            <div className="flex items-center">
-                              {item.badge && Number.parseInt(item.badge) > 0 && (
-                                <Badge
-                                  className={`mr-2 ${item.badgeColor || "bg-slate-500"} text-white`}
-                                  variant="secondary"
-                                >
-                                  {item.badge}
-                                </Badge>
-                              )}
-                              <ChevronDown
-                                className={`w-4 h-4 transition-transform duration-200 ${
-                                  openItems[item.label] ? "rotate-180" : ""
-                                } text-slate-500`}
-                              />
-                            </div>
+                            <ChevronDown
+                              className={`w-4 h-4 transition-transform duration-200 ${
+                                expandedItems[item.id] ? "rotate-180" : ""
+                              } text-slate-500 dark:text-zinc-400`}
+                            />
                           </button>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
-                          <div className="py-1 pr-2 space-y-1 pl-9">
-                            {item.actions?.map((action) => (
+                          <div className="py-1 space-y-1">
+                            {item.children.map((child) => (
                               <Link
-                                key={action.label}
-                                to={action.disabled ? "#" : action.path}
-                                className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md ${
-                                  location.pathname === action.path
-                                    ? "bg-slate-100 text-slate-900 font-medium"
-                                    : action.disabled
-                                      ? "text-slate-400 cursor-not-allowed"
-                                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                                }`}
-                                onClick={(e) => {
-                                  if (action.disabled) {
-                                    e.preventDefault()
-                                    return
-                                  }
-                                  if (window.innerWidth < 768) toggleSidebar()
-                                }}
-                                title={action.disabled ? action.tooltip : ""}
+                                key={child.id}
+                                to={child.path}
+                                className={`flex items-center justify-between pl-10 pr-3 py-2 text-sm rounded-md transition-colors 
+                                ${
+                                  location.pathname === child.path || location.pathname.startsWith(`${child.path}/`)
+                                    ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-medium"
+                                    : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/50"
+                                }
+                                ${child.isMainPage ? "font-medium" : ""}
+                                `}
+                                onClick={() => window.innerWidth < 768 && toggleSidebar()}
                               >
-                                <action.icon
-                                  className={`w-4 h-4 ${location.pathname === action.path ? "text-slate-900" : ""}`}
-                                />
-                                {action.label}
-                                {location.pathname === action.path && (
-                                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-slate-500"></div>
+                                <div className="flex items-center gap-3">
+                                  <child.icon
+                                    className={`w-4 h-4 ${
+                                      location.pathname === child.path || location.pathname.startsWith(`${child.path}/`)
+                                        ? "text-slate-900 dark:text-zinc-100"
+                                        : child.isMainPage
+                                          ? "text-slate-700 dark:text-zinc-300"
+                                          : "text-slate-500 dark:text-zinc-400"
+                                    }`}
+                                  />
+                                  <span>{child.label}</span>
+                                </div>
+                                {child.badgeKey && counts[child.badgeKey] > 0 && (
+                                  <Badge className="text-white bg-slate-500 dark:bg-zinc-700" variant="secondary">
+                                    {counts[child.badgeKey]}
+                                  </Badge>
                                 )}
                               </Link>
                             ))}
@@ -542,19 +802,11 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
           </ScrollArea>
 
           {/* Footer actions */}
-          <div className="p-4 mt-auto border-t">
+          <div className="p-4 mt-auto border-t dark:border-zinc-800">
             <div className="flex flex-col gap-2">
               <Button variant="outline" className="justify-start w-full" size="sm">
                 <HelpCircle className="w-4 h-4 mr-2" />
                 Help & Support
-              </Button>
-              <Button
-                variant="ghost"
-                className="justify-start w-full text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                size="sm"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Log out
               </Button>
             </div>
           </div>

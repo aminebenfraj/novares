@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useLocation } from "react-router-dom"
-import Navbar from "./navbar"
+import Navbar from "./NavBar"
 import Sidebar from "./sidebar"
 import { Toaster } from "@/components/ui/toaster"
 
@@ -32,7 +32,7 @@ export default function MainLayout({ children }) {
   }, [location.pathname])
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-zinc-950">
       {/* Navbar at the top, full width */}
       <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
 
@@ -42,7 +42,7 @@ export default function MainLayout({ children }) {
         <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
         {/* Main content area */}
-        <main className="relative flex-1 overflow-auto">{children}</main>
+        <main className="relative flex-1 p-4 overflow-auto">{children}</main>
       </div>
 
       {/* Toast notifications */}
@@ -50,4 +50,3 @@ export default function MainLayout({ children }) {
     </div>
   )
 }
-
