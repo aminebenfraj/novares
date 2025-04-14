@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
+import MainLayout from "@/components/MainLayout"
 
 // Import API functions
 import { getReadinessById, updateReadiness } from "../../apis/readiness/readinessApi"
@@ -190,6 +191,7 @@ function ReadinessEdit() {
   }
 
   return (
+    <MainLayout>
     <motion.div className="container py-6 mx-auto" initial="hidden" animate="visible" variants={fadeIn}>
       <div className="flex items-center mb-6">
         <Button variant="ghost" onClick={() => navigate(`/readiness/detail/${id}`)} className="mr-4">
@@ -438,6 +440,7 @@ function ReadinessEdit() {
         </div>
       </form>
     </motion.div>
+    </MainLayout>
   )
 }
 
