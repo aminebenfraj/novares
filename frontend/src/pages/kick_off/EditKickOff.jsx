@@ -77,9 +77,31 @@ const EditKickOff = () => {
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search)
     const mpId = queryParams.get("massProductionId")
-    console.log("Extracted massProductionId from URL:", mpId)
+
     if (mpId) {
+      console.log("Extracted massProductionId from URL:", mpId)
       setMassProductionId(mpId)
+      // Store in localStorage as fallback
+      localStorage.setItem("lastMassProductionId", mpId)
+    } else {
+      // Try to get from localStorage as a fallback
+      const storedMpId = localStorage.getItem("lastMassProductionId")
+      if (storedMpId) {
+        console.log("Retrieved massProductionId from localStorage:", storedMpId)
+        setMassProductionId(storedMpId)
+      } else {
+        // If we still don't have an ID, try to extract it from the URL path
+        const pathParts = window.location.pathname.split("/")
+        const editIndex = pathParts.indexOf("edit")
+        if (editIndex > 0 && editIndex < pathParts.length - 1) {
+          const possibleId = pathParts[editIndex + 1]
+          if (possibleId && possibleId !== "masspd_idAttachment") {
+            console.log("Extracted massProductionId from URL path:", possibleId)
+            setMassProductionId(possibleId)
+            localStorage.setItem("lastMassProductionId", possibleId)
+          }
+        }
+      }
     }
   }, [])
 
@@ -227,7 +249,7 @@ const EditKickOff = () => {
                 variant="outline"
                 size="icon"
                 onClick={() => {
-                  if (massProductionId) {
+                  if (massProductionId && massProductionId !== "masspd_idAttachment") {
                     navigate(`/masspd/detail/${massProductionId}`)
                   } else {
                     navigate("/kickoff")
@@ -442,7 +464,8 @@ const EditKickOff = () => {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      if (massProductionId) {
+                      if (massProductionId && massProductionId !== "masspd_idAttachment") {
+                        // Ensure we're using the correct URL format
                         navigate(`/masspd/detail/${massProductionId}`)
                       } else {
                         navigate("/kickoff")

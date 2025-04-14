@@ -87,13 +87,35 @@ const EditDesign = () => {
 
   // Add this useEffect to extract massProductionId from URL query parameters
   useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search)
-    const mpId = queryParams.get("massProductionId")
-    console.log("Extracted massProductionId from URL:", mpId)
+    const queryParams = new URLSearchParams(window.location.search);
+    const mpId = queryParams.get("massProductionId");
+    
     if (mpId) {
-      setMassProductionId(mpId)
+      console.log("Extracted massProductionId from URL:", mpId);
+      setMassProductionId(mpId);
+      // Store in localStorage as fallback
+      localStorage.setItem("lastMassProductionId", mpId);
+    } else {
+      // Try to get from localStorage as a fallback
+      const storedMpId = localStorage.getItem("lastMassProductionId");
+      if (storedMpId) {
+        console.log("Retrieved massProductionId from localStorage:", storedMpId);
+        setMassProductionId(storedMpId);
+      } else {
+        // If we still don't have an ID, try to extract it from the URL path
+        const pathParts = window.location.pathname.split('/');
+        const editIndex = pathParts.indexOf('edit');
+        if (editIndex > 0 && editIndex < pathParts.length - 1) {
+          const possibleId = pathParts[editIndex + 1];
+          if (possibleId && possibleId !== 'masspd_idAttachment') {
+            console.log("Extracted massProductionId from URL path:", possibleId);
+            setMassProductionId(possibleId);
+            localStorage.setItem("lastMassProductionId", possibleId);
+          }
+        }
+      }
     }
-  }, [])
+  }, []);
 
   const fetchDesign = async () => {
     setLoading(true)
@@ -236,10 +258,10 @@ const EditDesign = () => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
               <Button variant="outline" size="icon" onClick={() => {
-                if (massProductionId) {
-                  navigate(`/masspd/detail/${massProductionId}`)
+                if (massProductionId && massProductionId !== 'masspd_idAttachment') {
+                  navigate(`/masspd/detail/${massProductionId}`);
                 } else {
-                  navigate("/design")
+                  navigate("/design");
                 }
               }}>
                 <ArrowLeft className="w-4 h-4" />
@@ -451,10 +473,10 @@ const EditDesign = () => {
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <Button variant="outline" onClick={() => {
-                    if (massProductionId) {
-                      navigate(`/masspd/detail/${massProductionId}`)
+                    if (massProductionId && massProductionId !== 'masspd_idAttachment') {
+                      navigate(`/masspd/detail/${massProductionId}`);
                     } else {
-                      navigate("/design")
+                      navigate("/design");
                     }
                   }}>
                     Cancel

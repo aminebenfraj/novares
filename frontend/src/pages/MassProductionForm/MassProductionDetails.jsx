@@ -35,32 +35,7 @@ import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import ContactUs from "@/components/ContactUs"
 
-import {
-  ArrowLeft,
-  Calendar,
-  CheckCircle,
-  CheckSquare,
-  Clock,
-  Edit,
-  FileCheck,
-  FileText,
-  AlertTriangle,
-  BarChart,
-  ChevronRight,
-  CircleAlert,
-  ClipboardCheck,
-  Factory,
-  HelpCircle,
-  LayoutDashboard,
-  Package,
-  PenLine,
-  Plus,
-  Settings,
-  ShieldCheck,
-  Trash2,
-  User,
-  XCircle,
-} from "lucide-react"
+import { ArrowLeft, Calendar, CheckCircle, CheckSquare, Clock, Edit, FileCheck, FileText, AlertTriangle, BarChart, ChevronRight, CircleAlert, ClipboardCheck, Factory, HelpCircle, LayoutDashboard, Package, PenLine, Plus, Settings, ShieldCheck, Trash2, User, XCircle } from 'lucide-react'
 import { getDesignById } from "../../apis/designApi"
 
 // Animation variants for Framer Motion
@@ -124,6 +99,35 @@ const MassProductionDashboard = () => {
     processQualif: false,
     qualifConfirm: false,
   })
+
+  const navigateToEditPage = (path, stageData) => {
+    // Store the current mass production ID in localStorage for fallback
+    if (id) {
+      localStorage.setItem("lastMassProductionId", id);
+    }
+
+    // Determine the correct ID to use for the edit page
+    let editId;
+    if (stageData) {
+      // If the stage data is an object with an _id property
+      if (typeof stageData === "object" && stageData._id) {
+        editId = stageData._id;
+      }
+      // If the stage data is a string (direct ID reference)
+      else if (typeof stageData === "string") {
+        editId = stageData;
+      }
+      // If we couldn't extract an ID, use the mass production ID
+      else {
+        editId = id;
+      }
+    } else {
+      editId = id;
+    }
+
+    // Navigate to the edit page with the ID and a query parameter for the mass production ID
+    navigate(`/${path}/edit/${editId}?massProductionId=${id}`);
+  };
 
   // Fetch main data on component mount
   useEffect(() => {
@@ -747,7 +751,7 @@ const MassProductionDashboard = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleEdit} variant="outline">
+              <Button onClick={() => navigate(`/masspd/edit/${id}`)} variant="outline">
                 <Edit className="w-4 h-4 mr-2" /> Edit
               </Button>
               <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -978,15 +982,7 @@ const MassProductionDashboard = () => {
                               if (status.status === "missing") {
                                 navigate(`/${stage.path}/create?massProductionId=${id}`)
                               } else {
-                                navigate(
-                                  `/${stage.path}/edit/${
-                                    typeof stage.data === "object" && stage.data._id
-                                      ? stage.data._id
-                                      : typeof stage.data === "string"
-                                        ? stage.data
-                                        : id
-                                  }`,
-                                )
+                                navigateToEditPage(stage.path, stage.data)
                               }
                             }}
                           >
@@ -1182,17 +1178,7 @@ const MassProductionDashboard = () => {
                           key={stage.id}
                           variant="outline"
                           className="justify-start border-slate-200"
-                          onClick={() => {
-                            navigate(
-                              `/${stage.path}/edit/${
-                                typeof stage.data === "object" && stage.data._id
-                                  ? stage.data._id
-                                  : typeof stage.data === "string"
-                                    ? stage.data
-                                    : id
-                              }`,
-                            )
-                          }}
+                          onClick={() => navigateToEditPage(stage.path, stage.data)}
                         >
                           <PenLine className="w-4 h-4 mr-2 text-slate-500" />
                           Complete {stage.name} Information ({getStageStatus(stage.data).percentage}% done)
@@ -1233,7 +1219,12 @@ const MassProductionDashboard = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/${stages.find((s) => s.id === activeTab)?.path}/edit/${id}`)}
+                        onClick={() =>
+                          navigateToEditPage(
+                            stages.find((s) => s.id === activeTab)?.path,
+                            stages.find((s) => s.id === activeTab)?.data,
+                          )
+                        }
                       >
                         <Edit className="w-4 h-4 mr-2" /> Edit
                       </Button>
@@ -1295,15 +1286,7 @@ const MassProductionDashboard = () => {
                           onClick={() => {
                             const stage = stages.find((s) => s.id === activeTab)
                             if (stage) {
-                              navigate(
-                                `/${stage.path}/edit/${
-                                  typeof stage.data === "object" && stage.data._id
-                                    ? stage.data._id
-                                    : typeof stage.data === "string"
-                                      ? stage.data
-                                      : id
-                                }`,
-                              )
+                              navigateToEditPage(stage.path, stage.data)
                             }
                           }}
                         >
@@ -1324,4 +1307,3 @@ const MassProductionDashboard = () => {
 }
 
 export default MassProductionDashboard
-

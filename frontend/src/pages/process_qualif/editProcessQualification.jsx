@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
-import { Loader2, Save, ArrowLeft, CheckCircle, XCircle } from 'lucide-react'
+import { Loader2, Save, ArrowLeft, CheckCircle, XCircle } from "lucide-react"
 import { getProcessQualificationById, updateProcessQualification } from "../../apis/process_qualifApi"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -83,12 +83,44 @@ const EditProcessQualification = () => {
   const [formData, setFormData] = useState({})
   const [massProductionId, setMassProductionId] = useState(null)
 
-  // Extract massProductionId from URL query parameters
+  // Enhanced useEffect to extract massProductionId from multiple sources
   useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search)
-    const mpId = queryParams.get("massProductionId")
-    console.log("Extracted massProductionId from URL:", mpId)
-    setMassProductionId(mpId)
+    const extractMassProductionId = async () => {
+      // Try to get massProductionId from URL query parameters
+      const queryParams = new URLSearchParams(window.location.search)
+      const mpId = queryParams.get("massProductionId")
+
+      if (mpId) {
+        console.log("Extracted massProductionId from URL query:", mpId)
+        setMassProductionId(mpId)
+        // Store in localStorage for fallback
+        localStorage.setItem("lastMassProductionId", mpId)
+        return
+      }
+
+      // If not found in query params, check if it's in the URL path
+      const pathParts = window.location.pathname.split("/")
+      const editIndex = pathParts.indexOf("edit")
+      if (editIndex > 0 && editIndex < pathParts.length - 1) {
+        const pathMpId = pathParts[editIndex + 1]
+        if (pathMpId && pathMpId !== "masspd_idAttachment") {
+          console.log("Extracted massProductionId from URL path:", pathMpId)
+          setMassProductionId(pathMpId)
+          localStorage.setItem("lastMassProductionId", pathMpId)
+          return
+        }
+      }
+
+      // Try to get from localStorage as a fallback
+      const storedMpId = localStorage.getItem("lastMassProductionId")
+      if (storedMpId) {
+        console.log("Retrieved massProductionId from localStorage:", storedMpId)
+        setMassProductionId(storedMpId)
+        return
+      }
+    }
+
+    extractMassProductionId()
   }, [])
 
   // Fetch process qualification data
@@ -97,7 +129,7 @@ const EditProcessQualification = () => {
       try {
         setIsLoading(true)
         const data = await getProcessQualificationById(id)
-        
+
         // Initialize form data with fetched data
         const initialFormData = {}
         processQualificationFields.forEach((field) => {
@@ -113,9 +145,9 @@ const EditProcessQualification = () => {
             },
           }
         })
-        
+
         setFormData(initialFormData)
-        
+
         // Check for possible massProduction reference fields
         if (data._massProductionId) {
           console.log("Found massProductionId in _massProductionId:", data._massProductionId)
@@ -184,6 +216,18 @@ const EditProcessQualification = () => {
     }))
   }
 
+  // Handle navigation back to the mass production details page
+  const handleBack = () => {
+    if (massProductionId && massProductionId !== "masspd_idAttachment") {
+      console.log("Navigating back to mass production detail with ID:", massProductionId)
+      // Ensure we're using the correct URL format
+      navigate(`/masspd/detail/${massProductionId}`)
+    } else {
+      console.log("No valid massProductionId found, navigating to process qualification list")
+      navigate("/processqualification")
+    }
+  }
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -199,18 +243,14 @@ const EditProcessQualification = () => {
       })
 
       await updateProcessQualification(id, submissionData)
-      
+
       toast({
         title: "Success",
         description: "Process qualification updated successfully",
       })
 
       // Navigate back to mass production details page if massProductionId is available
-      if (massProductionId) {
-        navigate(`/masspd/detail/${massProductionId}`)
-      } else {
-        navigate("/processqualification")
-      }
+      handleBack()
     } catch (error) {
       console.error("Error updating process qualification:", error)
       toast({
@@ -237,17 +277,7 @@ const EditProcessQualification = () => {
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  if (massProductionId) {
-                    navigate(`/masspd/detail/${massProductionId}`)
-                  } else {
-                    navigate("/processqualification")
-                  }
-                }}
-              >
+              <Button variant="outline" size="icon" onClick={handleBack}>
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <div>
@@ -389,16 +419,7 @@ const EditProcessQualification = () => {
                   </Tabs>
                 </CardContent>
                 <CardFooter className="flex justify-between">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      if (massProductionId) {
-                        navigate(`/masspd/detail/${massProductionId}`)
-                      } else {
-                        navigate("/processqualification")
-                      }
-                    }}
-                  >
+                  <Button variant="outline" onClick={handleBack}>
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isSaving}>

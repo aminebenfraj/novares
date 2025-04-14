@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, ArrowLeft, Save, CheckCircle, XCircle } from 'lucide-react'
+import { Loader2, ArrowLeft, Save, CheckCircle, XCircle } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import MainLayout from "@/components/MainLayout"
@@ -97,7 +97,7 @@ const EditFeasibility = () => {
       // Try to get massProductionId from URL query parameters
       const queryParams = new URLSearchParams(window.location.search)
       const mpId = queryParams.get("massProductionId")
-      
+
       if (mpId) {
         console.log("Extracted massProductionId from URL query:", mpId)
         setMassProductionId(mpId)
@@ -105,18 +105,20 @@ const EditFeasibility = () => {
         localStorage.setItem("lastMassProductionId", mpId)
         return
       }
-      
+
       // If not found in query params, check if it's in the URL path
       const pathParts = window.location.pathname.split("/")
-      const masspdIndex = pathParts.indexOf("masspd")
-      if (masspdIndex !== -1 && masspdIndex + 1 < pathParts.length) {
-        const pathMpId = pathParts[masspdIndex + 1]
-        console.log("Extracted massProductionId from URL path:", pathMpId)
-        setMassProductionId(pathMpId)
-        localStorage.setItem("lastMassProductionId", pathMpId)
-        return
+      const editIndex = pathParts.indexOf("edit")
+      if (editIndex > 0 && editIndex < pathParts.length - 1) {
+        const pathMpId = pathParts[editIndex + 1]
+        if (pathMpId && pathMpId !== "masspd_idAttachment") {
+          console.log("Extracted massProductionId from URL path:", pathMpId)
+          setMassProductionId(pathMpId)
+          localStorage.setItem("lastMassProductionId", pathMpId)
+          return
+        }
       }
-      
+
       // Try to get from localStorage as a fallback
       const storedMpId = localStorage.getItem("lastMassProductionId")
       if (storedMpId) {
@@ -124,28 +126,10 @@ const EditFeasibility = () => {
         setMassProductionId(storedMpId)
         return
       }
-      
-      // If still not found, try to extract from feasibility data after it's loaded
-      if (feasibilityData && Object.keys(feasibilityData).length > 0) {
-        // Check for possible mass production reference fields in feasibility data
-        if (feasibilityData._massProductionId) {
-          console.log("Found massProductionId in _massProductionId:", feasibilityData._massProductionId)
-          setMassProductionId(feasibilityData._massProductionId)
-        } else if (feasibilityData.massProductionId) {
-          console.log("Found massProductionId in massProductionId:", feasibilityData.massProductionId)
-          setMassProductionId(feasibilityData.massProductionId)
-        } else if (feasibilityData.massProduction) {
-          const mpRef = typeof feasibilityData.massProduction === "object" 
-            ? feasibilityData.massProduction._id 
-            : feasibilityData.massProduction
-          console.log("Found massProductionId in massProduction:", mpRef)
-          setMassProductionId(mpRef)
-        }
-      }
     }
-    
+
     extractMassProductionId()
-  }, [feasibilityData])
+  }, [])
 
   // Handle Feasibility Field Changes
   const handleFeasibilityChange = (key, field, value) => {
@@ -162,11 +146,12 @@ const EditFeasibility = () => {
 
   // Back button handler
   const handleBack = () => {
-    if (massProductionId) {
+    if (massProductionId && massProductionId !== "masspd_idAttachment") {
       console.log("Back button: Navigating to mass production detail:", massProductionId)
+      // Ensure we're using the correct URL format
       navigate(`/masspd/detail/${massProductionId}`)
     } else {
-      console.log("No massProductionId found, navigating to feasibility list")
+      console.log("No valid massProductionId found, navigating to feasibility list")
       navigate(`/feasibility`)
     }
   }
@@ -191,20 +176,21 @@ const EditFeasibility = () => {
       toast({ title: "Success", description: "Feasibility and Checkin Updated Successfully!" })
 
       // Navigate back to mass production details page if massProductionId is available
-      if (massProductionId) {
+      if (massProductionId && massProductionId !== "masspd_idAttachment") {
         console.log("Navigating back to mass production detail with ID:", massProductionId)
+        // Ensure we're using the correct URL format
         navigate(`/masspd/detail/${massProductionId}`)
       } else {
         // If we couldn't extract the massProductionId directly, try to find it from API
         try {
           // Make an API call to get all mass production entries
           const massProductionEntries = await getAllMassProductions()
-          
+
           // Find the mass production entry that references this feasibility
           const massProductionEntry = massProductionEntries.find(
-            (entry) => entry.feasibility === id || (entry.feasibility && entry.feasibility._id === id)
+            (entry) => entry.feasibility === id || (entry.feasibility && entry.feasibility._id === id),
           )
-          
+
           if (massProductionEntry) {
             console.log("Found mass production entry:", massProductionEntry)
             navigate(`/masspd/detail/${massProductionEntry._id}`)
@@ -213,7 +199,7 @@ const EditFeasibility = () => {
         } catch (error) {
           console.error("Error finding mass production entry:", error)
         }
-        
+
         // Fallback to feasibility details page if massProductionId is not available
         console.log("No massProductionId found, navigating to feasibility detail")
         navigate(`/feasibility/${id}`)
@@ -263,11 +249,7 @@ const EditFeasibility = () => {
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleBack}
-              >
+              <Button variant="outline" size="icon" onClick={handleBack}>
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <div>
@@ -429,10 +411,7 @@ const EditFeasibility = () => {
                   </Tabs>
                 </CardContent>
                 <CardFooter className="flex justify-between">
-                  <Button
-                    variant="outline"
-                    onClick={handleBack}
-                  >
+                  <Button variant="outline" onClick={handleBack}>
                     Cancel
                   </Button>
                   <Button type="submit" disabled={submitting}>
