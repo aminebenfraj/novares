@@ -137,3 +137,14 @@ export const calculateProgress = (remainingTime) => {
   const totalTime = 90 * 60 // 90 minutes in seconds
   return Math.max(0, Math.min(100, (remainingTime / totalTime) * 100))
 }
+export const deleteCall = async (id) => {
+  try {
+    console.log(`Deleting call with ID: ${id}`);
+    const response = await axios.delete(`${API_URL}/${id}`);
+    console.log("Delete call response:", response);
+    return response;
+  } catch (error) {
+    console.error("Error in deleteCall:", error);
+    throw error;
+  }
+};

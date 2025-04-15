@@ -19,12 +19,17 @@ export const apiRequest = async (
         Authorization: `Bearer ${token}`,
         ...(isFormData ? {} : { "Content-Type": "application/json" }),
       },
-      data,
     };
+
+    // Only attach data if method allows a body
+    if (data && !["GET", "DELETE"].includes(method.toUpperCase())) {
+      config.data = data;
+    }
+
     const response = await axios(config);
-    
     return response.data;
   } catch (error) {
-    console.error(error);
+    console.error("API Request Error:", error);
+    throw error;
   }
 };

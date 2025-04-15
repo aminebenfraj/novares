@@ -159,3 +159,20 @@ function formatTime(seconds) {
   return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`
 }
 
+// Delete a call by ID
+exports.deleteCall = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedCall = await Call.findByIdAndDelete(id);
+
+    if (!deletedCall) {
+      return res.status(404).json({ message: "Call not found" });
+    }
+
+    res.status(200).json({ message: "Call deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting call:", error);
+    res.status(500).json({ message: error.message });
+  }
+};

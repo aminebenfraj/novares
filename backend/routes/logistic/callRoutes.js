@@ -5,6 +5,7 @@ const {
   completeCall,
   exportCalls,
   checkExpiredCalls,
+  deleteCall,
 } = require("../../controllers/logistic/callController")
 const router = express.Router()
 
@@ -22,6 +23,8 @@ router.get("/export", exportCalls)
 
 // Manually check and update expired calls
 router.post("/check-expired", checkExpiredCalls)
+
+router.delete("/:id",deleteCall);
 
 module.exports = router
 

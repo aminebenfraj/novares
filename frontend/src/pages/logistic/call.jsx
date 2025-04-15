@@ -1,8 +1,8 @@
 "use client"
-
+import { Trash2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { getCalls, createCall, completeCall, checkExpiredCalls, exportCalls } from "@/apis/logistic/callApi"
+import { getCalls, createCall, completeCall, checkExpiredCalls, exportCalls,deleteCall} from "@/apis/logistic/callApi"
 import { getAllMachines } from "@/apis/gestionStockApi/machineApi"
 import { useAuth } from "@/context/AuthContext"
 import MainLayout from "@/components/MainLayout"
@@ -353,7 +353,19 @@ const CallDashboard = () => {
         return "outline"
     }
   }
-
+  const handleDeleteCall = async (id) => {
+    const confirm = window.confirm("¿Estás seguro de que quieres eliminar esta llamada?");
+    if (!confirm) return;
+  
+    try {
+      await deleteCall(id);
+      alert("Llamada eliminada correctamente");
+      fetchCalls(); // Refresh the list after deletion
+    } catch (error) {
+      console.error("Error al eliminar la llamada:", error);
+      alert("Error al eliminar la llamada");
+    }
+  };
   // Get status icon
   const getStatusIcon = (status) => {
     switch (status) {
@@ -638,6 +650,7 @@ const CallDashboard = () => {
                       <TableHead className="font-bold">ESTATUS</TableHead>
                       <TableHead className="font-bold">ACCIÓN</TableHead>
                       <TableHead className="font-bold">HORA TAREA TERMINADA</TableHead>
+                      <TableHead className="font-bold">DELETE</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -705,10 +718,19 @@ const CallDashboard = () => {
                                   </Tooltip>
                                 </TooltipProvider>
                               )}
+
                             </TableCell>
                             <TableCell>
                               {call.completionTime ? new Date(call.completionTime).toLocaleTimeString() : "-"}
                             </TableCell>
+                            <TableCell>
+                            <Button
+  variant="ghost"
+  size="icon"
+  onClick={() => handleDeleteCall(call._id)}
+>
+  <Trash2 className="w-4 h-4 text-red-500" />
+</Button>                            </TableCell>
                           </motion.tr>
                         ))}
                       </AnimatePresence>
