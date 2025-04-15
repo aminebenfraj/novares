@@ -66,68 +66,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/context/AuthContext"
 
 // Define module groups for navigation
-const moduleGroups = [
-  {
-    id: "inventory",
-    label: "Inventory Management",
-    icon: Package,
-    modules: [
-      { id: "materials", label: "Materials", path: "/materials", icon: Package },
-      { id: "machines", label: "Machines", path: "/machines", icon: Wrench },
-      { id: "allocations", label: "Material Allocations", path: "/machinematerial", icon: Warehouse },
-      { id: "locations", label: "Locations", path: "/locations", icon: MapPin },
-      { id: "categories", label: "Categories", path: "/categories", icon: Box },
-      { id: "suppliers", label: "Suppliers", path: "/suppliers", icon: Briefcase },
-    ],
-  },
-  {
-    id: "production",
-    label: "Production",
-    icon: Atom,
-    modules: [
-      { id: "masspd", label: "Mass Production", path: "/masspd", icon: Atom },
-      { id: "machine-dashboard", label: "Machine Dashboard", path: "/machine-dashboard", icon: BarChart3 },
-      { id: "pptuning", label: "P-P Tuning", path: "/pptuning", icon: Tool },
-      { id: "process-qualification", label: "Process Qualification", path: "/processQualification", icon: CheckSquare },
-    ],
-  },
-  {
-    id: "orders",
-    label: "Orders & Logistics",
-    icon: ShoppingCart,
-    modules: [
-      { id: "pedido", label: "Orders", path: "/pedido", icon: ShoppingCart },
-      { id: "call", label: "Calls", path: "/call", icon: Bell },
-      { id: "logistics", label: "Logistics", path: "/logistics", icon: Truck },
-    ],
-  },
-  {
-    id: "planning",
-    label: "Planning & Documentation",
-    icon: FileText,
-    modules: [
-      { id: "readiness", label: "Readiness", path: "/readiness", icon: ClipboardCheck },
-      { id: "feasibility", label: "Feasibility", path: "/Feasibility", icon: FileCheck },
-      { id: "pd", label: "Product Designation", path: "/pd", icon: Clipboard },
-      { id: "design", label: "Design", path: "/design", icon: Tool },
-      { id: "documentation", label: "Documentation", path: "/documentation", icon: FileText },
-    ],
-  },
-  {
-    id: "quality",
-    label: "Quality & Safety",
-    icon: Shield,
-    modules: [
-      {
-        id: "qualification",
-        label: "Qualification Confirmation",
-        path: "/qualificationconfirmation",
-        icon: CheckSquare,
-      },
-      { id: "safety", label: "Safety", path: "/safety", icon: Shield },
-      { id: "maintenance", label: "Maintenance", path: "/maintenance", icon: Tool },
-    ],
-  },
+const moduleGroups = [  
   {
     id: "admin",
     label: "Administration",
@@ -371,46 +310,7 @@ export const Navbar = ({ toggleSidebar, isSidebarOpen }) => {
 
             <Separator orientation="vertical" className="hidden h-6 md:block" />
 
-            {/* Module navigation dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="hidden gap-1 md:flex">
-                  {React.createElement(currentModule.icon, { className: "w-4 h-4 mr-1" })}
-                  <span>{currentModule.label}</span>
-                  <ChevronDown className="w-3 h-3 ml-1 opacity-70" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel>Navigation</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-
-                {moduleGroups.map((group) => (
-                  <DropdownMenuSub key={group.id}>
-                    <DropdownMenuSubTrigger>
-                      <group.icon className="w-4 h-4 mr-2" />
-                      <span>{group.label}</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                      <DropdownMenuSubContent className="min-w-[220px]">
-                        {group.modules.map((module) => (
-                          <DropdownMenuItem
-                            key={module.id}
-                            onClick={() => navigate(module.path)}
-                            className={location.pathname === module.path ? "bg-slate-100" : ""}
-                          >
-                            <module.icon className="w-4 h-4 mr-2" />
-                            <span>{module.label}</span>
-                            {location.pathname === module.path && (
-                              <div className="ml-auto w-1.5 h-1.5 rounded-full bg-slate-500"></div>
-                            )}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                  </DropdownMenuSub>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            
           </div>
 
           <div className="flex items-center gap-2">
