@@ -3,18 +3,97 @@ const { Schema } = mongoose;
 
 const CheckinSchema = new Schema(
   {
-    project_manager: { type: Boolean, default: false },
-    business_manager: { type: Boolean, default: false },
-    engineering_leader_manager: { type: Boolean, default: false },
-    quality_leader: { type: Boolean, default: false },
-    plant_quality_leader: { type: Boolean, default: false },
-    industrial_engineering: { type: Boolean, default: false },
-    launch_manager_method: { type: Boolean, default: false },
-    maintenance: { type: Boolean, default: false },
-    purchasing: { type: Boolean, default: false },
-    logistics: { type: Boolean, default: false },
-    sales: { type: Boolean, default: false },
-    economic_financial_leader: { type: Boolean, default: false }
+    project_manager: {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+      date: { type: Date, default: Date.now },
+                  name: { type: String, default: "" }
+
+    },
+    business_manager: {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+            date: { type: Date, default: Date.now },
+                        name: { type: String, default: "" }
+
+    },
+    engineering_leader_manager: {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+      date: { type: Date, default: Date.now },
+                  name: { type: String, default: "" }
+
+
+    },
+    quality_leader: {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+      date: { type: Date, default: Date.now },
+                  name: { type: String, default: "" }
+
+    },
+    plant_quality_leader: {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+      date: { type: Date, default: Date.now },
+                  name: { type: String, default: "" }
+
+
+    },
+    industrial_engineering: {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+      date: { type: Date, default: Date.now },
+                  name: { type: String, default: "" }
+
+    },
+    launch_manager_method: {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+      date: { type: Date, default: Date.now },
+                  name: { type: String, default: "" }
+
+
+    },
+    maintenance: {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+            date: { type: Date, default: Date.now },
+                        name: { type: String, default: "" }
+
+
+    },
+    purchasing: {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+            date: { type: Date, default: Date.now },
+                        name: { type: String, default: "" }
+
+
+    },
+    logistics: {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+            date: { type: Date, default: Date.now },
+                        name: { type: String, default: "" }
+
+
+    },
+    sales: {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+            date: { type: Date, default: Date.now },
+                        name: { type: String, default: "" }
+
+
+    },
+    economic_financial_leader: {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+            date: { type: Date, default: Date.now },
+            name: { type: String, default: "" }
+
+    }
   },
   { timestamps: true }
 );

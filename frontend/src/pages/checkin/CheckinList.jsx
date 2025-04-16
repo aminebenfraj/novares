@@ -1,281 +1,287 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { getCheckins, deleteCheckin } from "../../apis/checkIn";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Badge } from "../../components/ui/badge";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "../../components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription
-} from "../../components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../../components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu";
-import { Skeleton } from "../../components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast"
-import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Loader2, CheckCircle, XCircle } from 'lucide-react';
-import MainLayout from "@/components/MainLayout";
+"use client"
 
-const CheckinList = () => {
-  const [checkins, setCheckins] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState(null);
-  const [selectedCheckin, setSelectedCheckin] = useState(null);
-  const [filter, setFilter] = useState("");
-  const { toast } = useToast();
+import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
+import { getCheckins, deleteCheckin }  from "../../apis/checkIn"
+import MainLayout from "@/components/MainLayout"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useToast } from "@/hooks/use-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Trash2, Edit, Plus, Info } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
+}
+
+const roleFields = [
+  { id: "project_manager", label: "Project Manager" },
+  { id: "business_manager", label: "Business Manager" },
+  { id: "engineering_leader_manager", label: "Engineering Leader/Manager" },
+  { id: "quality_leader", label: "Quality Leader" },
+  { id: "plant_quality_leader", label: "Plant Quality Leader" },
+  { id: "industrial_engineering", label: "Industrial Engineering" },
+  { id: "launch_manager_method", label: "Launch Manager Method" },
+  { id: "maintenance", label: "Maintenance" },
+  { id: "purchasing", label: "Purchasing" },
+  { id: "logistics", label: "Logistics" },
+  { id: "sales", label: "Sales" },
+  { id: "economic_financial_leader", label: "Economic Financial Leader" },
+]
+
+function CheckinList() {
+  const [checkins, setCheckins] = useState([])
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
+  const navigate = useNavigate()
 
   useEffect(() => {
-    fetchCheckins();
-  }, []);
+    fetchCheckins()
+  }, [])
 
   const fetchCheckins = async () => {
     try {
-      setLoading(true);
-      const res = await getCheckins();
-      setCheckins(res.data);
+      setLoading(true)
+      const response = await getCheckins()
+      setCheckins(response.data)
     } catch (error) {
       toast({
-        title: "Error fetching check-ins",
-        description: "Please try again later",
+        title: "Error",
+        description: "Failed to fetch check-ins",
         variant: "destructive",
-      });
+      })
+      console.error("Error fetching check-ins:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this check-in?")) return;
-    
-    setDeletingId(id);
     try {
-      await deleteCheckin(id);
-      setCheckins((prev) => prev.filter((item) => item._id !== id));
+      await deleteCheckin(id)
       toast({
-        title: "Check-in deleted",
-        description: "The check-in has been successfully deleted",
-      });
+        title: "Success",
+        description: "Check-in deleted successfully",
+      })
+      fetchCheckins()
     } catch (error) {
       toast({
-        title: "Error deleting check-in",
-        description: "Please try again later",
+        title: "Error",
+        description: "Failed to delete check-in",
         variant: "destructive",
-      });
-    } finally {
-      setDeletingId(null);
+      })
+      console.error("Error deleting check-in:", error)
     }
-  };
+  }
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
 
   const getCompletionStatus = (checkin) => {
-    const fields = Object.keys(checkin).filter(
-      key => !["_id", "__v", "createdAt", "updatedAt"].includes(key)
-    );
-    
-    const completedFields = fields.filter(key => checkin[key] === true);
-    const isComplete = completedFields.length === fields.length;
-    
-    return {
-      status: isComplete ? "Complete" : "Incomplete",
-      percentage: Math.round((completedFields.length / fields.length) * 100),
-      variant: isComplete ? "success" : "warning"
-    };
-  };
+    const fields = roleFields.map((field) => field.id)
+    const completedFields = fields.filter((field) => checkin[field]?.value === true).length
+    const percentage = Math.round((completedFields / fields.length) * 100)
+    return `${percentage}%`
+  }
 
-  const filteredCheckins = checkins.filter(item => 
-    item._id.toLowerCase().includes(filter.toLowerCase())
-  );
+  const getLastUpdatedRole = (checkin) => {
+    let lastUpdated = null
+    let lastRole = null
+
+    roleFields.forEach((field) => {
+      if (checkin[field.id]?.value && checkin[field.id]?.date) {
+        const roleDate = new Date(checkin[field.id].date)
+        if (!lastUpdated || roleDate > lastUpdated) {
+          lastUpdated = roleDate
+          lastRole = field
+        }
+      }
+    })
+
+    return lastRole
+      ? {
+          label: lastRole.label,
+          date: lastUpdated,
+          name: checkin[lastRole.id].name || "Unknown",
+        }
+      : null
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <MainLayout/>
-      <div className="container py-8 mx-auto">
+    <MainLayout>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="container px-4 py-8 mx-auto"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">Check-ins</h1>
+          <Button onClick={() => navigate("/checkin/create")} className="flex items-center gap-2">
+            <Plus size={16} />
+            New Check-in
+          </Button>
+        </div>
+
         <Card>
-          <CardHeader className="pb-3">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <CardTitle className="text-2xl font-bold">Check-ins</CardTitle>
-                <CardDescription>
-                  Manage and view all check-ins
-                </CardDescription>
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <div className="relative">
-                  <Search className="absolute w-4 h-4 -translate-y-1/2 text-muted-foreground left-3 top-1/2" />
-                  <Input
-                    placeholder="Search by ID..."
-                    className="pl-9"
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                  />
-                </div>
-                <Link to="/checkins/create">
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" /> Add Check-in
-                  </Button>
-                </Link>
-              </div>
-            </div>
+          <CardHeader>
+            <CardTitle>All Check-ins</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="space-y-4">
-                {[...Array(5)].map((_, index) => (
-                  <Skeleton key={index} className="w-full h-12" />
-                ))}
+              <div className="flex justify-center py-8">
+                <div className="w-12 h-12 border-b-2 border-gray-900 rounded-full animate-spin"></div>
               </div>
+            ) : checkins.length === 0 ? (
+              <div className="py-8 text-center text-gray-500">No check-ins found. Create your first one!</div>
             ) : (
-              <div className="border rounded-md">
+              <motion.div variants={container} initial="hidden" animate="show">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[100px]">ID</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Last Updated</TableHead>
                       <TableHead>Completion</TableHead>
+                      <TableHead>Last Check-in</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredCheckins.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">
-                          No check-ins found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredCheckins.map((checkin) => {
-                        const { status, percentage, variant } = getCompletionStatus(checkin);
-                        return (
-                          <TableRow key={checkin._id}>
-                            <TableCell className="font-medium">
-                              {checkin._id.substring(0, 8)}...
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={variant} className="flex items-center justify-center w-24 gap-1">
-                                {status === "Complete" ? (
-                                  <><CheckCircle className="w-3 h-3" /> Complete</>
-                                ) : (
-                                  <><XCircle className="w-3 h-3" /> Incomplete</>
-                                )}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <div className="w-full h-2 rounded-full bg-secondary">
-                                  <div 
-                                    className={`h-full rounded-full ${variant === "success" ? "bg-green-500" : "bg-amber-500"}`}
-                                    style={{ width: `${percentage}%` }}
-                                  />
-                                </div>
-                                <span className="text-xs w-9">{percentage}%</span>
+                    {checkins.map((checkin) => {
+                      const lastUpdatedRole = getLastUpdatedRole(checkin)
+
+                      return (
+                        <motion.tr key={checkin._id} variants={item} className="border-b">
+                          <TableCell className="font-medium">{checkin._id.substring(0, 8)}...</TableCell>
+                          <TableCell>{formatDate(checkin.createdAt)}</TableCell>
+                          <TableCell>{formatDate(checkin.updatedAt)}</TableCell>
+                          <TableCell>
+                            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                              <div
+                                className="bg-green-600 h-2.5 rounded-full"
+                                style={{ width: getCompletionStatus(checkin) }}
+                              ></div>
+                            </div>
+                            <span className="block mt-1 text-xs">{getCompletionStatus(checkin)}</span>
+                          </TableCell>
+                          <TableCell>
+                            {lastUpdatedRole ? (
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium">{lastUpdatedRole.label}</span>
+                                <span className="text-xs text-gray-500">
+                                  by {lastUpdatedRole.name} on {formatDate(lastUpdatedRole.date)}
+                                </span>
                               </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreHorizontal className="w-4 h-4" />
-                                    <span className="sr-only">Open menu</span>
+                            ) : (
+                              <span className="text-xs text-gray-500">No check-ins yet</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => navigate(`/checkin/details/${checkin._id}`)}
+                                    >
+                                      <Info size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>View Details</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => navigate(`/checkin/edit/${checkin._id}`)}
+                                    >
+                                      <Edit size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Edit Check-in</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="icon" className="text-red-500 hover:text-red-700">
+                                    <Trash2 size={16} />
                                   </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <Dialog>
-                                    <DialogTrigger asChild>
-                                      <DropdownMenuItem onSelect={(e) => {
-                                        e.preventDefault();
-                                        setSelectedCheckin(checkin);
-                                      }}>
-                                        <Eye className="w-4 h-4 mr-2" /> View details
-                                      </DropdownMenuItem>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                      <DialogHeader>
-                                        <DialogTitle>Check-in Details</DialogTitle>
-                                      </DialogHeader>
-                                      {selectedCheckin && (
-                                        <div className="grid gap-4 py-4">
-                                          <div className="grid items-center grid-cols-2 gap-4">
-                                            <span className="font-medium">ID:</span>
-                                            <span>{selectedCheckin._id}</span>
-                                          </div>
-                                          <div className="grid items-center grid-cols-2 gap-4">
-                                            <span className="font-medium">Status:</span>
-                                            <Badge variant={getCompletionStatus(selectedCheckin).variant}>
-                                              {getCompletionStatus(selectedCheckin).status}
-                                            </Badge>
-                                          </div>
-                                          <div className="h-px my-2 bg-border" />
-                                          {Object.entries(selectedCheckin)
-                                            .filter(([key]) => !["_id", "__v", "createdAt", "updatedAt"].includes(key))
-                                            .map(([key, value]) => (
-                                              <div key={key} className="grid items-center grid-cols-2 gap-4">
-                                                <span className="font-medium capitalize">{key.replace(/_/g, " ")}</span>
-                                                <Badge variant={value ? "success" : "secondary"}>
-                                                  {value ? "Yes" : "No"}
-                                                </Badge>
-                                              </div>
-                                            ))}
-                                        </div>
-                                      )}
-                                    </DialogContent>
-                                  </Dialog>
-                                  <Link to={`/checkins/edit/${checkin._id}`}>
-                                    <DropdownMenuItem>
-                                      <Pencil className="w-4 h-4 mr-2" /> Edit
-                                    </DropdownMenuItem>
-                                  </Link>
-                                  <DropdownMenuItem 
-                                    className="text-destructive focus:text-destructive"
-                                    onSelect={(e) => {
-                                      e.preventDefault();
-                                      handleDelete(checkin._id);
-                                    }}
-                                    disabled={deletingId === checkin._id}
-                                  >
-                                    {deletingId === checkin._id ? (
-                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="w-4 h-4 mr-2" />
-                                    )}
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This will permanently delete the check-in.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-red-500 hover:bg-red-700"
+                                      onClick={() => handleDelete(checkin._id)}
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </motion.tr>
+                      )
+                    })}
                   </TableBody>
                 </Table>
-              </div>
+              </motion.div>
             )}
           </CardContent>
         </Card>
-      </div>
-      <MainLayout />
-    </div>
-  );
-};
+      </motion.div>
+    </MainLayout>
+  )
+}
 
-export default CheckinList;
+export default CheckinList

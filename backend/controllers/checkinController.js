@@ -3,6 +3,7 @@ const Checkin = require("../models/CheckInModel");
 // ✅ Create a Checkin Record
 exports.createCheckin = async (req, res) => {
   try {
+    // Optional: You can validate req.body structure here
     const checkin = new Checkin(req.body);
     await checkin.save();
     res.status(201).json({ message: "Checkin created successfully", data: checkin });
@@ -35,7 +36,10 @@ exports.getCheckinById = async (req, res) => {
 // ✅ Update a Checkin Record
 exports.updateCheckin = async (req, res) => {
   try {
-    const updatedCheckin = await Checkin.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updatedCheckin = await Checkin.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true // ensure schema rules are respected
+    });
     if (!updatedCheckin) return res.status(404).json({ message: "Checkin not found" });
     res.status(200).json({ message: "Checkin updated successfully", data: updatedCheckin });
   } catch (error) {

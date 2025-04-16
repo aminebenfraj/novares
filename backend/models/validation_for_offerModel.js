@@ -4,10 +4,10 @@ const { Schema } = mongoose;
 const validationForOfferSchema = new Schema(
   {
     checkin: { type: mongoose.Schema.Types.ObjectId, ref: "Checkin", required: true },
-    name:{type:String,required:true},
     upload: { type: String, required: false }, // File path or URL
     check: { type: Boolean, default: false },
-    date: { type: Date, default: Date.now }
+    date: { type: Date, default: Date.now },
+    comments: { type: String, required: false }, // Optional comments field
   },
   { timestamps: true }
 );

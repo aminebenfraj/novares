@@ -1,39 +1,80 @@
 "use client"
 
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { createCheckin } from "../../apis/checkIn"
+import { motion } from "framer-motion"
+import { createCheckin }  from "../../apis/checkIn"
+import MainLayout from "@/components/MainLayout"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, ArrowLeft } from "lucide-react"
-import MainLayout from "@/components/MainLayout"
+import { ArrowLeft, Save } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
-const initialCheckinState = {
-  project_manager: false,
-  business_manager: false,
-  engineering_leader_manager: false,
-  quality_leader: false,
-  plant_quality_leader: false,
-  industrial_engineering: false,
-  launch_manager_method: false,
-  maintenance: false,
-  purchasing: false,
-  logistics: false,
-  sales: false,
-  economic_financial_leader: false,
-}
+const roleFields = [
+  { id: "project_manager", label: "Project Manager" },
+  { id: "business_manager", label: "Business Manager" },
+  { id: "engineering_leader_manager", label: "Engineering Leader/Manager" },
+  { id: "quality_leader", label: "Quality Leader" },
+  { id: "plant_quality_leader", label: "Plant Quality Leader" },
+  { id: "industrial_engineering", label: "Industrial Engineering" },
+  { id: "launch_manager_method", label: "Launch Manager Method" },
+  { id: "maintenance", label: "Maintenance" },
+  { id: "purchasing", label: "Purchasing" },
+  { id: "logistics", label: "Logistics" },
+  { id: "sales", label: "Sales" },
+  { id: "economic_financial_leader", label: "Economic Financial Leader" },
+]
 
-const CreateCheckin = () => {
-  const [formData, setFormData] = useState(initialCheckinState)
+function CheckinCreate() {
+  const [formData, setFormData] = useState(
+    roleFields.reduce((acc, field) => {
+      acc[field.id] = {
+        value: false,
+        comment: "",
+        date: new Date().toISOString(),
+        name: "",
+      }
+      return acc
+    }, {}),
+  )
   const [loading, setLoading] = useState(false)
-  const navigate = useNavigate()
   const { toast } = useToast()
+  const navigate = useNavigate()
 
-  const handleChange = (field, checked) => {
-    setFormData((prev) => ({ ...prev, [field]: checked }))
+  const handleCheckboxChange = (fieldId) => {
+    setFormData({
+      ...formData,
+      [fieldId]: {
+        ...formData[fieldId],
+        value: !formData[fieldId].value,
+        // Update date to current time when checked
+        date: !formData[fieldId].value ? new Date().toISOString() : formData[fieldId].date,
+      },
+    })
+  }
+
+  const handleCommentChange = (fieldId, value) => {
+    setFormData({
+      ...formData,
+      [fieldId]: {
+        ...formData[fieldId],
+        comment: value,
+      },
+    })
+  }
+
+  const handleNameChange = (fieldId, value) => {
+    setFormData({
+      ...formData,
+      [fieldId]: {
+        ...formData[fieldId],
+        name: value,
+      },
+    })
   }
 
   const handleSubmit = async (e) => {
@@ -49,70 +90,113 @@ const CreateCheckin = () => {
       navigate("/checkins")
     } catch (error) {
       toast({
-        title: "Error creating check-in",
-        description: error.message || "Please try again later",
+        title: "Error",
+        description: "Failed to create check-in",
         variant: "destructive",
       })
+      console.error("Error creating check-in:", error)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <MainLayout />
-      <div className="container py-8 mx-auto">
+    <MainLayout>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="container px-4 py-8 mx-auto"
+      >
         <div className="flex items-center mb-6">
-          <Button variant="outline" onClick={() => navigate("/checkins")} className="mr-4">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
+          <Button variant="ghost" className="mr-4" onClick={() => navigate("/checkins")}>
+            <ArrowLeft size={16} className="mr-2" />
+            Back
           </Button>
-          <h1 className="text-3xl font-bold">Create Check-in</h1>
+          <h1 className="text-3xl font-bold">Create New Check-in</h1>
         </div>
 
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle>New Check-in</CardTitle>
-            <CardDescription>Select all the roles that have been checked in for this project</CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
+          <Card>
+            <CardHeader>
+              <CardTitle>Check-in Details</CardTitle>
+              <CardDescription>
+                Fill in the details for the new check-in. Check the box for completed items, add the name of the person
+                checking in, and provide any comments.
+              </CardDescription>
+            </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {Object.keys(formData).map((field) => (
-                  <div key={field} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={field}
-                      checked={formData[field]}
-                      onCheckedChange={(checked) => handleChange(field, checked)}
-                    />
-                    <Label
-                      htmlFor={field}
-                      className="text-sm font-medium leading-none capitalize peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {field.replace(/_/g, " ")}
+              <motion.div
+                className="grid gap-6 md:grid-cols-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                {roleFields.map((field, index) => (
+                  <motion.div
+                    key={field.id}
+                    className="p-4 border rounded-lg"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 * index }}
+                  >
+                    <div className="flex items-start mb-3 space-x-3">
+                      <Checkbox
+                        id={`${field.id}-checkbox`}
+                        checked={formData[field.id].value}
+                        onCheckedChange={() => handleCheckboxChange(field.id)}
+                      />
+                      <label
+                        htmlFor={`${field.id}-checkbox`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {field.label}
+                      </label>
+                    </div>
+
+                    <div className="mb-3">
+                      <Label htmlFor={`${field.id}-name`} className="block mb-1 text-xs text-gray-500">
+                        Name
+                      </Label>
+                      <Input
+                        id={`${field.id}-name`}
+                        placeholder="Enter name"
+                        value={formData[field.id].name}
+                        onChange={(e) => handleNameChange(field.id, e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+
+                    <Label htmlFor={`${field.id}-comment`} className="block mb-1 text-xs text-gray-500">
+                      Comments
                     </Label>
-                  </div>
+                    <Textarea
+                      id={`${field.id}-comment`}
+                      placeholder="Add comments here..."
+                      value={formData[field.id].comment}
+                      onChange={(e) => handleCommentChange(field.id, e.target.value)}
+                      className="h-20 text-sm"
+                    />
+                  </motion.div>
                 ))}
+              </motion.div>
+
+              <div className="flex justify-end mt-6">
+                <Button type="submit" className="flex items-center gap-2" disabled={loading}>
+                  {loading ? (
+                    <div className="w-4 h-4 border-b-2 border-white rounded-full animate-spin"></div>
+                  ) : (
+                    <Save size={16} />
+                  )}
+                  {loading ? "Saving..." : "Save Check-in"}
+                </Button>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-end p-6 border-t">
-              <Button type="submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  "Create Check-in"
-                )}
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
-      </div>
-      <MainLayout />
-    </div>
+          </Card>
+        </form>
+      </motion.div>
+    </MainLayout>
   )
 }
 
-export default CreateCheckin
-
+export default CheckinCreate
