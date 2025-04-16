@@ -5,41 +5,53 @@ const fs = require("fs");
 const mongoose = require("mongoose");
 
   // ✅ Create a new "validationForOffer" entry
-exports.createValidationForOffer = async (req, res) => {
-  try {
-    const { name, check, date, checkin } = req.body
-    const uploadPath = req.file ? req.file.path : null
-
-    console.log("Received data:", { name, check, date, checkin })
-
-    // ✅ Create the Checkin entry with the provided checkin data
-    const checkinData = checkin || {} // Default to empty object if not provided
-    const newCheckin = new Checkin(checkinData)
-    await newCheckin.save()
-
-    console.log("Created checkin:", newCheckin)
-
-    // ✅ Create the ValidationForOffer entry linked to the Checkin
-    const newEntry = new ValidationForOffer({
-      checkin: newCheckin._id, // Associate Checkin entry
-      name,
-      upload: uploadPath,
-      check,
-      date,
-    })
-
-    await newEntry.save()
-
-    res.status(201).json({
-      message: "ValidationForOffer and Checkin entries created successfully",
-      data: newEntry,
-      checkin: newCheckin,
-    })
-  } catch (error) {
-    console.error("Error creating ValidationForOffer:", error)
-    res.status(500).json({ message: "Server error", error: error.message })
+  exports.createValidationForOffer = async (req, res) => {
+    try {
+      const { name, check, date, comments, checkin } = req.body
+      const uploadPath = req.file ? req.file.path : null
+  
+      console.log("Received data:", { name, check, date, comments, checkin })
+  
+      // Parse the checkin data if it's a string
+      let checkinData = checkin
+      if (typeof checkin === "string") {
+        try {
+          checkinData = JSON.parse(checkin)
+        } catch (error) {
+          console.error("Error parsing checkin JSON:", error)
+          checkinData = {}
+        }
+      }
+  
+      // Create the Checkin entry with the provided checkin data
+      const newCheckin = new Checkin(checkinData)
+      await newCheckin.save()
+  
+      console.log("Created checkin:", newCheckin)
+  
+      // Create the ValidationForOffer entry linked to the Checkin
+      const newEntry = new ValidationForOffer({
+        checkin: newCheckin._id,
+        name,
+        upload: uploadPath,
+        check,
+        date,
+        comments,
+      })
+  
+      await newEntry.save()
+  
+      res.status(201).json({
+        message: "ValidationForOffer and Checkin entries created successfully",
+        data: newEntry,
+        checkin: newCheckin,
+      })
+    } catch (error) {
+      console.error("Error creating ValidationForOffer:", error)
+      res.status(500).json({ message: "Server error", error: error.message })
+    }
   }
-}
+  
 
 
 // ✅ Get all "validationForOffer" entries

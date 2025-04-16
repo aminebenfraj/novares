@@ -8,6 +8,7 @@ const validationForOfferSchema = new Schema(
     check: { type: Boolean, default: false },
     date: { type: Date, default: Date.now },
     comments: { type: String, required: false }, // Optional comments field
+    name:{ type: String, required: false }, // Optional name field'
   },
   { timestamps: true }
 );

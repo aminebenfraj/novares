@@ -13,10 +13,18 @@ export const getValidationForOfferById = async (id) => {
 }
 
 // ✅ Create a new ValidationForOffer entry
-export const createValidationForOffer = async (data) => {
-  console.log("Creating ValidationForOffer with data:", JSON.stringify(data, null, 2))
-  return apiRequest("POST", API_URL, data, true)
+
+export const createValidationForOffer = async (formData) => {
+  try {
+    // If checkin is a JSON string in the FormData, the backend will handle it
+    const response = await apiRequest("post", API_URL, formData, true)
+    return response
+  } catch (error) {
+    console.error("API Request Error:", error)
+    throw error
+  }
 }
+
 
 // ✅ Update ValidationForOffer entry
 export const updateValidationForOffer = async (id, data) => {

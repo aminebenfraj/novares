@@ -3,380 +3,364 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
-import { getOkForLunchById, updateOkForLunch } from "@/apis/okForLunch"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { getOkForLunchById, updateOkForLunch } from "../../apis/okForLunch"
+import { getCheckins } from "../../apis/checkIn"
+import { useToast } from "@/hooks/use-toast"
+import MainLayout from "@/components/MainLayout"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { Loader2, CalendarIcon, CheckCircle, ArrowLeft, Save, XCircle } from "lucide-react"
+import { Loader2, CalendarIcon, CheckCircle, ArrowLeft, Save, XCircle, Edit } from "lucide-react"
 import { format } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import MainLayout from "@/components/MainLayout"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-const CHECKIN_FIELDS = [
-  "business_manager",
-  "economic_financial_leader",
-  "engineering_leader_manager",
-  "industrial_engineering",
-  "launch_manager_method",
-  "logistics",
-  "maintenance",
-  "plant_quality_leader",
-  "project_manager",
-  "purchasing",
-  "quality_leader",
-  "sales",
+const roleFields = [
+  { id: "project_manager", label: "Project Manager" },
+  { id: "business_manager", label: "Business Manager" },
+  { id: "engineering_leader_manager", label: "Engineering Leader/Manager" },
+  { id: "quality_leader", label: "Quality Leader" },
+  { id: "plant_quality_leader", label: "Plant Quality Leader" },
+  { id: "industrial_engineering", label: "Industrial Engineering" },
+  { id: "launch_manager_method", label: "Launch Manager Method" },
+  { id: "maintenance", label: "Maintenance" },
+  { id: "purchasing", label: "Purchasing" },
+  { id: "logistics", label: "Logistics" },
+  { id: "sales", label: "Sales" },
+  { id: "economic_financial_leader", label: "Economic Financial Leader" },
 ]
 
-// Define field config for better UI
-const fieldConfig = {}
-CHECKIN_FIELDS.forEach((field) => {
-  fieldConfig[field] = {
-    label: field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
-    description: `Approval from ${field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}`,
-  }
-})
-
-const EditOkForLunch = () => {
+function EditOkForLunch() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
   const [okForLunchData, setOkForLunchData] = useState({
     check: false,
-    date: null,
+    date: new Date(),
+    checkin: null,
   })
   const [checkinData, setCheckinData] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [submitting, setSubmitting] = useState(false)
-  const [activeTab, setActiveTab] = useState(CHECKIN_FIELDS[0])
-  const [massProductionId, setMassProductionId] = useState(null)
+  const [submitting, setSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState("details")
+  const [checkins, setCheckins] = useState([])
+  const [loadingCheckins, setLoadingCheckins] = useState(true)
 
   useEffect(() => {
-    async function fetchData() {
+    const fetchData = async () => {
       try {
+        setLoading(true)
+
+        // Fetch all checkins for the dropdown
+        const checkinsResponse = await getCheckins()
+        setCheckins(checkinsResponse.data)
+        setLoadingCheckins(false)
+
+        // Fetch the specific OkForLunch record
         const response = await getOkForLunchById(id)
-        console.log("API Response:", response)
 
         if (!response || typeof response !== "object") {
           throw new Error("Invalid API response")
         }
 
         const data = response
-        console.log("OkForLunch Response:", data)
 
         // Set OkForLunch data
         setOkForLunchData({
           check: data.check || false,
-          date: data.date ? new Date(data.date) : null,
+          date: data.date ? new Date(data.date) : new Date(),
+          checkin: data.checkin?._id || data.checkin,
         })
 
-        // Extract checkin data from the response
-        const checkinFields = {}
+        // Extract checkin data
         if (data.checkin && typeof data.checkin === "object") {
-          CHECKIN_FIELDS.forEach((field) => {
-            checkinFields[field] = data.checkin[field] || false
+          const checkinFields = {}
+          roleFields.forEach((field) => {
+            checkinFields[field.id] = {
+              value: data.checkin[field.id]?.value || false,
+              comment: data.checkin[field.id]?.comment || "",
+              date: data.checkin[field.id]?.date ? new Date(data.checkin[field.id].date) : new Date(),
+              name: data.checkin[field.id]?.name || "",
+            }
           })
-        } else {
-          CHECKIN_FIELDS.forEach((field) => {
-            checkinFields[field] = false
-          })
+          setCheckinData(checkinFields)
         }
-
-        console.log("Extracted Checkin Data:", checkinFields)
-        setCheckinData(checkinFields)
       } catch (error) {
         console.error("Error fetching data:", error)
         setError(error.message || "Failed to fetch data")
         toast({
           title: "Error",
-          description: "Failed to fetch OkForLunch or Checkin data.",
+          description: "Failed to fetch OK for Lunch or Check-in data.",
           variant: "destructive",
         })
       } finally {
         setLoading(false)
       }
     }
+
     fetchData()
   }, [id, toast])
-
-  useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search)
-    const mpId = queryParams.get("massProductionId")
-
-    if (mpId) {
-      console.log("Extracted massProductionId from URL:", mpId)
-      setMassProductionId(mpId)
-      // Store in localStorage as fallback
-      localStorage.setItem("lastMassProductionId", mpId)
-    } else {
-      // Try to get from localStorage as a fallback
-      const storedMpId = localStorage.getItem("lastMassProductionId")
-      if (storedMpId) {
-        console.log("Retrieved massProductionId from localStorage:", storedMpId)
-        setMassProductionId(storedMpId)
-      } else {
-        // If we still don't have an ID, try to extract it from the URL path
-        const pathParts = window.location.pathname.split("/")
-        const editIndex = pathParts.indexOf("edit")
-        if (editIndex > 0 && editIndex < pathParts.length - 1) {
-          const possibleId = pathParts[editIndex + 1]
-          if (possibleId && possibleId !== "masspd_idAttachment") {
-            console.log("Extracted massProductionId from URL path:", possibleId)
-            setMassProductionId(possibleId)
-            localStorage.setItem("lastMassProductionId", possibleId)
-          }
-        }
-      }
-    }
-  }, [])
 
   const handleOkForLunchChange = (key, value) => {
     setOkForLunchData((prev) => ({ ...prev, [key]: value }))
   }
 
-  const handleCheckinChange = (key, checked) => {
-    setCheckinData((prev) => {
-      const updatedCheckin = { ...prev, [key]: checked }
-      console.log("Updated checkin data:", updatedCheckin)
-      return updatedCheckin
-    })
+  const handleCheckinChange = (fieldId, key, value) => {
+    setCheckinData((prev) => ({
+      ...prev,
+      [fieldId]: {
+        ...prev[fieldId],
+        [key]: value,
+      },
+    }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setSubmitting(true)
+    setSaving(true)
 
     try {
+      // Prepare the data for submission
       const formData = {
         check: okForLunchData.check,
         date: okForLunchData.date ? format(okForLunchData.date, "yyyy-MM-dd") : null,
-        checkin: { ...checkinData },
+        checkin: okForLunchData.checkin,
       }
 
-      console.log("Sending data to server:", JSON.stringify(formData, null, 2))
-      const updatedData = await updateOkForLunch(id, formData)
-
-      console.log("Response from server:", updatedData)
-
-      // Update local state with the response from the server
-      setOkForLunchData({
-        check: updatedData.check || false,
-        date: updatedData.date ? new Date(updatedData.date) : null,
-      })
-
-      if (updatedData.checkin) {
-        const updatedCheckin = CHECKIN_FIELDS.reduce((acc, field) => {
-          acc[field] = !!updatedData.checkin[field]
-          return acc
-        }, {})
-        setCheckinData(updatedCheckin)
-        console.log("Updated checkin state:", updatedCheckin)
-      }
+      // Update the OkForLunch record
+      await updateOkForLunch(id, formData)
 
       toast({
         title: "Success",
-        description: "OkForLunch and Checkin Updated Successfully!",
+        description: "OK for Lunch updated successfully!",
       })
 
-      // Navigate back to mass production details page if massProductionId is available
-      if (massProductionId) {
-        navigate(`/masspd/detail/${massProductionId}`)
-      } else {
-        navigate("/okforlunch")
-      }
+      navigate("/okforlunch")
     } catch (error) {
       console.error("Update error:", error)
       toast({
         title: "Error",
-        description: "Failed to update OkForLunch and Checkin",
+        description: "Failed to update OK for Lunch",
         variant: "destructive",
       })
     } finally {
-      setSubmitting(false)
+      setSaving(false)
     }
+  }
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A"
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  }
+
+  const getCompletionStatus = (checkin) => {
+    if (!checkin) return "0%"
+
+    const fields = roleFields.map((field) => field.id)
+    const completedFields = fields.filter((field) => checkin[field]?.value === true).length
+    const percentage = Math.round((completedFields / fields.length) * 100)
+
+    return `${percentage}%`
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      </div>
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      </MainLayout>
     )
   }
 
   if (error) {
     return (
-      <div className="container px-4 py-8 mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle>Error</CardTitle>
-            <CardDescription>Failed to load OkForLunch data</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-red-500">{error}</p>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={() => navigate("/okforlunch")}>
-              <ArrowLeft className="w-4 h-4 mr-2" /> Back to OkForLunch
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+      <MainLayout>
+        <div className="container px-4 py-8 mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle>Error</CardTitle>
+              <CardDescription>Failed to load OK for Lunch data</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-red-500">{error}</p>
+            </CardContent>
+            <CardFooter>
+              <Button onClick={() => navigate("/okforlunch")}>
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to OK for Lunch
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </MainLayout>
     )
   }
 
   return (
     <MainLayout>
-      <div className="container px-4 py-8 mx-auto">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  if (massProductionId && massProductionId !== "masspd_idAttachment") {
-                    navigate(`/masspd/detail/${massProductionId}`)
-                  } else {
-                    navigate("/okforlunch")
-                  }
-                }}
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Edit OK for Launch</h1>
-                <p className="text-muted-foreground">Update launch approval details</p>
-              </div>
-            </div>
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-              Save Changes
-            </Button>
-          </div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="container px-4 py-8 mx-auto"
+      >
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" className="mr-4" onClick={() => navigate("/okforlunch")}>
+            <ArrowLeft size={16} className="mr-2" />
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold">Edit OK for Lunch</h1>
+        </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-              <Card className="md:col-span-1">
-                <CardHeader>
-                  <CardTitle>Approval Fields</CardTitle>
-                  <CardDescription>Select a field to edit</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Tabs value={activeTab} onValueChange={setActiveTab} orientation="vertical" className="w-full">
-                    <TabsList className="flex flex-col items-stretch h-auto">
-                      {CHECKIN_FIELDS.map((field) => (
-                        <TabsTrigger key={field} value={field} className="relative justify-start mb-1 text-left pl-9">
-                          <span className="absolute left-2">
-                            {checkinData[field] ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>OK for Lunch Details</CardTitle>
+            <CardDescription>Update the OK for Lunch approval and its associated check-in</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="details">OK for Lunch Details</TabsTrigger>
+                <TabsTrigger value="checkin">Associated Check-in</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="details">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="checkin">Associated Check-in</Label>
+                    <Select
+                      value={okForLunchData.checkin}
+                      onValueChange={(value) => handleOkForLunchChange("checkin", value)}
+                      disabled={loadingCheckins}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={loadingCheckins ? "Loading check-ins..." : "Select a check-in"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {checkins.map((checkin) => (
+                          <SelectItem key={checkin._id} value={checkin._id}>
+                            ID: {checkin._id.substring(0, 8)}...
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="check"
+                      checked={okForLunchData.check}
+                      onCheckedChange={(value) => handleOkForLunchChange("check", value === true)}
+                    />
+                    <Label htmlFor="check" className="text-sm font-medium">
+                      Approve Lunch
+                    </Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={`w-full justify-start text-left font-normal ${!okForLunchData.date && "text-muted-foreground"}`}
+                        >
+                          <CalendarIcon className="w-4 h-4 mr-2" />
+                          {okForLunchData.date ? format(okForLunchData.date, "PPP") : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={okForLunchData.date}
+                          onSelect={(date) => handleOkForLunchChange("date", date)}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button type="submit" className="flex items-center gap-2" disabled={submitting}>
+                      {submitting ? (
+                        <div className="w-4 h-4 border-b-2 border-white rounded-full animate-spin"></div>
+                      ) : (
+                        <Save size={16} />
+                      )}
+                      {submitting ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="checkin">
+                <div className="space-y-4">
+                  <div className="p-4 mb-4 rounded-md bg-gray-50">
+                    <p className="text-sm text-gray-500">
+                      This section shows the details of the associated check-in. To modify these values, please go to
+                      the Check-in edit page.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {roleFields.map((field) => (
+                      <Card key={field.id} className="overflow-hidden">
+                        <CardHeader className="p-4 bg-gray-50">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-sm font-medium">{field.label}</CardTitle>
+                            {checkinData[field.id]?.value ? (
                               <CheckCircle className="w-4 h-4 text-green-500" />
                             ) : (
-                              <XCircle className="w-4 h-4 text-red-500" />
+                              <XCircle className="w-4 h-4 text-gray-300" />
                             )}
-                          </span>
-                          {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-                  </Tabs>
-                </CardContent>
-              </Card>
-
-              <Card className="md:col-span-3">
-                <CardHeader>
-                  <CardTitle>{fieldConfig[activeTab]?.label || activeTab}</CardTitle>
-                  <CardDescription>{fieldConfig[activeTab]?.description || "Update approval status"}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="status" className="w-full">
-                    <TabsList>
-                      <TabsTrigger value="status">Approval Status</TabsTrigger>
-                      <TabsTrigger value="details">Launch Details</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="status" className="pt-4">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`${activeTab}-value`}
-                          checked={checkinData[activeTab] || false}
-                          onCheckedChange={(checked) => handleCheckinChange(activeTab, checked === true)}
-                        />
-                        <Label htmlFor={`${activeTab}-value`}>Mark as approved</Label>
-                      </div>
-                    </TabsContent>
-                    <TabsContent value="details" className="pt-4 space-y-6">
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-6"
-                      >
-                        <div className="space-y-4">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id="check"
-                              checked={okForLunchData.check}
-                              onCheckedChange={(checked) => handleOkForLunchChange("check", checked === true)}
-                            />
-                            <Label htmlFor="check" className="text-base font-medium">
-                              Approve Launch
-                            </Label>
                           </div>
-
+                        </CardHeader>
+                        <CardContent className="p-4 text-sm">
                           <div className="space-y-2">
-                            <Label htmlFor="date">Launch Date</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className={`w-full justify-start text-left font-normal ${!okForLunchData.date && "text-muted-foreground"}`}
-                                >
-                                  <CalendarIcon className="w-4 h-4 mr-2" />
-                                  {okForLunchData.date ? format(okForLunchData.date, "PPP") : "Pick a date"}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={okForLunchData.date}
-                                  onSelect={(date) => handleOkForLunchChange("date", date)}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
+                            <div>
+                              <span className="font-medium">Name:</span>{" "}
+                              {checkinData[field.id]?.name || "Not specified"}
+                            </div>
+                            <div>
+                              <span className="font-medium">Date:</span>{" "}
+                              {checkinData[field.id]?.date ? formatDate(checkinData[field.id].date) : "Not specified"}
+                            </div>
+                            <div>
+                              <span className="font-medium">Comment:</span>{" "}
+                              <p className="mt-1 text-gray-600">
+                                {checkinData[field.id]?.comment || "No comment provided"}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (massProductionId && massProductionId !== "masspd_idAttachment") {
-                        // Ensure we're using the correct URL format
-                        navigate(`/masspd/detail/${massProductionId}`)
-                      } else {
-                        navigate("/okforlunch")
-                      }
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                    Save Changes
-                  </Button>
-                </CardFooter>
-              </Card>
-            </div>
-          </form>
-        </motion.div>
-      </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end mt-6">
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate(`/checkin/edit/${okForLunchData.checkin}`)}
+                      className="flex items-center gap-2"
+                    >
+                      <Edit size={16} />
+                      Edit Check-in
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </motion.div>
     </MainLayout>
   )
 }

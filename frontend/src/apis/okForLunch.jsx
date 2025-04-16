@@ -9,19 +9,19 @@ export const getOkForLunch = async () => {
 export const getOkForLunchById = async (id) => {
   return apiRequest("GET", `${API_URL}/${id}`)
 }
+// Add this function to your okForLunch.js API file
 
-export const createOkForLunch = async (data) => {
-  // Log the data being sent to the API for debugging
-  console.log("Creating OkForLunch with data:", JSON.stringify(data, null, 2))
-
-  // Ensure checkin data is properly structured
-  if (data.checkin) {
-    // Make sure checkin is passed as an object, not an array or other type
-    console.log("Checkin data being sent:", JSON.stringify(data.checkin, null, 2))
+export const createOkForLunch = async (formData) => {
+  try {
+    // If checkin is a JSON string in the FormData, the backend will handle it
+    const response = await apiRequest("post",API_URL, formData, true)
+    return response
+  } catch (error) {
+    console.error("API Request Error:", error)
+    throw error
   }
-
-  return apiRequest("POST", API_URL, data, true)
 }
+
 
 export const deleteOkForLunch = async (id) => {
   return apiRequest("DELETE", `${API_URL}/${id}`)

@@ -11,16 +11,26 @@ exports.createOkForLunch = async (req, res) => {
 
     console.log("Received data:", { check, date, checkin })
 
-    // ✅ Create the Checkin entry with the provided checkin data
-    const checkinData = checkin || {} // Default to empty object if not provided
+    // Parse the checkin data if it's a string
+    let checkinData = checkin
+    if (typeof checkin === "string") {
+      try {
+        checkinData = JSON.parse(checkin)
+      } catch (error) {
+        console.error("Error parsing checkin JSON:", error)
+        checkinData = {}
+      }
+    }
+
+    // Create the Checkin entry with the provided checkin data
     const newCheckin = new Checkin(checkinData)
     await newCheckin.save()
 
     console.log("Created checkin:", newCheckin)
 
-    // ✅ Now create the OkForLunch entry linked to the Checkin
+    // Now create the OkForLunch entry linked to the Checkin
     const newEntry = new OkForLunch({
-      checkin: newCheckin._id, // Associate Checkin entry
+      checkin: newCheckin._id,
       upload: uploadPath,
       check,
       date,
