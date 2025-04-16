@@ -35,7 +35,32 @@ import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import ContactUs from "@/components/ContactUs"
 
-import { ArrowLeft, Calendar, CheckCircle, CheckSquare, Clock, Edit, FileCheck, FileText, AlertTriangle, BarChart, ChevronRight, CircleAlert, ClipboardCheck, Factory, HelpCircle, LayoutDashboard, Package, PenLine, Plus, Settings, ShieldCheck, Trash2, User, XCircle } from 'lucide-react'
+import {
+  ArrowLeft,
+  Calendar,
+  CheckCircle,
+  CheckSquare,
+  Clock,
+  Edit,
+  FileCheck,
+  FileText,
+  AlertTriangle,
+  BarChart,
+  ChevronRight,
+  CircleAlert,
+  ClipboardCheck,
+  Factory,
+  HelpCircle,
+  LayoutDashboard,
+  Package,
+  PenLine,
+  Plus,
+  Settings,
+  ShieldCheck,
+  Trash2,
+  User,
+  XCircle,
+} from "lucide-react"
 import { getDesignById } from "../../apis/designApi"
 
 // Animation variants for Framer Motion
@@ -103,31 +128,31 @@ const MassProductionDashboard = () => {
   const navigateToEditPage = (path, stageData) => {
     // Store the current mass production ID in localStorage for fallback
     if (id) {
-      localStorage.setItem("lastMassProductionId", id);
+      localStorage.setItem("lastMassProductionId", id)
     }
 
     // Determine the correct ID to use for the edit page
-    let editId;
+    let editId
     if (stageData) {
       // If the stage data is an object with an _id property
       if (typeof stageData === "object" && stageData._id) {
-        editId = stageData._id;
+        editId = stageData._id
       }
       // If the stage data is a string (direct ID reference)
       else if (typeof stageData === "string") {
-        editId = stageData;
+        editId = stageData
       }
       // If we couldn't extract an ID, use the mass production ID
       else {
-        editId = id;
+        editId = id
       }
     } else {
-      editId = id;
+      editId = id
     }
 
     // Navigate to the edit page with the ID and a query parameter for the mass production ID
-    navigate(`/${path}/edit/${editId}?massProductionId=${id}`);
-  };
+    navigate(`/${path}/edit/${editId}?massProductionId=${id}`)
+  }
 
   // Fetch main data on component mount
   useEffect(() => {
@@ -298,7 +323,14 @@ const MassProductionDashboard = () => {
       const response = await getValidationForOfferById(id)
       console.log("Fetched validation for offer data:", response)
 
-      const data = response.data || response
+      // Handle different response structures
+      let data
+      if (response && response.data) {
+        data = response.data
+      } else {
+        data = response
+      }
+
       setSectionData((prev) => ({ ...prev, validation: data }))
     } catch (error) {
       console.error("Failed to fetch validation data:", error)
@@ -316,7 +348,14 @@ const MassProductionDashboard = () => {
       const response = await getOkForLunchById(id)
       console.log("Fetched OK for launch data:", response)
 
-      const data = response.data || response
+      // Handle different response structures
+      let data
+      if (response && response.data) {
+        data = response.data
+      } else {
+        data = response
+      }
+
       setSectionData((prev) => ({ ...prev, okForLaunch: data }))
     } catch (error) {
       console.error("Failed to fetch OK for launch data:", error)

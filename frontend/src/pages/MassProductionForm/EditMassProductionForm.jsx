@@ -976,16 +976,41 @@ const EditMassProductionForm = () => {
         try {
           const okForLunchId = extractId(formData.ok_for_lunch)
           if (okForLunchId) {
-            const processedOkForLunchData = {
-              ...okForLunchData,
-              checkin: okForLunchCheckinData,
-            }
+            // Create FormData for the update
+            const formDataObj = new FormData()
+            formDataObj.append("check", okForLunchData.check)
+            formDataObj.append(
+              "date",
+              okForLunchData.date instanceof Date
+                ? okForLunchData.date.toISOString().split("T")[0]
+                : okForLunchData.date,
+            )
+
+            // Add file if it exists
             if (okForLunchData.upload instanceof File) {
-              processedOkForLunchData.upload = okForLunchData.upload.name
+              formDataObj.append("upload", okForLunchData.upload)
             }
-            const okForLunchResponse = await updateOkForLunch(okForLunchId, processedOkForLunchData)
+
+            // Add checkin data
+            formDataObj.append("checkin", JSON.stringify(okForLunchCheckinData))
+
+            console.log("Updating ok_for_lunch with ID:", okForLunchId)
+            console.log("Update data:", {
+              check: okForLunchData.check,
+              date:
+                okForLunchData.date instanceof Date
+                  ? okForLunchData.date.toISOString().split("T")[0]
+                  : okForLunchData.date,
+              checkin: okForLunchCheckinData,
+            })
+
+            const okForLunchResponse = await updateOkForLunch(okForLunchId, formDataObj)
+            console.log("ok_for_lunch update response:", okForLunchResponse)
+
             if (okForLunchResponse && okForLunchResponse._id) {
               updatedRelatedData.ok_for_lunch = okForLunchResponse._id
+            } else if (okForLunchResponse && okForLunchResponse.data && okForLunchResponse.data._id) {
+              updatedRelatedData.ok_for_lunch = okForLunchResponse.data._id
             }
           }
         } catch (error) {
@@ -998,19 +1023,47 @@ const EditMassProductionForm = () => {
         try {
           const validationForOfferId = extractId(formData.validation_for_offer)
           if (validationForOfferId) {
-            const processedValidationForOfferData = {
-              ...validationForOfferData,
-              checkin: validationForOfferCheckinData,
-            }
-            if (validationForOfferData.upload instanceof File) {
-              processedValidationForOfferData.upload = validationForOfferData.upload.name
-            }
-            const validationForOfferResponse = await updateValidationForOffer(
-              validationForOfferId,
-              processedValidationForOfferData,
+            // Create FormData for the update
+            const formDataObj = new FormData()
+            formDataObj.append("name", validationForOfferData.name)
+            formDataObj.append("check", validationForOfferData.check)
+            formDataObj.append(
+              "date",
+              validationForOfferData.date instanceof Date
+                ? validationForOfferData.date.toISOString().split("T")[0]
+                : validationForOfferData.date,
             )
+
+            // Add file if it exists
+            if (validationForOfferData.upload instanceof File) {
+              formDataObj.append("upload", validationForOfferData.upload)
+            }
+
+            // Add checkin data
+            formDataObj.append("checkin", JSON.stringify(validationForOfferCheckinData))
+
+            console.log("Updating validation_for_offer with ID:", validationForOfferId)
+            console.log("Update data:", {
+              name: validationForOfferData.name,
+              check: validationForOfferData.check,
+              date:
+                validationForOfferData.date instanceof Date
+                  ? validationForOfferData.date.toISOString().split("T")[0]
+                  : validationForOfferData.date,
+              checkin: validationForOfferCheckinData,
+            })
+
+            const validationForOfferResponse = await updateValidationForOffer(validationForOfferId, formDataObj)
+            console.log("validation_for_offer update response:", validationForOfferResponse)
+
             if (validationForOfferResponse && validationForOfferResponse._id) {
               updatedRelatedData.validation_for_offer = validationForOfferResponse._id
+            } else if (
+              validationForOfferResponse &&
+              validationForOfferResponse.data &&
+              validationForOfferResponse.data._id
+            ) {
+              updatedRelatedData.validation_for_offer = validationForOfferResponse.data._id
             }
           }
         } catch (error) {
@@ -2445,4 +2498,3 @@ const qualificationConfirmationFields = [
 ]
 
 export default EditMassProductionForm
-

@@ -26,6 +26,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, ArrowLeft } from "lucide-react"
 import MainLayout from "@/components/MainLayout"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { CalendarIcon, Upload } from "lucide-react"
 
 const MassPdCreate = () => {
   const navigate = useNavigate()
@@ -154,51 +158,50 @@ const MassPdCreate = () => {
     economic_financial_leader: false,
   })
 
-  // Ok For Lunch form state
+  // Update the state definitions for OkForLunch and ValidationForOffer
+  // Replace the existing okForLunchData state
   const [okForLunchData, setOkForLunchData] = useState({
     check: false,
     upload: null,
     date: new Date().toISOString().split("T")[0],
+    comments: "",
   })
 
+  // Replace the existing validationForOfferData state
   const [validationForOfferData, setValidationForOfferData] = useState({
     name: "",
     check: false,
     upload: null,
     date: new Date().toISOString().split("T")[0],
+    comments: "",
   })
 
+  // Replace the existing checkin data states
   // Checkin data for ValidationForOffer
-  const [validationForOfferCheckinData, setValidationForOfferCheckinData] = useState({
-    project_manager: false,
-    business_manager: false,
-    engineering_leader_manager: false,
-    quality_leader: false,
-    plant_quality_leader: false,
-    industrial_engineering: false,
-    launch_manager_method: false,
-    maintenance: false,
-    purchasing: false,
-    logistics: false,
-    sales: false,
-    economic_financial_leader: false,
-  })
+  const [validationForOfferCheckinData, setValidationForOfferCheckinData] = useState(
+    roleFields.reduce((acc, field) => {
+      acc[field.id] = {
+        value: false,
+        comment: "",
+        date: new Date().toISOString(),
+        name: "",
+      }
+      return acc
+    }, {}),
+  )
 
   // Checkin data for OkForLunch
-  const [okForLunchCheckinData, setOkForLunchCheckinData] = useState({
-    project_manager: false,
-    business_manager: false,
-    engineering_leader_manager: false,
-    quality_leader: false,
-    plant_quality_leader: false,
-    industrial_engineering: false,
-    launch_manager_method: false,
-    maintenance: false,
-    purchasing: false,
-    logistics: false,
-    sales: false,
-    economic_financial_leader: false,
-  })
+  const [okForLunchCheckinData, setOkForLunchCheckinData] = useState(
+    roleFields.reduce((acc, field) => {
+      acc[field.id] = {
+        value: false,
+        comment: "",
+        date: new Date().toISOString(),
+        name: "",
+      }
+      return acc
+    }, {}),
+  )
 
   // Checkin data for Feasibility
   const [feasibilityCheckinData, setFeasibilityCheckinData] = useState({
@@ -295,9 +298,17 @@ const MassPdCreate = () => {
     setCheckinData((prev) => ({ ...prev, [field]: checked }))
   }
 
+  // Update the handler functions for OkForLunch and ValidationForOffer
+  // Replace the existing handler functions
+
   // Handle ok for lunch changes
   const handleOkForLunchChange = (field, value) => {
     setOkForLunchData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // Handle validation for offer changes
+  const handleValidationForOfferChange = (field, value) => {
+    setValidationForOfferData((prev) => ({ ...prev, [field]: value }))
   }
 
   // Handle file upload for ok for lunch
@@ -335,13 +346,6 @@ const MassPdCreate = () => {
     }))
   }
 
-  const handleValidationForOfferChange = (field, value) => {
-    setValidationForOfferData((prev) => ({ ...prev, [field]: value }))
-
-    // Log the updated state for debugging
-    console.log(`Updated validation for offer ${field}:`, value)
-  }
-  // Handle file upload for validation for offer
   const handleValidationForOfferFileChange = (e) => {
     setValidationForOfferData((prev) => ({ ...prev, upload: e.target.files[0] }))
   }
@@ -349,7 +353,13 @@ const MassPdCreate = () => {
   // Handle ValidationForOffer checkin checkbox changes
   const handleValidationForOfferCheckinChange = (field, checked) => {
     setValidationForOfferCheckinData((prev) => {
-      const updatedData = { ...prev, [field]: checked }
+      const updatedData = {
+        ...prev,
+        [field]: {
+          ...prev[field],
+          value: checked,
+        },
+      }
       console.log(`Updated ValidationForOffer checkin ${field}:`, checked)
       console.log("Updated ValidationForOffer checkin data:", updatedData)
       return updatedData
@@ -358,7 +368,13 @@ const MassPdCreate = () => {
 
   // Handle OkForLunch checkin checkbox changes
   const handleOkForLunchCheckinChange = (field, checked) => {
-    setOkForLunchCheckinData((prev) => ({ ...prev, [field]: checked }))
+    setOkForLunchCheckinData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        value: checked,
+      },
+    }))
   }
 
   // Handle Feasibility checkin checkbox changes
@@ -671,24 +687,70 @@ const MassPdCreate = () => {
       )
 
       // Create ok for lunch record with embedded checkin data
-      // Make sure the structure matches exactly how feasibility checkin is working
-      const okForLunchFormData = {
-        ...okForLunchData,
-        checkin: okForLunchCheckinData, // Pass the checkin data directly
+      const okForLunchFormData = new FormData()
+      okForLunchFormData.append("check", okForLunchData.check)
+      okForLunchFormData.append("date", okForLunchData.date)
+      okForLunchFormData.append("comments", okForLunchData.comments || "")
+      if (okForLunchData.upload) {
+        okForLunchFormData.append("upload", okForLunchData.upload)
       }
 
-      console.log("✅ OkForLunch data to be sent:", JSON.stringify(okForLunchFormData, null, 2))
+      // Convert checkin data to the format expected by the API
+      const okForLunchCheckinDataObj = {}
+      Object.keys(okForLunchCheckinData).forEach((key) => {
+        okForLunchCheckinDataObj[key] = okForLunchCheckinData[key]
+      })
+      okForLunchFormData.append("checkin", JSON.stringify(okForLunchCheckinDataObj))
+
+      console.log(
+        "✅ OkForLunch data to be sent:",
+        JSON.stringify(
+          {
+            check: okForLunchData.check,
+            date: okForLunchData.date,
+            comments: okForLunchData.comments,
+            checkin: okForLunchCheckinDataObj,
+          },
+          null,
+          2,
+        ),
+      )
+
       const okForLunchResponse = await createOkForLunch(okForLunchFormData)
       console.log("✅ OkForLunch created successfully:", okForLunchResponse)
 
       // Create validation for offer record with embedded checkin data
-      // Make sure the structure matches exactly how feasibility checkin is working
-      const validationForOfferFormData = {
-        ...validationForOfferData,
-        checkin: validationForOfferCheckinData, // Pass the checkin data directly
+      const validationForOfferFormData = new FormData()
+      validationForOfferFormData.append("name", validationForOfferData.name)
+      validationForOfferFormData.append("check", validationForOfferData.check)
+      validationForOfferFormData.append("date", validationForOfferData.date)
+      validationForOfferFormData.append("comments", validationForOfferData.comments || "")
+      if (validationForOfferData.upload) {
+        validationForOfferFormData.append("upload", validationForOfferData.upload)
       }
 
-      console.log("✅ ValidationForOffer data to be sent:", JSON.stringify(validationForOfferFormData, null, 2))
+      // Convert checkin data to the format expected by the API
+      const validationForOfferCheckinDataObj = {}
+      Object.keys(validationForOfferCheckinData).forEach((key) => {
+        validationForOfferCheckinDataObj[key] = validationForOfferCheckinData[key]
+      })
+      validationForOfferFormData.append("checkin", JSON.stringify(validationForOfferCheckinDataObj))
+
+      console.log(
+        "✅ ValidationForOffer data to be sent:",
+        JSON.stringify(
+          {
+            name: validationForOfferData.name,
+            check: validationForOfferData.check,
+            date: validationForOfferData.date,
+            comments: validationForOfferData.comments,
+            checkin: validationForOfferCheckinDataObj,
+          },
+          null,
+          2,
+        ),
+      )
+
       const validationForOfferResponse = await createValidationForOffer(validationForOfferFormData)
       console.log("✅ ValidationForOffer created successfully:", validationForOfferResponse)
 
@@ -1026,6 +1088,7 @@ const MassPdCreate = () => {
                       />
                     </div>
 
+                    {/* Ok For Lunch Section */}
                     <div className="space-y-2">
                       <Label>OK for Launch</Label>
                       <Card className="p-4">
@@ -1036,40 +1099,114 @@ const MassPdCreate = () => {
                               checked={okForLunchData.check}
                               onCheckedChange={(checked) => handleOkForLunchChange("check", checked)}
                             />
-                            <Label htmlFor="ok-for-lunch-check">Approved</Label>
+                            <Label htmlFor="ok-for-lunch-check">Approve Launch</Label>
                           </div>
 
                           <div className="space-y-2">
                             <Label htmlFor="ok-for-lunch-date">Date</Label>
-                            <Input
-                              id="ok-for-lunch-date"
-                              type="date"
-                              value={okForLunchData.date}
-                              onChange={(e) => handleOkForLunchChange("date", e.target.value)}
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  id="ok-for-lunch-date"
+                                  variant="outline"
+                                  className="justify-start w-full font-normal text-left"
+                                >
+                                  <CalendarIcon className="w-4 h-4 mr-2" />
+                                  {okForLunchData.date ? format(new Date(okForLunchData.date), "PPP") : "Pick a date"}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={new Date(okForLunchData.date)}
+                                  onSelect={(date) => handleOkForLunchChange("date", date.toISOString().split("T")[0])}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="ok-for-lunch-comments">Comments</Label>
+                            <Textarea
+                              id="ok-for-lunch-comments"
+                              value={okForLunchData.comments || ""}
+                              onChange={(e) => handleOkForLunchChange("comments", e.target.value)}
+                              placeholder="Add any comments about this approval"
+                              className="min-h-[80px]"
                             />
                           </div>
 
                           <div className="space-y-2">
                             <Label htmlFor="ok-for-lunch-upload">Upload Document</Label>
-                            <Input id="ok-for-lunch-upload" type="file" onChange={handleFileChange} />
+                            <div className="relative">
+                              <Upload className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
+                              <Input
+                                id="ok-for-lunch-upload"
+                                type="file"
+                                onChange={handleFileChange}
+                                className="pl-10"
+                              />
+                            </div>
                           </div>
 
                           <div className="pt-4 mt-6 border-t">
                             <h4 className="mb-3 text-sm font-medium">Check-in for OK for Launch</h4>
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                               {Object.keys(okForLunchCheckinData).map((field) => (
-                                <div key={field} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`ok-for-lunch-${field}`}
-                                    checked={okForLunchCheckinData[field]}
-                                    onCheckedChange={(checked) => handleOkForLunchCheckinChange(field, checked)}
-                                  />
-                                  <Label
-                                    htmlFor={`ok-for-lunch-${field}`}
-                                    className="text-sm font-medium leading-none capitalize"
-                                  >
-                                    {field.replace(/_/g, " ")}
-                                  </Label>
+                                <div key={field} className="p-3 border rounded-md">
+                                  <div className="flex items-center mb-2 space-x-2">
+                                    <Checkbox
+                                      id={`ok-for-lunch-${field}`}
+                                      checked={okForLunchCheckinData[field].value || false}
+                                      onCheckedChange={(checked) =>
+                                        setOkForLunchCheckinData((prev) => ({
+                                          ...prev,
+                                          [field]: {
+                                            ...prev[field],
+                                            value: checked === true,
+                                            date: checked === true ? new Date().toISOString() : prev[field].date,
+                                          },
+                                        }))
+                                      }
+                                    />
+                                    <Label
+                                      htmlFor={`ok-for-lunch-${field}`}
+                                      className="text-sm font-medium leading-none capitalize"
+                                    >
+                                      {field.replace(/_/g, " ")}
+                                    </Label>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Input
+                                      placeholder="Name"
+                                      value={okForLunchCheckinData[field].name || ""}
+                                      onChange={(e) =>
+                                        setOkForLunchCheckinData((prev) => ({
+                                          ...prev,
+                                          [field]: {
+                                            ...prev[field],
+                                            name: e.target.value,
+                                          },
+                                        }))
+                                      }
+                                      className="h-8 mb-2 text-sm"
+                                    />
+                                    <Textarea
+                                      placeholder="Comments"
+                                      value={okForLunchCheckinData[field].comment || ""}
+                                      onChange={(e) =>
+                                        setOkForLunchCheckinData((prev) => ({
+                                          ...prev,
+                                          [field]: {
+                                            ...prev[field],
+                                            comment: e.target.value,
+                                          },
+                                        }))
+                                      }
+                                      className="h-16 text-sm"
+                                    />
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -1078,6 +1215,7 @@ const MassPdCreate = () => {
                       </Card>
                     </div>
 
+                    {/* Validation For Offer Section */}
                     <div className="space-y-2">
                       <Label>Validation For Offer</Label>
                       <Card className="p-4">
@@ -1088,6 +1226,7 @@ const MassPdCreate = () => {
                               id="validation-for-offer-name"
                               value={validationForOfferData.name}
                               onChange={(e) => handleValidationForOfferChange("name", e.target.value)}
+                              placeholder="Enter offer name"
                             />
                           </div>
 
@@ -1097,44 +1236,118 @@ const MassPdCreate = () => {
                               checked={validationForOfferData.check}
                               onCheckedChange={(checked) => handleValidationForOfferChange("check", checked)}
                             />
-                            <Label htmlFor="validation-for-offer-check">Approved</Label>
+                            <Label htmlFor="validation-for-offer-check">Approve Offer</Label>
                           </div>
 
                           <div className="space-y-2">
                             <Label htmlFor="validation-for-offer-date">Date</Label>
-                            <Input
-                              id="validation-for-offer-date"
-                              type="date"
-                              value={validationForOfferData.date}
-                              onChange={(e) => handleValidationForOfferChange("date", e.target.value)}
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  id="validation-for-offer-date"
+                                  variant="outline"
+                                  className="justify-start w-full font-normal text-left"
+                                >
+                                  <CalendarIcon className="w-4 h-4 mr-2" />
+                                  {validationForOfferData.date
+                                    ? format(new Date(validationForOfferData.date), "PPP")
+                                    : "Pick a date"}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={new Date(validationForOfferData.date)}
+                                  onSelect={(date) =>
+                                    handleValidationForOfferChange("date", date.toISOString().split("T")[0])
+                                  }
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="validation-for-offer-comments">Comments</Label>
+                            <Textarea
+                              id="validation-for-offer-comments"
+                              value={validationForOfferData.comments || ""}
+                              onChange={(e) => handleValidationForOfferChange("comments", e.target.value)}
+                              placeholder="Add any comments about this validation"
+                              className="min-h-[80px]"
                             />
                           </div>
 
                           <div className="space-y-2">
                             <Label htmlFor="validation-for-offer-upload">Upload Document</Label>
-                            <Input
-                              id="validation-for-offer-upload"
-                              type="file"
-                              onChange={handleValidationForOfferFileChange}
-                            />
+                            <div className="relative">
+                              <Upload className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
+                              <Input
+                                id="validation-for-offer-upload"
+                                type="file"
+                                onChange={handleValidationForOfferFileChange}
+                                className="pl-10"
+                              />
+                            </div>
                           </div>
 
                           <div className="pt-4 mt-6 border-t">
                             <h4 className="mb-3 text-sm font-medium">Check-in for Validation For Offer</h4>
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                               {Object.keys(validationForOfferCheckinData).map((field) => (
-                                <div key={field} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`validation-for-offer-${field}`}
-                                    checked={validationForOfferCheckinData[field]}
-                                    onCheckedChange={(checked) => handleValidationForOfferCheckinChange(field, checked)}
-                                  />
-                                  <Label
-                                    htmlFor={`validation-for-offer-${field}`}
-                                    className="text-sm font-medium leading-none capitalize"
-                                  >
-                                    {field.replace(/_/g, " ")}
-                                  </Label>
+                                <div key={field} className="p-3 border rounded-md">
+                                  <div className="flex items-center mb-2 space-x-2">
+                                    <Checkbox
+                                      id={`validation-for-offer-${field}`}
+                                      checked={validationForOfferCheckinData[field].value || false}
+                                      onCheckedChange={(checked) =>
+                                        setValidationForOfferCheckinData((prev) => ({
+                                          ...prev,
+                                          [field]: {
+                                            ...prev[field],
+                                            value: checked === true,
+                                            date: checked === true ? new Date().toISOString() : prev[field].date,
+                                          },
+                                        }))
+                                      }
+                                    />
+                                    <Label
+                                      htmlFor={`validation-for-offer-${field}`}
+                                      className="text-sm font-medium leading-none capitalize"
+                                    >
+                                      {field.replace(/_/g, " ")}
+                                    </Label>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Input
+                                      placeholder="Name"
+                                      value={validationForOfferCheckinData[field].name || ""}
+                                      onChange={(e) =>
+                                        setValidationForOfferCheckinData((prev) => ({
+                                          ...prev,
+                                          [field]: {
+                                            ...prev[field],
+                                            name: e.target.value,
+                                          },
+                                        }))
+                                      }
+                                      className="h-8 mb-2 text-sm"
+                                    />
+                                    <Textarea
+                                      placeholder="Comments"
+                                      value={validationForOfferCheckinData[field].comment || ""}
+                                      onChange={(e) =>
+                                        setValidationForOfferCheckinData((prev) => ({
+                                          ...prev,
+                                          [field]: {
+                                            ...prev[field],
+                                            comment: e.target.value,
+                                          },
+                                        }))
+                                      }
+                                      className="h-16 text-sm"
+                                    />
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -2116,6 +2329,22 @@ const qualificationConfirmationFields = [
   "information_to_customer_logistics",
   "information_to_customer_quality",
   "updating_customer_programme_data_sheet",
+]
+
+// Add the roleFields array if it doesn't exist
+const roleFields = [
+  { id: "project_manager", label: "Project Manager" },
+  { id: "business_manager", label: "Business Manager" },
+  { id: "engineering_leader_manager", label: "Engineering Leader/Manager" },
+  { id: "quality_leader", label: "Quality Leader" },
+  { id: "plant_quality_leader", label: "Plant Quality Leader" },
+  { id: "industrial_engineering", label: "Industrial Engineering" },
+  { id: "launch_manager_method", label: "Launch Manager Method" },
+  { id: "maintenance", label: "Maintenance" },
+  { id: "purchasing", label: "Purchasing" },
+  { id: "logistics", label: "Logistics" },
+  { id: "sales", label: "Sales" },
+  { id: "economic_financial_leader", label: "Economic Financial Leader" },
 ]
 
 export default MassPdCreate

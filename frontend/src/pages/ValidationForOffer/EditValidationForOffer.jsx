@@ -1,174 +1,202 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { motion } from "framer-motion"
+import { getValidationForOfferById, updateValidationForOffer } from "../../apis/validationForOfferApi"
+import { getCheckinById, updateCheckin } from "../../apis/checkIn"
 import { useParams, useNavigate } from "react-router-dom"
-import { getValidationForOfferById, updateValidationForOffer } from "@/apis/validationForOfferApi"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import MainLayout from "@/components/MainLayout"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { toast } from "@/hooks/use-toast"
-import { Loader2, CalendarIcon, AlertTriangle, ArrowLeft } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-import { format } from "date-fns"
+import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import MainLayout from "@/components/MainLayout"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/hooks/use-toast"
+import { format } from "date-fns"
+import { CalendarIcon, Upload, ArrowLeft, Save, Loader2 } from "lucide-react"
 
-
-const CHECKIN_FIELDS = [
-  "business_manager",
-  "economic_financial_leader",
-  "engineering_leader_manager",
-  "industrial_engineering",
-  "launch_manager_method",
-  "logistics",
-  "maintenance",
-  "plant_quality_leader",
-  "project_manager",
-  "purchasing",
-  "quality_leader",
-  "sales",
+const roleFields = [
+  { id: "project_manager", label: "Project Manager" },
+  { id: "business_manager", label: "Business Manager" },
+  { id: "engineering_leader_manager", label: "Engineering Leader/Manager" },
+  { id: "quality_leader", label: "Quality Leader" },
+  { id: "plant_quality_leader", label: "Plant Quality Leader" },
+  { id: "industrial_engineering", label: "Industrial Engineering" },
+  { id: "launch_manager_method", label: "Launch Manager Method" },
+  { id: "maintenance", label: "Maintenance" },
+  { id: "purchasing", label: "Purchasing" },
+  { id: "logistics", label: "Logistics" },
+  { id: "sales", label: "Sales" },
+  { id: "economic_financial_leader", label: "Economic Financial Leader" },
 ]
 
 const EditValidationForOffer = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [validationForOfferData, setValidationForOfferData] = useState({
+  const { toast } = useToast()
+
+  // ValidationForOffer state
+  const [validationData, setValidationData] = useState({
     name: "",
     check: false,
-    date: null,
+    date: new Date(),
+    comments: "",
   })
-  const [checkinData, setCheckinData] = useState({})
+  const [file, setFile] = useState(null)
+  const [existingFile, setExistingFile] = useState(null)
+
+  // Checkin state
+  const [checkinData, setCheckinData] = useState(
+    roleFields.reduce((acc, field) => {
+      acc[field.id] = {
+        value: false,
+        comment: "",
+        date: new Date().toISOString(),
+        name: "",
+      }
+      return acc
+    }, {}),
+  )
+
+  const [checkinId, setCheckinId] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [activeTab, setActiveTab] = useState("validation")
   const [massProductionId, setMassProductionId] = useState(null)
 
-  // Enhanced useEffect to extract massProductionId from multiple sources
+  // Extract massProductionId from URL or localStorage
   useEffect(() => {
-    const extractMassProductionId = async () => {
-      // Try to get massProductionId from URL query parameters
-      const queryParams = new URLSearchParams(window.location.search)
-      const mpId = queryParams.get("massProductionId")
+    const queryParams = new URLSearchParams(window.location.search)
+    const mpId = queryParams.get("massProductionId")
 
-      if (mpId) {
-        console.log("Extracted massProductionId from URL query:", mpId)
-        setMassProductionId(mpId)
-        // Store in localStorage for fallback
-        localStorage.setItem("lastMassProductionId", mpId)
-        return
-      }
-
-      // If not found in query params, check if it's in the URL path
-      const pathParts = window.location.pathname.split("/")
-      const editIndex = pathParts.indexOf("edit")
-      if (editIndex > 0 && editIndex < pathParts.length - 1) {
-        const pathMpId = pathParts[editIndex + 1]
-        if (pathMpId && pathMpId !== "masspd_idAttachment") {
-          console.log("Extracted massProductionId from URL path:", pathMpId)
-          setMassProductionId(pathMpId)
-          localStorage.setItem("lastMassProductionId", pathMpId)
-          return
-        }
-      }
-
-      // Try to get from localStorage as a fallback
-      const storedMpId = localStorage.getItem("lastMassProductionId")
-      if (storedMpId) {
-        console.log("Retrieved massProductionId from localStorage:", storedMpId)
-        setMassProductionId(storedMpId)
-        return
+    if (mpId) {
+      console.log("Found massProductionId in query params:", mpId)
+      setMassProductionId(mpId)
+      localStorage.setItem("lastMassProductionId", mpId)
+    } else {
+      const storedId = localStorage.getItem("lastMassProductionId")
+      if (storedId) {
+        console.log("Using massProductionId from localStorage:", storedId)
+        setMassProductionId(storedId)
       }
     }
-
-    extractMassProductionId()
   }, [])
 
+  // Fetch validation for offer and checkin data
   useEffect(() => {
-    async function fetchData() {
+    const fetchData = async () => {
       try {
-        const response = await getValidationForOfferById(id)
-        console.log("API Response:", response)
+        setLoading(true)
 
-        if (!response || typeof response !== "object") {
-          throw new Error("Invalid API response")
+        // Fetch validation for offer data
+        const response = await getValidationForOfferById(id)
+        console.log("Validation for offer data:", response)
+
+        if (!response) {
+          throw new Error("Failed to fetch validation for offer data")
         }
 
-        const data = response
-        console.log("ValidationForOffer Response:", data)
+        const data = response.data || response
 
-        // Set ValidationForOffer data
-        setValidationForOfferData({
+        // Set validation data
+        setValidationData({
           name: data.name || "",
           check: data.check || false,
-          date: data.date ? new Date(data.date) : null,
+          date: data.date ? new Date(data.date) : new Date(),
+          comments: data.comments || "",
         })
 
-        // Extract check-in data from the response
-        const checkinFields = {}
-        if (data.checkin && typeof data.checkin === "object") {
-          CHECKIN_FIELDS.forEach((field) => {
-            checkinFields[field] = data.checkin[field] || false
-          })
-        } else {
-          CHECKIN_FIELDS.forEach((field) => {
-            checkinFields[field] = false
-          })
+        // Set existing file if available
+        if (data.upload) {
+          setExistingFile(data.upload)
         }
 
-        console.log("Extracted Checkin Data:", checkinFields)
-        setCheckinData(checkinFields)
+        // Handle checkin data
+        if (data.checkin) {
+          const checkinId = typeof data.checkin === "object" ? data.checkin._id : data.checkin
+          setCheckinId(checkinId)
 
-        // Check for possible massProduction reference fields
-        if (data._massProductionId) {
-          console.log("Found massProductionId in _massProductionId:", data._massProductionId)
-          setMassProductionId(data._massProductionId)
-        } else if (data.massProductionId) {
-          console.log("Found massProductionId in massProductionId:", data.massProductionId)
-          setMassProductionId(data.massProductionId)
-        } else if (data.massProduction) {
-          const mpRef = typeof data.massProduction === "object" ? data.massProduction._id : data.massProduction
-          console.log("Found massProductionId in massProduction:", mpRef)
-          setMassProductionId(mpRef)
+          // Fetch checkin data
+          if (checkinId) {
+            try {
+              const checkinResponse = await getCheckinById(checkinId)
+              const checkinData = checkinResponse.data || checkinResponse
+
+              // Map checkin data to state
+              const mappedCheckinData = {}
+              roleFields.forEach((field) => {
+                mappedCheckinData[field.id] = {
+                  value: checkinData[field.id]?.value || false,
+                  comment: checkinData[field.id]?.comment || "",
+                  date: checkinData[field.id]?.date || new Date().toISOString(),
+                  name: checkinData[field.id]?.name || "",
+                }
+              })
+
+              setCheckinData(mappedCheckinData)
+            } catch (error) {
+              console.error("Error fetching checkin data:", error)
+              toast({
+                title: "Warning",
+                description: "Could not load check-in data. You'll create a new check-in.",
+                variant: "warning",
+              })
+            }
+          }
         }
       } catch (error) {
         console.error("Error fetching data:", error)
-        setError(error.message || "Failed to fetch data")
         toast({
           title: "Error",
-          description: "Failed to fetch ValidationForOffer or Checkin data.",
+          description: "Failed to fetch validation for offer data",
           variant: "destructive",
         })
       } finally {
         setLoading(false)
       }
     }
-    fetchData()
-  }, [id])
 
-  const handleValidationForOfferChange = (key, value) => {
-    setValidationForOfferData((prev) => ({ ...prev, [key]: value }))
+    fetchData()
+  }, [id, toast])
+
+  const handleValidationChange = (key, value) => {
+    setValidationData((prev) => ({ ...prev, [key]: value }))
   }
 
-  const handleCheckinChange = (key) => {
-    setCheckinData((prev) => {
-      const updatedCheckin = { ...prev, [key]: !prev[key] }
-      console.log("Updated check-in data:", updatedCheckin)
-      return updatedCheckin
+  const handleCheckboxChange = (fieldId) => {
+    setCheckinData({
+      ...checkinData,
+      [fieldId]: {
+        ...checkinData[fieldId],
+        value: !checkinData[fieldId].value,
+        // Update date to current time when checked
+        date: !checkinData[fieldId].value ? new Date().toISOString() : checkinData[fieldId].date,
+      },
     })
   }
 
-  // Handle navigation back to the mass production details page
-  const handleBack = () => {
-    if (massProductionId && massProductionId !== "masspd_idAttachment") {
-      console.log("Navigating back to mass production detail with ID:", massProductionId)
-      // Ensure we're using the correct URL format
-      navigate(`/masspd/detail/${massProductionId}`)
-    } else {
-      console.log("No valid massProductionId found, navigating to validation for offer list")
-      navigate("/validationforoffer")
-    }
+  const handleCommentChange = (fieldId, value) => {
+    setCheckinData({
+      ...checkinData,
+      [fieldId]: {
+        ...checkinData[fieldId],
+        comment: value,
+      },
+    })
+  }
+
+  const handleNameChange = (fieldId, value) => {
+    setCheckinData({
+      ...checkinData,
+      [fieldId]: {
+        ...checkinData[fieldId],
+        name: value,
+      },
+    })
   }
 
   const handleSubmit = async (e) => {
@@ -176,46 +204,68 @@ const EditValidationForOffer = () => {
     setSubmitting(true)
 
     try {
-      const formData = {
-        name: validationForOfferData.name,
-        check: validationForOfferData.check,
-        date: validationForOfferData.date ? format(validationForOfferData.date, "yyyy-MM-dd") : null,
-        checkin: { ...checkinData },
+      // Create a FormData object for the request
+      const formData = new FormData()
+
+      // Add ValidationForOffer data
+      formData.append("name", validationData.name)
+      formData.append("check", validationData.check)
+      formData.append("date", validationData.date ? format(validationData.date, "yyyy-MM-dd") : "")
+      formData.append("comments", validationData.comments)
+
+      // Add file if present
+      if (file) {
+        formData.append("upload", file)
       }
 
-      console.log("Sending data to server:", JSON.stringify(formData, null, 2))
-      const updatedData = await updateValidationForOffer(id, formData)
+      // Update or create checkin
+      const checkinReference = checkinId
 
-      console.log("Response from server:", updatedData)
-
-      // Update local state with the response from the server
-      setValidationForOfferData({
-        name: updatedData.name || "",
-        check: updatedData.check || false,
-        date: updatedData.date ? new Date(updatedData.date) : null,
+      // Prepare checkin data
+      const checkinDataObj = {}
+      Object.keys(checkinData).forEach((key) => {
+        checkinDataObj[key] = checkinData[key]
       })
 
-      if (updatedData.checkin) {
-        const updatedCheckin = CHECKIN_FIELDS.reduce((acc, field) => {
-          acc[field] = !!updatedData.checkin[field]
-          return acc
-        }, {})
-        setCheckinData(updatedCheckin)
-        console.log("Updated check-in state:", updatedCheckin)
+      if (checkinId) {
+        // Update existing checkin
+        console.log("Updating existing checkin:", checkinId)
+        await updateCheckin(checkinId, checkinDataObj)
+      } else {
+        // Create new checkin - handled by backend when we pass the data
+        console.log("Will create new checkin")
       }
+
+      // Add checkin data to form
+      formData.append("checkin", JSON.stringify(checkinDataObj))
+
+      // If we have a massProductionId, include it
+      if (massProductionId) {
+        formData.append("massProductionId", massProductionId)
+      }
+
+      console.log("Sending data to update ValidationForOffer with checkin")
+
+      // Update the validation for offer
+      const response = await updateValidationForOffer(id, formData)
+      console.log("Update response:", response)
 
       toast({
         title: "Success",
-        description: "ValidationForOffer and Checkin Updated Successfully!",
+        description: "Validation for Offer updated successfully!",
       })
 
-      // Navigate back to mass production details page if massProductionId is available
-      handleBack()
+      // Navigate back based on context
+      if (massProductionId) {
+        navigate(`/masspd/detail/${massProductionId}`)
+      } else {
+        navigate("/validationforoffer")
+      }
     } catch (error) {
-      console.error("Update error:", error)
+      console.error("Error updating Validation for Offer:", error)
       toast({
         title: "Error",
-        description: "Failed to update ValidationForOffer and Checkin",
+        description: error.message || "Failed to update Validation for Offer",
         variant: "destructive",
       })
     } finally {
@@ -223,111 +273,216 @@ const EditValidationForOffer = () => {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-      </div>
-    )
+  const handleBack = () => {
+    if (massProductionId) {
+      navigate(`/masspd/detail/${massProductionId}`)
+    } else {
+      navigate("/validationforoffer")
+    }
   }
 
-  if (error) {
+  if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <AlertTriangle className="w-12 h-12 mb-4 text-red-500" />
-        <h2 className="mb-2 text-2xl font-bold text-gray-800">Error Loading Data</h2>
-        <p className="mb-4 text-gray-600">{error}</p>
-        <Button onClick={handleBack}>Go Back</Button>
-      </div>
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      </MainLayout>
     )
   }
 
   return (
-    <div>
-      <MainLayout>
-      <div className="container p-6 mx-auto">
+    <MainLayout>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="container px-4 py-8 mx-auto"
+      >
         <div className="flex items-center mb-6">
-          <Button variant="outline" onClick={handleBack} className="mr-4">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back
+          <Button variant="ghost" className="mr-4" onClick={handleBack}>
+            <ArrowLeft size={16} className="mr-2" />
+            Back
           </Button>
-          <h1 className="text-2xl font-bold">Edit Validation For Offer</h1>
+          <h1 className="text-3xl font-bold">Edit Validation for Offer</h1>
         </div>
 
-        <Card className="max-w-2xl mx-auto shadow-lg">
-          <CardHeader className="bg-gray-50">
-            <CardTitle className="text-2xl font-semibold text-center text-gray-800">
-              Edit ValidationForOffer & Checkin
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="mt-4 space-y-6">
-              <Label>Name</Label>
-              <input
-                type="text"
-                value={validationForOfferData.name}
-                onChange={(e) => handleValidationForOfferChange("name", e.target.value)}
-                className="w-full p-2 border rounded"
-              />
+        <form onSubmit={handleSubmit}>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="validation">Validation Details</TabsTrigger>
+              <TabsTrigger value="checkin">Check-in Details</TabsTrigger>
+            </TabsList>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="check"
-                  checked={validationForOfferData.check}
-                  onCheckedChange={(value) => handleValidationForOfferChange("check", value)}
-                />
-                <Label htmlFor="check" className="text-sm font-medium text-gray-700">
-                  Approve Offer
-                </Label>
-              </div>
+            <TabsContent value="validation">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Validation for Offer Details</CardTitle>
+                  <CardDescription>Edit the details for the Validation for Offer</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Offer Name</Label>
+                    <Input
+                      id="name"
+                      value={validationData.name}
+                      onChange={(e) => handleValidationChange("name", e.target.value)}
+                      placeholder="Enter offer name"
+                      required
+                    />
+                  </div>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline">
-                    <CalendarIcon className="w-4 h-4 mr-2" />
-                    {validationForOfferData.date ? format(validationForOfferData.date, "PPP") : "Pick a date"}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="check"
+                      checked={validationData.check}
+                      onCheckedChange={(value) => handleValidationChange("check", value === true)}
+                    />
+                    <Label htmlFor="check" className="text-sm font-medium">
+                      Approve Offer
+                    </Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={`w-full justify-start text-left font-normal ${!validationData.date && "text-muted-foreground"}`}
+                        >
+                          <CalendarIcon className="w-4 h-4 mr-2" />
+                          {validationData.date ? format(validationData.date, "PPP") : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={validationData.date}
+                          onSelect={(date) => handleValidationChange("date", date)}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="comments">Comments</Label>
+                    <Textarea
+                      id="comments"
+                      value={validationData.comments}
+                      onChange={(e) => handleValidationChange("comments", e.target.value)}
+                      placeholder="Add any comments about this validation"
+                      className="min-h-[100px]"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="file">Upload File (optional)</Label>
+                    <div className="relative">
+                      <Upload className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
+                      <Input id="file" type="file" onChange={(e) => setFile(e.target.files[0])} className="pl-10" />
+                    </div>
+                    {existingFile && !file && (
+                      <p className="text-sm text-muted-foreground">Current file: {existingFile}</p>
+                    )}
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button type="button" variant="outline" onClick={handleBack}>
+                    Cancel
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent>
-                  <Calendar
-                    mode="single"
-                    selected={validationForOfferData.date}
-                    onSelect={(date) => handleValidationForOfferChange("date", date)}
-                  />
-                </PopoverContent>
-              </Popover>
+                  <Button type="button" onClick={() => setActiveTab("checkin")}>
+                    Next: Check-in Details
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
 
-              <h3 className="mb-4 text-lg font-semibold">Checkin Details</h3>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <AnimatePresence>
-                  {CHECKIN_FIELDS.map((field) => (
-                    <motion.div key={field} className="flex items-center p-2 space-x-2 rounded-md hover:bg-gray-50">
-                      <Checkbox
-                        id={field}
-                        checked={checkinData[field] || false}
-                        onCheckedChange={() => handleCheckinChange(field)}
-                      />
-                      <Label htmlFor={field} className="text-sm font-medium text-gray-700 capitalize">
-                        {field.replace(/_/g, " ")}
-                      </Label>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
+            <TabsContent value="checkin">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Check-in Details</CardTitle>
+                  <CardDescription>
+                    Edit the details for the check-in. Check the box for completed items, add the name of the person
+                    checking in, and provide any comments.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <motion.div
+                    className="grid gap-6 md:grid-cols-2"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    {roleFields.map((field, index) => (
+                      <motion.div
+                        key={field.id}
+                        className="p-4 border rounded-lg"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 * index }}
+                      >
+                        <div className="flex items-start mb-3 space-x-3">
+                          <Checkbox
+                            id={`${field.id}-checkbox`}
+                            checked={checkinData[field.id].value}
+                            onCheckedChange={() => handleCheckboxChange(field.id)}
+                          />
+                          <label
+                            htmlFor={`${field.id}-checkbox`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            {field.label}
+                          </label>
+                        </div>
 
-              <div className="flex justify-between pt-4">
-                <Button type="button" variant="outline" onClick={handleBack}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Update"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-      </MainLayout>
-    </div>
+                        <div className="mb-3">
+                          <Label htmlFor={`${field.id}-name`} className="block mb-1 text-xs text-gray-500">
+                            Name
+                          </Label>
+                          <Input
+                            id={`${field.id}-name`}
+                            placeholder="Enter name"
+                            value={checkinData[field.id].name}
+                            onChange={(e) => handleNameChange(field.id, e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+
+                        <Label htmlFor={`${field.id}-comment`} className="block mb-1 text-xs text-gray-500">
+                          Comments
+                        </Label>
+                        <Textarea
+                          id={`${field.id}-comment`}
+                          placeholder="Add comments here..."
+                          value={checkinData[field.id].comment}
+                          onChange={(e) => handleCommentChange(field.id, e.target.value)}
+                          className="h-20 text-sm"
+                        />
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button type="button" variant="outline" onClick={() => setActiveTab("validation")}>
+                    Back to Validation
+                  </Button>
+                  <Button type="submit" className="flex items-center gap-2" disabled={submitting}>
+                    {submitting ? (
+                      <div className="w-4 h-4 border-b-2 border-white rounded-full animate-spin"></div>
+                    ) : (
+                      <Save size={16} />
+                    )}
+                    {submitting ? "Saving..." : "Save Both"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </form>
+      </motion.div>
+    </MainLayout>
   )
 }
 
