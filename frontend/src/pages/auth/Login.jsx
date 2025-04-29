@@ -38,7 +38,7 @@ export default function Login() {
       const result = await login(data.license, data.password)
 
       if (result.success) {
-        navigate("/call")
+        navigate("/home")
       } else {
         setServerError(result.message)
       }
