@@ -195,7 +195,7 @@ function OkForLunchList() {
                         <TableCell>
                           {entry.upload ? (
                             <a
-                              href={`http://192.168.1.187:5000/${entry.upload}`}
+                              href={`http://localhost:5000/${entry.upload}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center text-blue-500 hover:text-blue-700"

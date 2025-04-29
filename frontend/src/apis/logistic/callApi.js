@@ -1,6 +1,6 @@
 import axios from "axios"
 
-const API_URL = "http://192.168.1.187:5000/api/call"
+const API_URL = "http://localhost:5000/api/call"
 
 // Get all calls with optional filtering
 export const getCalls = async (filters = {}) => {
