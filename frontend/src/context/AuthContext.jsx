@@ -1,57 +1,136 @@
-import  { createContext, useState, useEffect, useContext } from "react";
-import { getCurrentUser, login, register } from "../lib/Auth";
+"use client"
 
-const AuthContext = createContext(null);
+import { createContext, useContext, useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import axios from "axios"
+
+const AuthContext = createContext()
+
+// Create axios instance with base URL
+const api = axios.create({
+  baseURL: "https://machine-alert.onrender.com/api",
+  timeout: 10000, // Set timeout to prevent hanging requests
+})
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
-  const initAuth = async () => {
-    try {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-    } catch (error) {
-      console.error("Failed to fetch user:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load user data on initial mount
   useEffect(() => {
-    if (localStorage.getItem("accessToken")) {
-      initAuth();
-    } else {
-      setLoading(false);
+    const loadUser = async () => {
+      try {
+        const token = localStorage.getItem("accessToken")
+
+        if (!token) {
+          setLoading(false)
+          return
+        }
+
+        // Set token for all requests
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`
+
+        // Fetch current user profile
+        const response = await api.get("/users/profile")
+
+        if (response.data) {
+          setUser(response.data)
+          setIsAuthenticated(true)
+        }
+      } catch (error) {
+        console.error("Error loading user:", error)
+        localStorage.removeItem("accessToken")
+        localStorage.removeItem("user")
+      } finally {
+        setLoading(false)
+      }
     }
-  }, []);
 
-  const loginUser = async (license, password) => {
-    await login(license, password);
-    await initAuth();
-  };
+    loadUser()
+  }, [])
 
-  const registerUser = async (license,username, email, password) => {
-    await register(license ,username, email, password);
-  };
+  // Register function
+  const register = async (license, username, email, password) => {
+    try {
+      const response = await api.post("/auth/register", {
+        license,
+        username,
+        email,
+        password,
+      })
 
-  const logoutUser = () => {
-    localStorage.removeItem("accessToken");
-    setUser(null);
-  };
+      return {
+        success: true,
+        data: response.data,
+      }
+    } catch (error) {
+      console.error("Registration error:", error)
+
+      return {
+        success: false,
+        message: error.response?.data?.error || "Registration failed. Please try again.",
+      }
+    }
+  }
+
+  // Optimized login function
+  const login = async (license, password) => {
+    try {
+      const response = await api.post("/auth/login", {
+        license,
+        password,
+      })
+
+      // Extract token and user data
+      const { token, ...userData } = response.data
+
+      // Store token in localStorage
+      localStorage.setItem("accessToken", token)
+
+      // Set default auth header
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`
+
+      // Store user data
+      setUser(userData)
+      setIsAuthenticated(true)
+      localStorage.setItem("user", JSON.stringify(userData))
+
+      return { success: true }
+    } catch (error) {
+      console.error("Login error:", error)
+      return {
+        success: false,
+        message: error.response?.data?.error || "Login failed. Please check your credentials.",
+      }
+    }
+  }
+
+  // Logout function
+  const logout = () => {
+    localStorage.removeItem("accessToken")
+    localStorage.removeItem("user")
+    delete api.defaults.headers.common["Authorization"]
+    setUser(null)
+    setIsAuthenticated(false)
+    navigate("/login")
+  }
 
   return (
-    <AuthContext.Provider value={{ user, login: loginUser, register: registerUser, logout: logoutUser, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        loading,
+        login,
+        logout,
+        register,
+      }}
+    >
       {children}
     </AuthContext.Provider>
-  );
-};
+  )
+}
 
-// ✅ Fix: Ensure `useAuth` is used inside `AuthProvider`
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext)

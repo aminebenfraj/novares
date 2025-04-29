@@ -1,3 +1,4 @@
+"use client"
 
 import React from "react"
 
@@ -8,7 +9,6 @@ import {
   Menu,
   X,
   Settings,
-  HelpCircle,
   User,
   LogOut,
   ChevronDown,
@@ -16,7 +16,6 @@ import {
   Package,
   Wrench,
   ShoppingCart,
-  FileText,
   BarChart3,
   PlusCircle,
   Star,
@@ -24,20 +23,8 @@ import {
   ChevronRight,
   Bookmark,
   History,
-  Briefcase,
   Atom,
-  Warehouse,
-  MapPin,
-  Box,
-  CheckSquare,
-  FileCheck,
   ClipboardCheck,
-  Clipboard,
-  PenToolIcon as Tool,
-  Truck,
-  Shield,
-  Bell,
-  Edit,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -50,11 +37,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuGroup,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -66,7 +48,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/context/AuthContext"
 
 // Define module groups for navigation
-const moduleGroups = [  
+const moduleGroups = [
   {
     id: "admin",
     label: "Administration",
@@ -127,7 +109,7 @@ export const Navbar = ({ toggleSidebar, isSidebarOpen }) => {
   const navigate = useNavigate()
   const params = useParams()
   const { toast } = useToast()
-  const { user } = useAuth() || { user: { role: "user" } }
+  const { user, logout } = useAuth() || { user: { role: "user" } }
 
   // Get current module from path
   const currentModule = useMemo(() => {
@@ -309,8 +291,6 @@ export const Navbar = ({ toggleSidebar, isSidebarOpen }) => {
             </Link>
 
             <Separator orientation="vertical" className="hidden h-6 md:block" />
-
-            
           </div>
 
           <div className="flex items-center gap-2">
@@ -611,14 +591,14 @@ export const Navbar = ({ toggleSidebar, isSidebarOpen }) => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate("/profile")}>
-                <User className="w-4 h-4 mr-2" />
-                <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/settings")}>
-                <Settings className="w-4 h-4 mr-2" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-                <DropdownMenuItem className="text-rose-600">
+                  <User className="w-4 h-4 mr-2" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/settings")}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={logout} className="text-rose-600">
                   <LogOut className="w-4 h-4 mr-2" />
                   <span>Log out</span>
                 </DropdownMenuItem>
@@ -628,7 +608,6 @@ export const Navbar = ({ toggleSidebar, isSidebarOpen }) => {
         </div>
 
         {/* Breadcrumbs navigation bar */}
-      
       </div>
     </header>
   )
