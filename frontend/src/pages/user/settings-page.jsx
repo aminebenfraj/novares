@@ -23,7 +23,6 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { useNavigate } from "react-router-dom"
 import { User, Mail, Lock, Upload, AlertTriangle } from "lucide-react"
-import MainLayout from "../../components/MainLayout"
 
 const SettingsPage = () => {
   const [user, setUser] = useState(null)
@@ -216,7 +215,6 @@ const SettingsPage = () => {
   }
 
   return (
-    <MainLayout>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -234,7 +232,7 @@ const SettingsPage = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Profile</CardTitle>
-                  <CardDescription>Update your personal information and profile picture.</CardDescription>
+                  <CardDescription>Update your personal information </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-6">
@@ -250,13 +248,7 @@ const SettingsPage = () => {
                       </Avatar>
 
                       <div className="flex items-center gap-2">
-                        <Label
-                          htmlFor="picture"
-                          className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md shadow cursor-pointer h-9 bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1"
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          Upload Picture
-                        </Label>
+                        
                         <Input
                           id="picture"
                           type="file"
@@ -407,7 +399,6 @@ const SettingsPage = () => {
           </TabsContent>
         </Tabs>
       </motion.div>
-    </MainLayout>
   )
 }
 

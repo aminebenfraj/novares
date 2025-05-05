@@ -1,160 +1,160 @@
 "use client"
 
-import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { motion } from "framer-motion"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { loginSchema } from "@/lib/AuthValidation"
-import { useAuth } from "@/context/AuthContext"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { BadgeIcon as IdCard, Lock, Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Link, useNavigate, useLocation } from "react-router-dom"
+import { useAuth } from "../../context/AuthContext"
+import { Button } from "../../components/ui/button"
+import { Input } from "../../components/ui/input"
+import { Label } from "../../components/ui/label"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card"
+import { Alert, AlertDescription } from "../../components/ui/alert"
+import { Loader2, AlertCircle } from "lucide-react"
 
-export default function Login() {
-  const navigate = useNavigate()
-  const { login } = useAuth()
-  const [serverError, setServerError] = useState(null)
+const Login = () => {
+  const [license, setLicense] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [loginAttempts, setLoginAttempts] = useState(0)
+  const { login, user } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
 
-  // Initialize form with default values
-  const form = useForm({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      license: "",
-      password: "",
-    },
-    mode: "onBlur", // Changed from onChange to onBlur for better performance
-  })
+  // Get the redirect path from location state or default to home
+  const from = location.state?.from?.pathname || "/"
 
-  // Optimized submit handler
-  const onSubmit = async (data) => {
-    setServerError(null)
+  useEffect(() => {
+    // Redirect if already authenticated
+    if (user) {
+      navigate("/")
+    }
+
+    
+  }, [user])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError("")
     setIsLoading(true)
-    try {
-      const result = await login(data.license, data.password)
 
-      if (result.success) {
-        navigate("/home")
-      } else {
-        setServerError(result.message)
+    try {
+      // Validate input
+      if (!license.trim()) {
+        setError("License is required")
+        setIsLoading(false)
+        return
       }
+
+      if (!password) {
+        setError("Password is required")
+        setIsLoading(false)
+        return
+      }
+
+      const result = await login(license, password)
+      
+        // Successful login
+        navigate("/")
     } catch (err) {
-      console.error(err)
-      setServerError(err.message || "Login failed. Please try again.")
+      console.error("Login error:", err)
+      setError(err.message || "An unexpected error occurred. Please try again.")
     } finally {
+      navigate("/")
       setIsLoading(false)
     }
   }
 
-  return (
-    <section className="flex items-center justify-center h-full min-h-screen bg-gray-100 dark:bg-gray-800">
-      <div className="container p-4 md:p-8">
-        <div className="flex items-center justify-center text-gray-900 dark:text-white">
-          <div className="flex flex-wrap w-full max-w-4xl overflow-hidden bg-white shadow-xl rounded-2xl dark:bg-gray-700">
-            {/* Left Column */}
-            <div className="flex flex-col justify-center w-full p-6 lg:w-6/12">
-              <CardHeader className="text-center">
-                <img src="/novares-logo.webp" alt="Novares" className="w-56 mx-auto" />
-                <CardTitle className="mt-4 text-2xl font-semibold text-blue-600">Welcome Back</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {serverError && (
-                  <Alert variant="destructive" className="mb-6 text-white bg-red-500">
-                    <AlertDescription>{serverError}</AlertDescription>
-                  </Alert>
-                )}
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="license"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-lg text-blue-600">License</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <IdCard className="absolute text-gray-500 transform -translate-y-1/2 left-4 top-1/2" />
-                              <Input
-                                {...field}
-                                className="py-4 pl-12 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Enter license"
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-lg text-blue-600">Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Lock className="absolute text-gray-500 transform -translate-y-1/2 left-4 top-1/2" />
-                              <Input
-                                {...field}
-                                type="password"
-                                className="py-4 pl-12 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Enter password"
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage className="text-red-500" />
-                        </FormItem>
-                      )}
-                    />
-
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Button
-                        type="submit"
-                        className="w-full py-4 text-xl text-white rounded-lg bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                            Signing in...
-                          </>
-                        ) : (
-                          "Sign in"
-                        )}
-                      </Button>
-                    </motion.div>
-                  </form>
-                </Form>
-
-                <p className="mt-6 text-lg text-center text-gray-700">
-                  Don't have an account?{" "}
-                  <Link to="/register" className="text-blue-600 hover:underline">
-                    Register here
-                  </Link>
-                </p>
-              </CardContent>
-            </div>
-            {/* Right Column */}
-            <div
-              className="items-center justify-center hidden w-6/12 p-12 text-white lg:flex"
-              style={{ background: "linear-gradient(to right, #3b82f6, #2563eb, #1d4ed8, #1e40af)" }}
-            >
-              <div>
-                <h4 className="mb-6 text-2xl font-semibold">We are more than just a company</h4>
-                <p className="text-lg">
-                  Novares is a global supplier of plastic solutions specializing in the design and manufacture of
-                  complex components and systems for the automotive industry.
-                </p>
-              </div>
-            </div>
+  // Show a more helpful message after multiple failed attempts
+  const getErrorMessage = () => {
+    if (loginAttempts >= 3) {
+      return (
+        <>
+          {error}
+          <div className="mt-2 text-sm">
+            <p>Having trouble logging in? Try these steps:</p>
+            <ul className="pl-5 mt-1 list-disc">
+              <li>Double-check your license and password</li>
+              <li>Make sure caps lock is off</li>
+              <li>Try clearing your browser cache</li>
+              <li>Contact support if the issue persists</li>
+            </ul>
           </div>
-        </div>
+        </>
+      )
+    }
+    return error
+  }
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-zinc-900">
+      <div className="w-full max-w-md p-4">
+        <Card className="border shadow-lg">
+          <CardHeader className="space-y-1">
+            <div className="flex justify-center mb-4">
+              <img src="/novares-logo.webp" alt="Novares" className="h-12" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
+            <CardDescription className="text-center">
+              Enter your license and password to access your account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="w-4 h-4 mr-2" />
+                <AlertDescription>{getErrorMessage()}</AlertDescription>
+              </Alert>
+            )}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="license">License</Label>
+                <Input
+                  id="license"
+                  type="text"
+                  placeholder="Enter your license"
+                  value={license}
+                  onChange={(e) => setLicense(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Please wait
+                  </>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
+            </form>
+          </CardContent>
+          <CardFooter className="flex justify-center">
+            <p className="text-sm text-center text-gray-500">
+              Don't have an account?{" "}
+              <Link to="/register" className="font-medium text-blue-600 hover:underline">
+                Register
+              </Link>
+            </p>
+          </CardFooter>
+        </Card>
       </div>
-    </section>
+    </div>
   )
 }
+
+export default Login

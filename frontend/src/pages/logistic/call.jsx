@@ -1,11 +1,10 @@
 "use client"
-import { Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { getCalls, createCall, completeCall, checkExpiredCalls, exportCalls,deleteCall} from "@/apis/logistic/callApi"
+import { getCalls, createCall, completeCall, checkExpiredCalls, exportCalls, deleteCall } from "@/apis/logistic/callApi"
 import { getAllMachines } from "@/apis/gestionStockApi/machineApi"
 import { useAuth } from "@/context/AuthContext"
-import MainLayout from "@/components/MainLayout"
 import { CallTimer } from "@/components/CallTimer"
 import { CallStats } from "@/components/CallStats"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -22,17 +21,17 @@ import {
   Download,
   Filter,
   Loader2,
-  RefreshCw,
   Clock,
   CheckCircle,
   XCircle,
   PhoneCall,
-  RotateCw,
   Calendar,
   Info,
+  RotateCw,
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import MainLayout from "../../components/MainLayout"
 
 const CallDashboard = () => {
   // Get the current user from auth context
@@ -56,6 +55,11 @@ const CallDashboard = () => {
   // Ref for the interval timer
   const timerRef = useRef(null)
 
+  // Check if user has the LOGISTICA role
+  const isLogistics = user?.roles?.includes("LOGISTICA")
+  // Check if user has the PRODUCCION role
+  const isProduction = user?.roles?.includes("PRODUCCION")
+
   useEffect(() => {
     fetchCalls()
     fetchMachines()
@@ -65,10 +69,22 @@ const CallDashboard = () => {
       updateRemainingTime()
     }, 1000)
 
+    // Set up interval to check expired calls and refresh data every 15 seconds
+    const refreshInterval = setInterval(() => {
+      if (isLogistics) {
+        // Check expired calls in the background (silently)
+        handleCheckExpiredCalls(true)
+      } else {
+        // For non-logistics users, just refresh the calls data
+        fetchCalls(true)
+      }
+    }, 15000) // 15 seconds
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
+      clearInterval(refreshInterval)
     }
-  }, [])
+  }, [isLogistics])
 
   const fetchMachines = async () => {
     try {
@@ -112,9 +128,9 @@ const CallDashboard = () => {
 
       // Convert filter values for API
       const apiFilters = { ...filters }
-      if (apiFilters.machineId === "all") apiFilters.machineId = ""
-      if (apiFilters.status === "all") apiFilters.status = ""
-
+      if (apiFilters.machineId === "all") delete apiFilters.machineId
+      if (apiFilters.status === "all") delete apiFilters.status
+      if (!apiFilters.date) delete apiFilters.date
       const callsData = await getCalls(apiFilters)
       setCalls(callsData)
     } catch (error) {
@@ -287,9 +303,9 @@ const CallDashboard = () => {
     }
   }
 
-  const handleCheckExpiredCalls = async () => {
+  const handleCheckExpiredCalls = async (silent = false) => {
     try {
-      setCheckingExpired(true)
+      if (!silent) setCheckingExpired(true)
 
       // Call the API to check expired calls
       const response = await checkExpiredCalls()
@@ -297,31 +313,36 @@ const CallDashboard = () => {
       // Refresh the calls list
       await fetchCalls(true)
 
-      // Show success toast
-      toast({
-        title: "Verificación completada",
-        description: response.data.message || "Se han verificado las llamadas expiradas",
-        variant: "success",
-      })
+      // Show success toast only if not silent
+      if (!silent) {
+        toast({
+          title: "Verificación completada",
+          description: response.data.message || "Se han verificado las llamadas expiradas",
+          variant: "success",
+        })
+      }
     } catch (error) {
       console.error("Error checking expired calls:", error)
 
-      // Show error toast
-      toast({
-        title: "Error",
-        description: "No se pudieron verificar las llamadas expiradas",
-        variant: "destructive",
-      })
+      // Show error toast only if not silent
+      if (!silent) {
+        toast({
+          title: "Error",
+          description: "No se pudieron verificar las llamadas expiradas",
+          variant: "destructive",
+        })
+      }
     } finally {
-      setCheckingExpired(false)
+      if (!silent) setCheckingExpired(false)
     }
   }
 
   const handleExportToExcel = () => {
     // Convert filter values for API
     const apiFilters = { ...filters }
-    if (apiFilters.machineId === "all") apiFilters.machineId = ""
-    if (apiFilters.status === "all") apiFilters.status = ""
+    if (apiFilters.machineId === "all") delete apiFilters.machineId
+    if (apiFilters.status === "all") delete apiFilters.status
+    if (!apiFilters.date) delete apiFilters.date
 
     exportCalls(apiFilters)
   }
@@ -354,18 +375,65 @@ const CallDashboard = () => {
     }
   }
   const handleDeleteCall = async (id) => {
-    const confirm = window.confirm("¿Estás seguro de que quieres eliminar esta llamada?");
-    if (!confirm) return;
-  
+    const confirm = window.confirm("¿Estás seguro de que quieres eliminar esta llamada?")
+    if (!confirm) return
+
     try {
-      await deleteCall(id);
-      alert("Llamada eliminada correctamente");
-      fetchCalls(); // Refresh the list after deletion
+      await deleteCall(id)
+      alert("Llamada eliminada correctamente")
+      fetchCalls() // Refresh the list after deletion
     } catch (error) {
-      console.error("Error al eliminar la llamada:", error);
-      alert("Error al eliminar la llamada");
+      console.error("Error al eliminar la llamada:", error)
+      alert("Error al eliminar la llamada")
     }
-  };
+  }
+
+  const handleDeleteAllExceptFirst10 = async () => {
+    const confirm = window.confirm("¿Estás seguro de que quieres eliminar todas las llamadas excepto las primeras 10?")
+    if (!confirm) return
+
+    try {
+      // Get all calls except the first 10
+      const callsToDelete = calls.slice(10)
+
+      // Show loading toast
+      toast({
+        title: "Eliminando llamadas",
+        description: `Eliminando ${callsToDelete.length} llamadas...`,
+        variant: "default",
+      })
+
+      // Delete each call
+      let deletedCount = 0
+      for (const call of callsToDelete) {
+        try {
+          await deleteCall(call._id)
+          deletedCount++
+        } catch (error) {
+          console.error(`Error al eliminar la llamada ${call._id}:`, error)
+        }
+      }
+
+      // Show success toast
+      toast({
+        title: "Llamadas eliminadas",
+        description: `Se han eliminado ${deletedCount} llamadas correctamente`,
+        variant: "success",
+      })
+
+      // Refresh the calls list
+      fetchCalls()
+    } catch (error) {
+      console.error("Error al eliminar las llamadas:", error)
+
+      // Show error toast
+      toast({
+        title: "Error",
+        description: "Ocurrió un error al eliminar las llamadas",
+        variant: "destructive",
+      })
+    }
+  }
   // Get status icon
   const getStatusIcon = (status) => {
     switch (status) {
@@ -389,36 +457,27 @@ const CallDashboard = () => {
     return true
   })
 
-  // Check if user has the LOGISTICA role
-  const isLogistics = user?.roles?.includes("LOGISTICA")
-  // Check if user has the PRODUCCION role
-  const isProduction = user?.roles?.includes("PRODUCCION")
-
   // If user is not authenticated or doesn't have either role, show loading or unauthorized message
   if (!user) {
     return (
-      <MainLayout>
-        <div className="container py-6 mx-auto flex items-center justify-center h-[80vh]">
-          <Loader2 className="w-8 h-8 mr-2 animate-spin" />
-          <span>Cargando información de usuario...</span>
-        </div>
-      </MainLayout>
+      <div className="container py-6 mx-auto flex items-center justify-center h-[80vh]">
+        <Loader2 className="w-8 h-8 mr-2 animate-spin" />
+        <span>Cargando información de usuario...</span>
+      </div>
     )
   }
 
   if (!isLogistics && !isProduction) {
     return (
-      <MainLayout>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="container py-6 mx-auto"
-        >
-          <h1 className="text-3xl font-bold tracking-tight text-center">Acceso no autorizado</h1>
-          <p className="mt-4 text-center">No tienes permisos para acceder a este módulo. Contacta al administrador.</p>
-        </motion.div>
-      </MainLayout>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="container py-6 mx-auto"
+      >
+        <h1 className="text-3xl font-bold tracking-tight text-center">Acceso no autorizado</h1>
+        <p className="mt-4 text-center">No tienes permisos para acceder a este módulo. Contacta al administrador.</p>
+      </motion.div>
     )
   }
 
@@ -448,36 +507,26 @@ const CallDashboard = () => {
           </div>
 
           <div className="flex gap-2">
-            {isLogistics && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={handleCheckExpiredCalls} disabled={checkingExpired}>
-                      {checkingExpired ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <RotateCw className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Verificar llamadas expiradas</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button variant="outline" size="icon" onClick={() => fetchCalls(true)} disabled={refreshing}>
-                      {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                    </Button>
-                  </motion.div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={isLogistics ? () => handleCheckExpiredCalls(false) : () => fetchCalls(false)}
+                    disabled={checkingExpired || refreshing}
+                  >
+                    {checkingExpired || refreshing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
+                        <RotateCw className="w-4 h-4" />
+                      </motion.div>
+                    )}
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Actualizar datos</p>
+                  <p>{isLogistics ? "Verificar llamadas expiradas" : "Actualizar datos"}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -571,6 +620,26 @@ const CallDashboard = () => {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Exportar datos a CSV</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDeleteAllExceptFirst10}
+                          className="flex items-center gap-2 mr-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Eliminar excepto 10
+                        </Button>
+                      </motion.div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Eliminar todas las llamadas excepto las primeras 10</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -687,7 +756,12 @@ const CallDashboard = () => {
                               <CallTimer remainingTime={call.remainingTime} status={call.status} />
                             </TableCell>
                             <TableCell>
-                              <Badge variant={getStatusBadgeVariant(call.status)}>
+                              <Badge
+                                variant={getStatusBadgeVariant(call.status)}
+                                className={
+                                  call.status === "Realizada" ? "bg-green-500 hover:bg-green-600 text-white" : ""
+                                }
+                              >
                                 {getStatusIcon(call.status)}
                                 {call.status}
                               </Badge>
@@ -718,19 +792,15 @@ const CallDashboard = () => {
                                   </Tooltip>
                                 </TooltipProvider>
                               )}
-
                             </TableCell>
                             <TableCell>
                               {call.completionTime ? new Date(call.completionTime).toLocaleTimeString() : "-"}
                             </TableCell>
                             <TableCell>
-                            <Button
-  variant="ghost"
-  size="icon"
-  onClick={() => handleDeleteCall(call._id)}
->
-  <Trash2 className="w-4 h-4 text-red-500" />
-</Button>                            </TableCell>
+                              <Button variant="ghost" size="icon" onClick={() => handleDeleteCall(call._id)}>
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>{" "}
+                            </TableCell>
                           </motion.tr>
                         ))}
                       </AnimatePresence>
@@ -747,4 +817,3 @@ const CallDashboard = () => {
 }
 
 export default CallDashboard
-

@@ -7,24 +7,24 @@ const {
   checkExpiredCalls,
   deleteCall,
 } = require("../../controllers/logistic/callController")
+const { protect } = require("../../middlewares/authMiddleware")
 const router = express.Router()
 
-// Get all calls
-router.get("/", getCalls)
+// Get all calls - protected
+router.get("/", protect, getCalls)
 
-// Create a new call
-router.post("/", createCall)
+// Create a new call - protected
+router.post("/", protect, createCall)
 
-// Mark a call as completed
-router.put("/:id/complete", completeCall)
+// Mark a call as completed - protected
+router.put("/:id/complete", protect, completeCall)
 
-// Export calls to CSV
+// Manually check and update expired calls - protected
+router.post("/check-expired", protect, checkExpiredCalls)
+
+// Delete a call - protected
+router.delete("/:id", protect, deleteCall)
 router.get("/export", exportCalls)
 
-// Manually check and update expired calls
-router.post("/check-expired", checkExpiredCalls)
-
-router.delete("/:id",deleteCall);
 
 module.exports = router
-
