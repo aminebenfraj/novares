@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../../../components/ui/card"
 import { createMachine } from "../../../apis/gestionStockApi/machineApi"
 import { Sparkles } from "lucide-react"
-import ContactUs from "@/components/ContactUs"
-import Navbar from "@/components/NavBar"
+import MainLayout from "@/components/MainLayout"
 const CreateMachine = () => {
   const [machine, setMachine] = useState({
     name: "",
@@ -36,9 +35,9 @@ const CreateMachine = () => {
 
   return (
     <div>
-      <Navbar />
+      <MainLayout>
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-zinc-900">
-      <Card className="w-full max-w-md bg-white dark:bg-zinc-800 shadow-lg">
+      <Card className="w-full max-w-md bg-white shadow-lg dark:bg-zinc-800">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Create New Machine</CardTitle>
         </CardHeader>
@@ -96,7 +95,7 @@ const CreateMachine = () => {
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full">
               <Button
                 type="submit"
-                className="w-full bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+                className="w-full text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Create Machine
@@ -106,8 +105,8 @@ const CreateMachine = () => {
         </form>
       </Card>
     </div>
-    <ContactUs />
-    </div>
+</MainLayout>   
+ </div>
   )
 }
 

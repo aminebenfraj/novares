@@ -23,6 +23,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { useNavigate } from "react-router-dom"
 import { User, Mail, Lock, Upload, AlertTriangle } from "lucide-react"
+import MainLayout from "@/components/MainLayout"
 
 const SettingsPage = () => {
   const [user, setUser] = useState(null)
@@ -215,6 +216,7 @@ const SettingsPage = () => {
   }
 
   return (
+    <MainLayout>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -399,6 +401,7 @@ const SettingsPage = () => {
           </TabsContent>
         </Tabs>
       </motion.div>
+    </MainLayout>
   )
 }
 

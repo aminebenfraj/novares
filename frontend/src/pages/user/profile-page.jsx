@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { CalendarDays, User, Mail, Key, Clock } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import MainLayout from "@/components/MainLayout"
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null)
@@ -78,6 +79,7 @@ const ProfilePage = () => {
   }
 
   return (
+    <MainLayout>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -200,6 +202,7 @@ const ProfilePage = () => {
           </motion.div>
         </div>
       </motion.div>
+    </MainLayout>
   )
 }
 
