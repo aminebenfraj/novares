@@ -1,58 +1,47 @@
 const ValidationForOffer = require("../models/validation_for_offerModel");
-const Checkin = require("../models/CheckInModel"); // ✅ Ensure this is correctly imported
+const Checkin = require("../models/CheckInModel");
 const path = require("path");
 const fs = require("fs");
-const mongoose = require("mongoose");
 
-  // ✅ Create a new "validationForOffer" entry
-  exports.createValidationForOffer = async (req, res) => {
-    try {
-      const { name, check, date, comments, checkin } = req.body
-      const uploadPath = req.file ? req.file.path : null
-  
-      console.log("Received data:", { name, check, date, comments, checkin })
-  
-      // Parse the checkin data if it's a string
-      let checkinData = checkin
-      if (typeof checkin === "string") {
-        try {
-          checkinData = JSON.parse(checkin)
-        } catch (error) {
-          console.error("Error parsing checkin JSON:", error)
-          checkinData = {}
-        }
+// ✅ Create a new "validationForOffer" entry
+exports.createValidationForOffer = async (req, res) => {
+  try {
+    const { name, check, date, comments } = req.body;
+    const uploadPath = req.file ? req.file.path : null;
+
+    let checkinData = req.body.checkin;
+    if (typeof checkinData === "string") {
+      try {
+        checkinData = JSON.parse(checkinData);
+      } catch (error) {
+        return res.status(400).json({ message: "Invalid JSON in 'checkin' field" });
       }
-  
-      // Create the Checkin entry with the provided checkin data
-      const newCheckin = new Checkin(checkinData)
-      await newCheckin.save()
-  
-      console.log("Created checkin:", newCheckin)
-  
-      // Create the ValidationForOffer entry linked to the Checkin
-      const newEntry = new ValidationForOffer({
-        checkin: newCheckin._id,
-        name,
-        upload: uploadPath,
-        check,
-        date,
-        comments,
-      })
-  
-      await newEntry.save()
-  
-      res.status(201).json({
-        message: "ValidationForOffer and Checkin entries created successfully",
-        data: newEntry,
-        checkin: newCheckin,
-      })
-    } catch (error) {
-      console.error("Error creating ValidationForOffer:", error)
-      res.status(500).json({ message: "Server error", error: error.message })
     }
-  }
-  
 
+    const newCheckin = new Checkin(checkinData);
+    await newCheckin.save();
+
+    const newValidation = new ValidationForOffer({
+      name,
+      check,
+      date,
+      comments,
+      upload: uploadPath,
+      checkin: newCheckin._id,
+    });
+
+    await newValidation.save();
+
+    res.status(201).json({
+      message: "ValidationForOffer and Checkin created successfully",
+      data: newValidation,
+      checkin: newCheckin,
+    });
+  } catch (error) {
+    console.error("Error creating ValidationForOffer:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
 
 // ✅ Get all "validationForOffer" entries
 exports.getAllValidationForOffers = async (req, res) => {
@@ -67,15 +56,11 @@ exports.getAllValidationForOffers = async (req, res) => {
 // ✅ Get a single "validationForOffer" entry by ID
 exports.getValidationForOfferById = async (req, res) => {
   try {
-    console.log("Fetching ValidationForOffer by ID:", req.params.id);
-    const validationForOffer = await ValidationForOffer.findById(req.params.id).populate("checkin");
-
-    if (!validationForOffer) {
-      console.log("No ValidationForOffer found for ID:", req.params.id);
+    const validation = await ValidationForOffer.findById(req.params.id).populate("checkin");
+    if (!validation) {
       return res.status(404).json({ message: "ValidationForOffer entry not found" });
     }
-
-    res.status(200).json(validationForOffer);
+    res.status(200).json(validation);
   } catch (error) {
     console.error("Error in getValidationForOfferById:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -85,24 +70,32 @@ exports.getValidationForOfferById = async (req, res) => {
 // ✅ Update "validationForOffer" entry
 exports.updateValidationForOffer = async (req, res) => {
   try {
-    const { name, check, date, comments, checkin } = req.body;
+    const { name, check, date, comments } = req.body;
     const uploadPath = req.file ? req.file.path : undefined;
 
-    // ✅ Find the existing ValidationForOffer entry
+    let checkinData = req.body.checkin;
+    if (typeof checkinData === "string") {
+      try {
+        checkinData = JSON.parse(checkinData);
+      } catch (error) {
+        return res.status(400).json({ message: "Invalid JSON in 'checkin' field" });
+      }
+    }
+
     const existingEntry = await ValidationForOffer.findById(req.params.id);
     if (!existingEntry) {
       return res.status(404).json({ message: "ValidationForOffer entry not found" });
     }
 
-    // ✅ Update Checkin if provided
-    if (checkin && existingEntry.checkin) {
-      await Checkin.findByIdAndUpdate(existingEntry.checkin, { $set: checkin }, { new: true });
-    } else if (checkin) {
-      const newCheckin = await Checkin.create(checkin);
+    // ✅ Update or create Checkin
+    if (checkinData && existingEntry.checkin) {
+      await Checkin.findByIdAndUpdate(existingEntry.checkin, checkinData, { new: true });
+    } else if (checkinData) {
+      const newCheckin = await Checkin.create(checkinData);
       existingEntry.checkin = newCheckin._id;
     }
 
-    // ✅ Update ValidationForOffer with provided fields
+    // ✅ Build update object
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (check !== undefined) updateData.check = check;
@@ -119,6 +112,7 @@ exports.updateValidationForOffer = async (req, res) => {
       data: updatedEntry,
     });
   } catch (error) {
+    console.error("Error updating ValidationForOffer:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -127,9 +121,11 @@ exports.updateValidationForOffer = async (req, res) => {
 exports.deleteValidationForOffer = async (req, res) => {
   try {
     const entry = await ValidationForOffer.findByIdAndDelete(req.params.id);
-    if (!entry) return res.status(404).json({ message: "Entry not found" });
+    if (!entry) {
+      return res.status(404).json({ message: "Entry not found" });
+    }
 
-    // ✅ Delete the associated file if it exists
+    // ✅ Delete associated file
     if (entry.upload) {
       fs.unlink(entry.upload, (err) => {
         if (err) console.error("Failed to delete file:", err);

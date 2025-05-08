@@ -17,21 +17,25 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
-import { CalendarIcon, Upload, ArrowLeft, Save, Loader2 } from "lucide-react"
+import { CalendarIcon, Upload, ArrowLeft, Save, Loader2 } from 'lucide-react'
 
+// Define role fields based on the CheckInModel schema
 const roleFields = [
-  { id: "project_manager", label: "Project Manager" },
-  { id: "business_manager", label: "Business Manager" },
-  { id: "engineering_leader_manager", label: "Engineering Leader/Manager" },
-  { id: "quality_leader", label: "Quality Leader" },
-  { id: "plant_quality_leader", label: "Plant Quality Leader" },
-  { id: "industrial_engineering", label: "Industrial Engineering" },
-  { id: "launch_manager_method", label: "Launch Manager Method" },
-  { id: "maintenance", label: "Maintenance" },
-  { id: "purchasing", label: "Purchasing" },
-  { id: "logistics", label: "Logistics" },
-  { id: "sales", label: "Sales" },
-  { id: "economic_financial_leader", label: "Economic Financial Leader" },
+  { id: "Project Manager", label: "Project Manager" },
+  { id: "Business Manager", label: "Business Manager" },
+  { id: "Financial Leader", label: "Financial Leader" },
+  { id: "Manufacturing Eng. Manager", label: "Manufacturing Eng. Manager" },
+  { id: "Manufacturing Eng. Leader", label: "Manufacturing Eng. Leader" },
+  { id: "Methodes UAP1&3", label: "Methodes UAP1&3" },
+  { id: "Methodes UAP2", label: "Methodes UAP2" },
+  { id: "Maintenance Manager", label: "Maintenance Manager" },
+  { id: "Maintenance Leader UAP2", label: "Maintenance Leader UAP2" },
+  { id: "Prod. Plant Manager UAP1", label: "Prod. Plant Manager UAP1" },
+  { id: "Prod. Plant Manager UAP2", label: "Prod. Plant Manager UAP2" },
+  { id: "Quality Manager", label: "Quality Manager" },
+  { id: "Quality Leader UAP1", label: "Quality Leader UAP1" },
+  { id: "Quality Leader UAP2", label: "Quality Leader UAP2" },
+  { id: "Quality Leader UAP3", label: "Quality Leader UAP3" },
 ]
 
 const EditValidationForOffer = () => {
@@ -49,7 +53,7 @@ const EditValidationForOffer = () => {
   const [file, setFile] = useState(null)
   const [existingFile, setExistingFile] = useState(null)
 
-  // Checkin state
+  // Checkin state - initialize with default structure
   const [checkinData, setCheckinData] = useState(
     roleFields.reduce((acc, field) => {
       acc[field.id] = {
@@ -59,7 +63,7 @@ const EditValidationForOffer = () => {
         name: "",
       }
       return acc
-    }, {}),
+    }, {})
   )
 
   const [checkinId, setCheckinId] = useState(null)
@@ -126,18 +130,30 @@ const EditValidationForOffer = () => {
               const checkinResponse = await getCheckinById(checkinId)
               const checkinData = checkinResponse.data || checkinResponse
 
-              // Map checkin data to state
-              const mappedCheckinData = {}
+              // Initialize checkin data with default structure
+              const initializedCheckinData = {}
+              
+              // Map checkin data to state, ensuring all fields have the correct structure
               roleFields.forEach((field) => {
-                mappedCheckinData[field.id] = {
-                  value: checkinData[field.id]?.value || false,
-                  comment: checkinData[field.id]?.comment || "",
-                  date: checkinData[field.id]?.date || new Date().toISOString(),
-                  name: checkinData[field.id]?.name || "",
+                if (checkinData[field.id]) {
+                  initializedCheckinData[field.id] = {
+                    value: checkinData[field.id].value || false,
+                    comment: checkinData[field.id].comment || "",
+                    date: checkinData[field.id].date || new Date().toISOString(),
+                    name: checkinData[field.id].name || "",
+                  }
+                } else {
+                  // If field doesn't exist in the data, create it with default values
+                  initializedCheckinData[field.id] = {
+                    value: false,
+                    comment: "",
+                    date: new Date().toISOString(),
+                    name: "",
+                  }
                 }
               })
 
-              setCheckinData(mappedCheckinData)
+              setCheckinData(initializedCheckinData)
             } catch (error) {
               console.error("Error fetching checkin data:", error)
               toast({
@@ -426,7 +442,7 @@ const EditValidationForOffer = () => {
                         <div className="flex items-start mb-3 space-x-3">
                           <Checkbox
                             id={`${field.id}-checkbox`}
-                            checked={checkinData[field.id].value}
+                            checked={checkinData[field.id]?.value || false}
                             onCheckedChange={() => handleCheckboxChange(field.id)}
                           />
                           <label
@@ -444,7 +460,7 @@ const EditValidationForOffer = () => {
                           <Input
                             id={`${field.id}-name`}
                             placeholder="Enter name"
-                            value={checkinData[field.id].name}
+                            value={checkinData[field.id]?.name || ""}
                             onChange={(e) => handleNameChange(field.id, e.target.value)}
                             className="h-8 text-sm"
                           />
@@ -456,7 +472,7 @@ const EditValidationForOffer = () => {
                         <Textarea
                           id={`${field.id}-comment`}
                           placeholder="Add comments here..."
-                          value={checkinData[field.id].comment}
+                          value={checkinData[field.id]?.comment || ""}
                           onChange={(e) => handleCommentChange(field.id, e.target.value)}
                           className="h-20 text-sm"
                         />
