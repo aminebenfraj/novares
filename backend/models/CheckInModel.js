@@ -1,101 +1,100 @@
-const mongoose = require("mongoose");
-const { Schema } = mongoose;
+const mongoose = require("mongoose")
+const { Schema } = mongoose
 
 const CheckinSchema = new Schema(
   {
-    project_manager: {
+    "Project Manager": {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
-                  name: { type: String, default: "" }
-
+      name: { type: String, default: "" },
     },
-    business_manager: {
-      value: { type: Boolean, default: false },
-      comment: { type: String, default: "" },
-            date: { type: Date, default: Date.now },
-                        name: { type: String, default: "" }
-
-    },
-    engineering_leader_manager: {
+    "Business Manager": {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
-                  name: { type: String, default: "" }
-
-
+      name: { type: String, default: "" },
     },
-    quality_leader: {
+    "Financial Leader": {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
-                  name: { type: String, default: "" }
-
+      name: { type: String, default: "" },
     },
-    plant_quality_leader: {
+    "Manufacturing Eng. Manager": {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
-                  name: { type: String, default: "" }
-
-
+      name: { type: String, default: "" },
     },
-    industrial_engineering: {
+    "Manufacturing Eng. Leader": {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
-                  name: { type: String, default: "" }
-
+      name: { type: String, default: "" },
     },
-    launch_manager_method: {
+    "Methodes UAP1&3": {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
-                  name: { type: String, default: "" }
-
-
+      name: { type: String, default: "" },
     },
-    maintenance: {
+    "Methodes UAP2": {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
-            date: { type: Date, default: Date.now },
-                        name: { type: String, default: "" }
-
-
+      date: { type: Date, default: Date.now },
+      name: { type: String, default: "" },
     },
-    purchasing: {
+    "Maintenance Manager": {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
-            date: { type: Date, default: Date.now },
-                        name: { type: String, default: "" }
-
-
+      date: { type: Date, default: Date.now },
+      name: { type: String, default: "" },
     },
-    logistics: {
+    "Maintenance Leader UAP2": {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
-            date: { type: Date, default: Date.now },
-                        name: { type: String, default: "" }
-
-
+      date: { type: Date, default: Date.now },
+      name: { type: String, default: "" },
     },
-    sales: {
+    "Prod. Plant Manager UAP1": {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
-            date: { type: Date, default: Date.now },
-                        name: { type: String, default: "" }
-
-
+      date: { type: Date, default: Date.now },
+      name: { type: String, default: "" },
     },
-    economic_financial_leader: {
+    "Prod. Plant Manager UAP2": {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
-            date: { type: Date, default: Date.now },
-            name: { type: String, default: "" }
-
-    }
+      date: { type: Date, default: Date.now },
+      name: { type: String, default: "" },
+    },
+    "Quality Manager": {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+      date: { type: Date, default: Date.now },
+      name: { type: String, default: "" },
+    },
+    "Quality Leader UAP1": {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+      date: { type: Date, default: Date.now },
+      name: { type: String, default: "" },
+    },
+    "Quality Leader UAP2": {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+      date: { type: Date, default: Date.now },
+      name: { type: String, default: "" },
+    },
+    "Quality Leader UAP3": {
+      value: { type: Boolean, default: false },
+      comment: { type: String, default: "" },
+      date: { type: Date, default: Date.now },
+      name: { type: String, default: "" },
+    },
   },
-  { timestamps: true }
-);
+  { timestamps: true },
+)
 
-module.exports = mongoose.model("Checkin", CheckinSchema);
+module.exports = mongoose.model("Checkin", CheckinSchema)

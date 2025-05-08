@@ -159,10 +159,27 @@ import Call from "./pages/logistic/call"
 function App() {
   // Define role groups for different sections
   const adminRoles = ["Admin"]
-  const productionRoles = ["Admin", "PRODUCCION", "Manufacturing Eng. Manager", "Manufacturing Eng. Leader"]
-  const logisticRoles = ["Admin", "LOGISTICA", "Logistic Manager", "Logistic Leader"]
-  const inventoryRoles = ["Admin", "PRODUCCION", "LOGISTICA", "Material Administrator"]
-  const qualityRoles = ["Admin", "Quality Manager", "Quality Leader UAP1", "Quality Leader UAP2", "Quality Leader UAP3"]
+  const productionRoles = [
+    "Admin", 
+    "PRODUCCION", 
+    "Manufacturing Eng. Manager", 
+    "Manufacturing Eng. Leader",
+    "Project Manager",
+    "Business Manager",
+    "Financial Leader",
+    "Methodes UAP1&3",
+    "Methodes UAP2",
+    "Maintenance Manager",
+    "Maintenance Leader UAP2",
+    "Prod. Plant Manager UAP1",
+    "Prod. Plant Manager UAP2",
+    "Quality Manager",
+    "Quality Leader UAP1",
+    "Quality Leader UAP2",
+    "Quality Leader UAP3"]
+ const logisticRoles = ["Admin"]
+  const inventoryRoles = ["Admin"]
+  const qualityRoles = ["Admin"]
 
   return (
     <AuthProvider>

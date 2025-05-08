@@ -85,7 +85,7 @@ exports.getValidationForOfferById = async (req, res) => {
 // ✅ Update "validationForOffer" entry
 exports.updateValidationForOffer = async (req, res) => {
   try {
-    const { name, check, date, checkin } = req.body;
+    const { name, check, date, comments, checkin } = req.body;
     const uploadPath = req.file ? req.file.path : undefined;
 
     // ✅ Find the existing ValidationForOffer entry
@@ -107,6 +107,7 @@ exports.updateValidationForOffer = async (req, res) => {
     if (name !== undefined) updateData.name = name;
     if (check !== undefined) updateData.check = check;
     if (date !== undefined) updateData.date = date;
+    if (comments !== undefined) updateData.comments = comments;
     if (uploadPath) updateData.upload = uploadPath;
 
     const updatedEntry = await ValidationForOffer.findByIdAndUpdate(req.params.id, updateData, {
