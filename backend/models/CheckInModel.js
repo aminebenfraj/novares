@@ -3,91 +3,91 @@ const { Schema } = mongoose
 
 const CheckinSchema = new Schema(
   {
-    "Project Manager": {
+    Project_Manager: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Business Manager": {
+    Business_Manager: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Financial Leader": {
+    Financial_Leader: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Manufacturing Eng. Manager": {
+    Manufacturing_Eng_Manager: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Manufacturing Eng. Leader": {
+    Manufacturing_Eng_Leader: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Methodes UAP1&3": {
+    Methodes_UAP1_3: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Methodes UAP2": {
+    Methodes_UAP2: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Maintenance Manager": {
+    Maintenance_Manager: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Maintenance Leader UAP2": {
+    Maintenance_Leader_UAP2: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Prod. Plant Manager UAP1": {
+    Prod_Plant_Manager_UAP1: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Prod. Plant Manager UAP2": {
+    Prod_Plant_Manager_UAP2: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Quality Manager": {
+    Quality_Manager: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Quality Leader UAP1": {
+    Quality_Leader_UAP1: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Quality Leader UAP2": {
+    Quality_Leader_UAP2: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },
       name: { type: String, default: "" },
     },
-    "Quality Leader UAP3": {
+    Quality_Leader_UAP3: {
       value: { type: Boolean, default: false },
       comment: { type: String, default: "" },
       date: { type: Date, default: Date.now },

@@ -16,26 +16,26 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { format } from "date-fns"
-import { CalendarIcon, Upload, ArrowLeft, Save, Loader2 } from 'lucide-react'
+import { format, parseISO } from "date-fns"
+import { CalendarIcon, Upload, ArrowLeft, Save, Loader2, Clock } from "lucide-react"
 
-// Define role fields based on the CheckInModel schema
+// Update the roleFields array to match exactly with the new CheckinSchema model (with underscores)
 const roleFields = [
-  { id: "Project Manager", label: "Project Manager" },
-  { id: "Business Manager", label: "Business Manager" },
-  { id: "Financial Leader", label: "Financial Leader" },
-  { id: "Manufacturing Eng. Manager", label: "Manufacturing Eng. Manager" },
-  { id: "Manufacturing Eng. Leader", label: "Manufacturing Eng. Leader" },
-  { id: "Methodes UAP1&3", label: "Methodes UAP1&3" },
-  { id: "Methodes UAP2", label: "Methodes UAP2" },
-  { id: "Maintenance Manager", label: "Maintenance Manager" },
-  { id: "Maintenance Leader UAP2", label: "Maintenance Leader UAP2" },
-  { id: "Prod. Plant Manager UAP1", label: "Prod. Plant Manager UAP1" },
-  { id: "Prod. Plant Manager UAP2", label: "Prod. Plant Manager UAP2" },
-  { id: "Quality Manager", label: "Quality Manager" },
-  { id: "Quality Leader UAP1", label: "Quality Leader UAP1" },
-  { id: "Quality Leader UAP2", label: "Quality Leader UAP2" },
-  { id: "Quality Leader UAP3", label: "Quality Leader UAP3" },
+  { id: "Project_Manager", label: "Project Manager" },
+  { id: "Business_Manager", label: "Business Manager" },
+  { id: "Financial_Leader", label: "Financial Leader" },
+  { id: "Manufacturing_Eng_Manager", label: "Manufacturing Eng. Manager" },
+  { id: "Manufacturing_Eng_Leader", label: "Manufacturing Eng. Leader" },
+  { id: "Methodes_UAP1_3", label: "Methodes UAP1&3" },
+  { id: "Methodes_UAP2", label: "Methodes UAP2" },
+  { id: "Maintenance_Manager", label: "Maintenance Manager" },
+  { id: "Maintenance_Leader_UAP2", label: "Maintenance Leader UAP2" },
+  { id: "Prod_Plant_Manager_UAP1", label: "Prod. Plant Manager UAP1" },
+  { id: "Prod_Plant_Manager_UAP2", label: "Prod. Plant Manager UAP2" },
+  { id: "Quality_Manager", label: "Quality Manager" },
+  { id: "Quality_Leader_UAP1", label: "Quality Leader UAP1" },
+  { id: "Quality_Leader_UAP2", label: "Quality Leader UAP2" },
+  { id: "Quality_Leader_UAP3", label: "Quality Leader UAP3" },
 ]
 
 const EditValidationForOffer = () => {
@@ -63,7 +63,7 @@ const EditValidationForOffer = () => {
         name: "",
       }
       return acc
-    }, {})
+    }, {}),
   )
 
   const [checkinId, setCheckinId] = useState(null)
@@ -129,10 +129,11 @@ const EditValidationForOffer = () => {
             try {
               const checkinResponse = await getCheckinById(checkinId)
               const checkinData = checkinResponse.data || checkinResponse
+              console.log("Fetched checkin data:", checkinData)
 
               // Initialize checkin data with default structure
               const initializedCheckinData = {}
-              
+
               // Map checkin data to state, ensuring all fields have the correct structure
               roleFields.forEach((field) => {
                 if (checkinData[field.id]) {
@@ -153,6 +154,7 @@ const EditValidationForOffer = () => {
                 }
               })
 
+              console.log("Initialized checkin data:", initializedCheckinData)
               setCheckinData(initializedCheckinData)
             } catch (error) {
               console.error("Error fetching checkin data:", error)
@@ -215,6 +217,19 @@ const EditValidationForOffer = () => {
     })
   }
 
+  // Format date for display
+  const formatDate = (dateString) => {
+    try {
+      if (!dateString) return "Not submitted"
+      const date = parseISO(dateString)
+      return format(date, "MMM d, yyyy 'at' h:mm a")
+    } catch (error) {
+      console.error("Error formatting date:", error)
+      return "Invalid date"
+    }
+  }
+
+  // Update the handleSubmit function to ensure all fields are properly structured and sent
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
@@ -227,20 +242,24 @@ const EditValidationForOffer = () => {
       formData.append("name", validationData.name)
       formData.append("check", validationData.check)
       formData.append("date", validationData.date ? format(validationData.date, "yyyy-MM-dd") : "")
-      formData.append("comments", validationData.comments)
+      formData.append("comments", validationData.comments || "")
 
       // Add file if present
       if (file) {
         formData.append("upload", file)
       }
 
-      // Update or create checkin
-      const checkinReference = checkinId
-
-      // Prepare checkin data
+      // Prepare checkin data - ensure all fields from the schema are included
       const checkinDataObj = {}
-      Object.keys(checkinData).forEach((key) => {
-        checkinDataObj[key] = checkinData[key]
+
+      // Explicitly include all fields from the schema
+      roleFields.forEach((field) => {
+        checkinDataObj[field.id] = {
+          value: checkinData[field.id]?.value || false,
+          comment: checkinData[field.id]?.comment || "",
+          date: checkinData[field.id]?.date || new Date().toISOString(),
+          name: checkinData[field.id]?.name || "",
+        }
       })
 
       if (checkinId) {
@@ -260,7 +279,10 @@ const EditValidationForOffer = () => {
         formData.append("massProductionId", massProductionId)
       }
 
-      console.log("Sending data to update ValidationForOffer with checkin")
+      console.log("Sending data to update ValidationForOffer with checkin:", {
+        validationData,
+        checkinData: checkinDataObj,
+      })
 
       // Update the validation for offer
       const response = await updateValidationForOffer(id, formData)
@@ -439,18 +461,28 @@ const EditValidationForOffer = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 * index }}
                       >
-                        <div className="flex items-start mb-3 space-x-3">
-                          <Checkbox
-                            id={`${field.id}-checkbox`}
-                            checked={checkinData[field.id]?.value || false}
-                            onCheckedChange={() => handleCheckboxChange(field.id)}
-                          />
-                          <label
-                            htmlFor={`${field.id}-checkbox`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-start space-x-3">
+                            <Checkbox
+                              id={`${field.id}-checkbox`}
+                              checked={checkinData[field.id]?.value || false}
+                              onCheckedChange={() => handleCheckboxChange(field.id)}
+                            />
+                            <label
+                              htmlFor={`${field.id}-checkbox`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              {field.label}
+                            </label>
+                          </div>
+
+                          {/* Display submission status with date */}
+                          <div
+                            className={`text-xs flex items-center ${checkinData[field.id]?.value ? "text-green-600" : "text-gray-400"}`}
                           >
-                            {field.label}
-                          </label>
+                            <Clock size={12} className="mr-1" />
+                            {checkinData[field.id]?.value ? formatDate(checkinData[field.id]?.date) : "Not submitted"}
+                          </div>
                         </div>
 
                         <div className="mb-3">

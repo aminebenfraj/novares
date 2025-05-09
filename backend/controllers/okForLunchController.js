@@ -77,60 +77,56 @@ exports.getOkForLunchById = async (req, res) => {
   }
 }
 
-// Update "OkForLunch" entry
-const mongoose = require("mongoose")
-
 exports.updateOkForLunch = async (req, res) => {
   try {
-    const { check, date, checkin } = req.body
-    const uploadPath = req.file ? req.file.path : undefined
+    const { check, date } = req.body;
+    const uploadPath = req.file ? req.file.path : undefined;
 
-    console.log("Received update data:", { check, date, checkin })
+    // ✅ Parse checkin if it's a JSON string
+    let checkinData = req.body.checkin;
+    if (typeof checkinData === "string") {
+      try {
+        checkinData = JSON.parse(checkinData);
+      } catch (error) {
+        return res.status(400).json({ message: "Invalid JSON in 'checkin' field" });
+      }
+    }
 
-    // ✅ Find the existing OkForLunch entry
-    const existingEntry = await OkForLunch.findById(req.params.id)
+    // ✅ Find existing OkForLunch entry
+    const existingEntry = await OkForLunch.findById(req.params.id);
     if (!existingEntry) {
-      return res.status(404).json({ message: "OkForLunch entry not found" })
+      return res.status(404).json({ message: "OkForLunch entry not found" });
     }
 
-    // ✅ Update Checkin if provided
-    if (checkin && existingEntry.checkin) {
-      console.log("Updating existing checkin:", existingEntry.checkin)
-      console.log("With data:", checkin)
-
-      const updatedCheckin = await Checkin.findByIdAndUpdate(existingEntry.checkin, { $set: checkin }, { new: true })
-
-      console.log("Updated checkin result:", updatedCheckin)
-    } else if (checkin) {
-      console.log("Creating new checkin with data:", checkin)
-      const newCheckin = await Checkin.create(checkin)
-      existingEntry.checkin = newCheckin._id
-      console.log("Created new checkin:", newCheckin)
+    // ✅ Update or create Checkin
+    if (checkinData && existingEntry.checkin) {
+      await Checkin.findByIdAndUpdate(existingEntry.checkin, checkinData, { new: true });
+    } else if (checkinData) {
+      const newCheckin = await Checkin.create(checkinData);
+      existingEntry.checkin = newCheckin._id;
     }
 
-    // ✅ Update OkForLunch with provided fields
-    const updateData = {}
-    if (check !== undefined) updateData.check = check
-    if (date !== undefined) updateData.date = date
-    if (uploadPath) updateData.upload = uploadPath
+    // ✅ Build update object
+    const updateData = {};
+    if (check !== undefined) updateData.check = check;
+    if (date !== undefined) updateData.date = date;
+    if (uploadPath) updateData.upload = uploadPath;
 
-    console.log("Updating OkForLunch with data:", updateData)
-
-    const updatedEntry = await OkForLunch.findByIdAndUpdate(req.params.id, updateData, { new: true }).populate(
-      "checkin",
-    )
-
-    console.log("Updated OkForLunch result:", updatedEntry)
+    // ✅ Update OkForLunch entry
+    const updatedEntry = await OkForLunch.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+    }).populate("checkin");
 
     res.status(200).json({
       message: "OkForLunch and Checkin updated successfully",
       data: updatedEntry,
-    })
+    });
   } catch (error) {
-    console.error("Error updating OkForLunch:", error)
-    res.status(500).json({ message: "Server error", error: error.message })
+    console.error("Error updating OkForLunch:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
-}
+};
+
 
 // Delete "OkForLunch" entry
 exports.deleteOkForLunch = async (req, res) => {
