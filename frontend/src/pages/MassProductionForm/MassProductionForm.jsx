@@ -24,12 +24,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, ArrowLeft } from "lucide-react"
+import { Loader2, ArrowLeft, Clock, Upload } from "lucide-react"
 import MainLayout from "@/components/MainLayout"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
-import { CalendarIcon, Upload } from "lucide-react"
+import { CalendarIcon } from "lucide-react"
 
 const MassPdCreate = () => {
   const navigate = useNavigate()
@@ -204,20 +204,17 @@ const MassPdCreate = () => {
   )
 
   // Checkin data for Feasibility
-  const [feasibilityCheckinData, setFeasibilityCheckinData] = useState({
-    project_manager: false,
-    business_manager: false,
-    engineering_leader_manager: false,
-    quality_leader: false,
-    plant_quality_leader: false,
-    industrial_engineering: false,
-    launch_manager_method: false,
-    maintenance: false,
-    purchasing: false,
-    logistics: false,
-    sales: false,
-    economic_financial_leader: false,
-  })
+  const [feasibilityCheckinData, setFeasibilityCheckinData] = useState(
+    roleFields.reduce((acc, field) => {
+      acc[field.id] = {
+        value: false,
+        comment: "",
+        date: new Date().toISOString(),
+        name: "",
+      }
+      return acc
+    }, {}),
+  )
 
   // Fetch customers and product designations on component mount
   useEffect(() => {
@@ -357,7 +354,8 @@ const MassPdCreate = () => {
         ...prev,
         [field]: {
           ...prev[field],
-          value: checked,
+          value: checked === true,
+          date: checked === true ? new Date().toISOString() : prev[field].date,
         },
       }
       console.log(`Updated ValidationForOffer checkin ${field}:`, checked)
@@ -377,9 +375,16 @@ const MassPdCreate = () => {
     }))
   }
 
-  // Handle Feasibility checkin checkbox changes
+  // Handle Feasibility checkin changes
   const handleFeasibilityCheckinChange = (field, checked) => {
-    setFeasibilityCheckinData((prev) => ({ ...prev, [field]: checked }))
+    setFeasibilityCheckinData((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        value: checked === true,
+        date: checked === true ? new Date().toISOString() : prev[field].date,
+      },
+    }))
   }
 
   // Handle file upload for kick-off tasks
@@ -1151,65 +1156,73 @@ const MassPdCreate = () => {
                           </div>
 
                           <div className="pt-4 mt-6 border-t">
-                            <h4 className="mb-3 text-sm font-medium">Check-in for OK for Launch</h4>
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                              {Object.keys(okForLunchCheckinData).map((field) => (
-                                <div key={field} className="p-3 border rounded-md">
-                                  <div className="flex items-center mb-2 space-x-2">
-                                    <Checkbox
-                                      id={`ok-for-lunch-${field}`}
-                                      checked={okForLunchCheckinData[field].value || false}
-                                      onCheckedChange={(checked) =>
-                                        setOkForLunchCheckinData((prev) => ({
-                                          ...prev,
-                                          [field]: {
-                                            ...prev[field],
-                                            value: checked === true,
-                                            date: checked === true ? new Date().toISOString() : prev[field].date,
-                                          },
-                                        }))
-                                      }
-                                    />
-                                    <Label
-                                      htmlFor={`ok-for-lunch-${field}`}
-                                      className="text-sm font-medium leading-none capitalize"
-                                    >
-                                      {field.replace(/_/g, " ")}
-                                    </Label>
+                            <Accordion type="single" collapsible className="w-full">
+                              <AccordionItem value="ok-for-lunch-checkin">
+                                <AccordionTrigger className="text-sm font-medium">
+                                  Check-in for OK for Launch
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    {Object.keys(okForLunchCheckinData).map((field) => (
+                                      <div key={field} className="p-3 border rounded-md">
+                                        <div className="flex items-center mb-2 space-x-2">
+                                          <Checkbox
+                                            id={`ok-for-lunch-${field}`}
+                                            checked={okForLunchCheckinData[field].value || false}
+                                            onCheckedChange={(checked) =>
+                                              setOkForLunchCheckinData((prev) => ({
+                                                ...prev,
+                                                [field]: {
+                                                  ...prev[field],
+                                                  value: checked === true,
+                                                  date: checked === true ? new Date().toISOString() : prev[field].date,
+                                                },
+                                              }))
+                                            }
+                                          />
+                                          <Label
+                                            htmlFor={`ok-for-lunch-${field}`}
+                                            className="text-sm font-medium leading-none capitalize"
+                                          >
+                                            {field.replace(/_/g, " ")}
+                                          </Label>
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Input
+                                            placeholder="Name"
+                                            value={okForLunchCheckinData[field].name || ""}
+                                            onChange={(e) =>
+                                              setOkForLunchCheckinData((prev) => ({
+                                                ...prev,
+                                                [field]: {
+                                                  ...prev[field],
+                                                  name: e.target.value,
+                                                },
+                                              }))
+                                            }
+                                            className="h-8 mb-2 text-sm"
+                                          />
+                                          <Textarea
+                                            placeholder="Comments"
+                                            value={okForLunchCheckinData[field].comment || ""}
+                                            onChange={(e) =>
+                                              setOkForLunchCheckinData((prev) => ({
+                                                ...prev,
+                                                [field]: {
+                                                  ...prev[field],
+                                                  comment: e.target.value,
+                                                },
+                                              }))
+                                            }
+                                            className="h-16 text-sm"
+                                          />
+                                        </div>
+                                      </div>
+                                    ))}
                                   </div>
-                                  <div className="space-y-2">
-                                    <Input
-                                      placeholder="Name"
-                                      value={okForLunchCheckinData[field].name || ""}
-                                      onChange={(e) =>
-                                        setOkForLunchCheckinData((prev) => ({
-                                          ...prev,
-                                          [field]: {
-                                            ...prev[field],
-                                            name: e.target.value,
-                                          },
-                                        }))
-                                      }
-                                      className="h-8 mb-2 text-sm"
-                                    />
-                                    <Textarea
-                                      placeholder="Comments"
-                                      value={okForLunchCheckinData[field].comment || ""}
-                                      onChange={(e) =>
-                                        setOkForLunchCheckinData((prev) => ({
-                                          ...prev,
-                                          [field]: {
-                                            ...prev[field],
-                                            comment: e.target.value,
-                                          },
-                                        }))
-                                      }
-                                      className="h-16 text-sm"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            </Accordion>
                           </div>
                         </div>
                       </Card>
@@ -1292,65 +1305,73 @@ const MassPdCreate = () => {
                           </div>
 
                           <div className="pt-4 mt-6 border-t">
-                            <h4 className="mb-3 text-sm font-medium">Check-in for Validation For Offer</h4>
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                              {Object.keys(validationForOfferCheckinData).map((field) => (
-                                <div key={field} className="p-3 border rounded-md">
-                                  <div className="flex items-center mb-2 space-x-2">
-                                    <Checkbox
-                                      id={`validation-for-offer-${field}`}
-                                      checked={validationForOfferCheckinData[field].value || false}
-                                      onCheckedChange={(checked) =>
-                                        setValidationForOfferCheckinData((prev) => ({
-                                          ...prev,
-                                          [field]: {
-                                            ...prev[field],
-                                            value: checked === true,
-                                            date: checked === true ? new Date().toISOString() : prev[field].date,
-                                          },
-                                        }))
-                                      }
-                                    />
-                                    <Label
-                                      htmlFor={`validation-for-offer-${field}`}
-                                      className="text-sm font-medium leading-none capitalize"
-                                    >
-                                      {field.replace(/_/g, " ")}
-                                    </Label>
+                            <Accordion type="single" collapsible className="w-full">
+                              <AccordionItem value="validation-for-offer-checkin">
+                                <AccordionTrigger className="text-sm font-medium">
+                                  Check-in for Validation For Offer
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    {Object.keys(validationForOfferCheckinData).map((field) => (
+                                      <div key={field} className="p-3 border rounded-md">
+                                        <div className="flex items-center mb-2 space-x-2">
+                                          <Checkbox
+                                            id={`validation-for-offer-${field}`}
+                                            checked={validationForOfferCheckinData[field].value || false}
+                                            onCheckedChange={(checked) =>
+                                              setValidationForOfferCheckinData((prev) => ({
+                                                ...prev,
+                                                [field]: {
+                                                  ...prev[field],
+                                                  value: checked === true,
+                                                  date: checked === true ? new Date().toISOString() : prev[field].date,
+                                                },
+                                              }))
+                                            }
+                                          />
+                                          <Label
+                                            htmlFor={`validation-for-offer-${field}`}
+                                            className="text-sm font-medium leading-none capitalize"
+                                          >
+                                            {field.replace(/_/g, " ")}
+                                          </Label>
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Input
+                                            placeholder="Name"
+                                            value={validationForOfferCheckinData[field].name || ""}
+                                            onChange={(e) =>
+                                              setValidationForOfferCheckinData((prev) => ({
+                                                ...prev,
+                                                [field]: {
+                                                  ...prev[field],
+                                                  name: e.target.value,
+                                                },
+                                              }))
+                                            }
+                                            className="h-8 mb-2 text-sm"
+                                          />
+                                          <Textarea
+                                            placeholder="Comments"
+                                            value={validationForOfferCheckinData[field].comment || ""}
+                                            onChange={(e) =>
+                                              setValidationForOfferCheckinData((prev) => ({
+                                                ...prev,
+                                                [field]: {
+                                                  ...prev[field],
+                                                  comment: e.target.value,
+                                                },
+                                              }))
+                                            }
+                                            className="h-16 text-sm"
+                                          />
+                                        </div>
+                                      </div>
+                                    ))}
                                   </div>
-                                  <div className="space-y-2">
-                                    <Input
-                                      placeholder="Name"
-                                      value={validationForOfferCheckinData[field].name || ""}
-                                      onChange={(e) =>
-                                        setValidationForOfferCheckinData((prev) => ({
-                                          ...prev,
-                                          [field]: {
-                                            ...prev[field],
-                                            name: e.target.value,
-                                          },
-                                        }))
-                                      }
-                                      className="h-8 mb-2 text-sm"
-                                    />
-                                    <Textarea
-                                      placeholder="Comments"
-                                      value={validationForOfferCheckinData[field].comment || ""}
-                                      onChange={(e) =>
-                                        setValidationForOfferCheckinData((prev) => ({
-                                          ...prev,
-                                          [field]: {
-                                            ...prev[field],
-                                            comment: e.target.value,
-                                          },
-                                        }))
-                                      }
-                                      className="h-16 text-sm"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            </Accordion>
                           </div>
                         </div>
                       </Card>
@@ -1540,24 +1561,95 @@ const MassPdCreate = () => {
                               ))}
                             </Accordion>
                             <div className="pt-4 mt-6 border-t">
-                              <h4 className="mb-3 text-lg font-medium">Check-in for Feasibility</h4>
-                              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                {Object.keys(feasibilityCheckinData).map((field) => (
-                                  <div key={field} className="flex items-center space-x-2">
-                                    <Checkbox
-                                      id={`feasibility-${field}`}
-                                      checked={feasibilityCheckinData[field]}
-                                      onCheckedChange={(checked) => handleFeasibilityCheckinChange(field, checked)}
-                                    />
-                                    <Label
-                                      htmlFor={`feasibility-${field}`}
-                                      className="text-sm font-medium leading-none capitalize"
-                                    >
-                                      {field.replace(/_/g, " ")}
-                                    </Label>
-                                  </div>
-                                ))}
-                              </div>
+                              <Accordion type="single" collapsible className="w-full">
+                                <AccordionItem value="feasibility-checkin">
+                                  <AccordionTrigger className="text-sm font-medium">
+                                    Check-in for Feasibility
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                      {Object.keys(feasibilityCheckinData).map((field) => (
+                                        <div key={field} className="p-4 border rounded-lg">
+                                          <div className="flex items-start justify-between mb-3">
+                                            <div className="flex items-start space-x-3">
+                                              <Checkbox
+                                                id={`feasibility-${field}`}
+                                                checked={feasibilityCheckinData[field].value || false}
+                                                onCheckedChange={(checked) =>
+                                                  handleFeasibilityCheckinChange(field, checked)
+                                                }
+                                              />
+                                              <label
+                                                htmlFor={`feasibility-${field}`}
+                                                className="text-sm font-medium leading-none capitalize"
+                                              >
+                                                {field.replace(/_/g, " ")}
+                                              </label>
+                                            </div>
+
+                                            <div
+                                              className={`text-xs flex items-center ${
+                                                feasibilityCheckinData[field].value ? "text-green-600" : "text-gray-400"
+                                              }`}
+                                            >
+                                              <Clock size={12} className="mr-1" />
+                                              {feasibilityCheckinData[field].value
+                                                ? format(new Date(feasibilityCheckinData[field].date), "MMM d, yyyy")
+                                                : "Not submitted"}
+                                            </div>
+                                          </div>
+
+                                          <div className="mb-3">
+                                            <Label
+                                              htmlFor={`feasibility-${field}-name`}
+                                              className="block mb-1 text-xs text-gray-500"
+                                            >
+                                              Name
+                                            </Label>
+                                            <Input
+                                              id={`feasibility-${field}-name`}
+                                              placeholder="Enter name"
+                                              value={feasibilityCheckinData[field].name || ""}
+                                              onChange={(e) =>
+                                                setFeasibilityCheckinData((prev) => ({
+                                                  ...prev,
+                                                  [field]: {
+                                                    ...prev[field],
+                                                    name: e.target.value,
+                                                  },
+                                                }))
+                                              }
+                                              className="h-8 text-sm"
+                                            />
+                                          </div>
+
+                                          <Label
+                                            htmlFor={`feasibility-${field}-comment`}
+                                            className="block mb-1 text-xs text-gray-500"
+                                          >
+                                            Comments
+                                          </Label>
+                                          <Textarea
+                                            id={`feasibility-${field}-comment`}
+                                            placeholder="Add comments here..."
+                                            value={feasibilityCheckinData[field].comment || ""}
+                                            onChange={(e) =>
+                                              setFeasibilityCheckinData((prev) => ({
+                                                ...prev,
+                                                [field]: {
+                                                  ...prev[field],
+                                                  comment: e.target.value,
+                                                },
+                                              }))
+                                            }
+                                            className="h-20 text-sm"
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              </Accordion>
                             </div>
                           </CardContent>
                         </Card>
@@ -2198,8 +2290,8 @@ const MassPdCreate = () => {
                       </TabsContent>
                     </Tabs>
                   </CardContent>
-                  <CardFooter>
-                    <Button type="submit" disabled={loading} className="w-full">
+                  <CardFooter className="flex justify-center">
+                    <Button type="submit" disabled={loading} className="px-8">
                       {loading ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
