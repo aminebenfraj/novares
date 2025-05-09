@@ -16,16 +16,12 @@ const FeasabilitySchema = new Schema(
     raw_material_qty: FeasibilityFieldSchema,
     packaging: FeasibilityFieldSchema,
     purchased_part: FeasibilityFieldSchema,
-
-    // Process Metrics
     injection_cycle_time: FeasibilityFieldSchema,
     moulding_labor: FeasibilityFieldSchema,
     press_size: FeasibilityFieldSchema,
     assembly_finishing_paint_cycle_time: FeasibilityFieldSchema,
     assembly_finishing_paint_labor: FeasibilityFieldSchema,
     ppm_level: FeasibilityFieldSchema,
-
-    // Impact on Investment
     pre_study: FeasibilityFieldSchema,
     project_management: FeasibilityFieldSchema,
     study_design: FeasibilityFieldSchema,
@@ -41,8 +37,6 @@ const FeasabilitySchema = new Schema(
     stock_production_coverage: FeasibilityFieldSchema,
     is_presentation: FeasibilityFieldSchema,
     documentation_update: FeasibilityFieldSchema,
-
-    // Check-in & Mass Production References
     checkin: { type: Schema.Types.ObjectId, ref: "Checkin", required: true },
   },
   { timestamps: true },
