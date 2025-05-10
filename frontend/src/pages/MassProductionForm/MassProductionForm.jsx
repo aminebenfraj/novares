@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom"
 import { createKickOff } from "../../apis/kickOffApi"
 import { createDesign } from "../../apis/designApi"
 import { createfacilities } from "../../apis/facilitiesApi"
-import { createFeasibility } from "../../apis/feasabilityApi" // Note: API file name remains the same for backward compatibility
+import { createFeasibility } from "../../apis/feasabilityApi"
 import { createQualificationProcess } from "../../apis/process_qualifApi"
 import { createQualificationConfirmation } from "../../apis/qualificationconfirmationapi"
 import { getAllCustomers } from "../../apis/customerApi"
@@ -30,6 +30,136 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
+
+// Define role fields for checkin
+const roleFields = [
+  { id: "Project_Manager", label: "Project Manager" },
+  { id: "Business_Manager", label: "Business Manager" },
+  { id: "Financial_Leader", label: "Financial Leader" },
+  { id: "Manufacturing_Eng_Manager", label: "Manufacturing Eng. Manager" },
+  { id: "Manufacturing_Eng_Leader", label: "Manufacturing Eng. Leader" },
+  { id: "Methodes_UAP1_3", label: "Methodes UAP1&3" },
+  { id: "Methodes_UAP2", label: "Methodes UAP2" },
+  { id: "Maintenance_Manager", label: "Maintenance Manager" },
+  { id: "Maintenance_Leader_UAP2", label: "Maintenance Leader UAP2" },
+  { id: "Prod_Plant_Manager_UAP1", label: "Prod. Plant Manager UAP1" },
+  { id: "Prod_Plant_Manager_UAP2", label: "Prod. Plant Manager UAP2" },
+  { id: "Quality_Manager", label: "Quality Manager" },
+  { id: "Quality_Leader_UAP1", label: "Quality Leader UAP1" },
+  { id: "Quality_Leader_UAP2", label: "Quality Leader UAP2" },
+  { id: "Quality_Leader_UAP3", label: "Quality Leader UAP3" },
+]
+
+// Field definitions
+const feasibilityFields = [
+  "product",
+  "raw_material_type",
+  "raw_material_qty",
+  "packaging",
+  "purchased_part",
+  "injection_cycle_time",
+  "moulding_labor",
+  "press_size",
+  "assembly_finishing_paint_cycle_time",
+  "assembly_finishing_paint_labor",
+  "ppm_level",
+  "pre_study",
+  "project_management",
+  "study_design",
+  "cae_design",
+  "monitoring",
+  "measurement_metrology",
+  "validation",
+  "molds",
+  "special_machines",
+  "checking_fixture",
+  "equipment_painting_prehension",
+  "run_validation",
+  "stock_production_coverage",
+  "is_presentation",
+  "documentation_update",
+]
+
+const kickOffFields = [
+  "timeScheduleApproved",
+  "modificationLaunchOrder",
+  "projectRiskAssessment",
+  "standardsImpact",
+  "validationOfCosts",
+]
+
+const designFields = [
+  "Validation_of_the_validation",
+  "Modification_of_bought_product",
+  "Modification_of_tolerance",
+  "Modification_of_checking_fixtures",
+  "Modification_of_Product_FMEA",
+  "Modification_of_part_list_form",
+  "Modification_of_control_plan",
+  "Modification_of_Process_FMEA",
+  "Modification_of_production_facilities",
+  "Modification_of_tools",
+  "Modification_of_packaging",
+  "Modification_of_information_system",
+  "Updating_of_drawings",
+]
+
+const facilitiesFields = [
+  "reception_of_modified_means",
+  "reception_of_modified_tools",
+  "reception_of_modified_fixtures",
+  "reception_of_modified_parts",
+  "control_plan",
+]
+
+const ppTuningFields = [
+  "product_process_tuning",
+  "functional_validation_test",
+  "dimensional_validation_test",
+  "aspect_validation_test",
+  "supplier_order_modification",
+  "acceptation_of_supplier",
+  "capability",
+  "manufacturing_of_control_parts",
+  "product_training",
+  "process_training",
+  "purchase_file",
+  "means_technical_file_data",
+  "means_technical_file_manufacturing",
+  "means_technical_file_maintenance",
+  "tooling_file",
+  "product_file",
+  "internal_process",
+]
+
+const processQualifFields = [
+  "updating_of_capms",
+  "modification_of_customer_logistics",
+  "qualification_of_supplier",
+  "presentation_of_initial_samples",
+  "filing_of_initial_samples",
+  "information_on_modification_implementation",
+  "full_production_run",
+  "request_for_dispensation",
+  "process_qualification",
+  "initial_sample_acceptance",
+]
+
+const qualificationConfirmationFields = [
+  "using_up_old_stock",
+  "using_up_safety_stocks",
+  "updating_version_number_mould",
+  "updating_version_number_product_label",
+  "management_of_manufacturing_programmes",
+  "specific_spotting_of_packaging_with_label",
+  "management_of_galia_identification_labels",
+  "preservation_measure",
+  "product_traceability_label_modification",
+  "information_to_production",
+  "information_to_customer_logistics",
+  "information_to_customer_quality",
+  "updating_customer_programme_data_sheet",
+]
 
 const MassPdCreate = () => {
   const navigate = useNavigate()
@@ -142,24 +272,7 @@ const MassPdCreate = () => {
     }, {}),
   )
 
-  // Checkin form state
-  const [checkinData, setCheckinData] = useState({
-    project_manager: false,
-    business_manager: false,
-    engineering_leader_manager: false,
-    quality_leader: false,
-    plant_quality_leader: false,
-    industrial_engineering: false,
-    launch_manager_method: false,
-    maintenance: false,
-    purchasing: false,
-    logistics: false,
-    sales: false,
-    economic_financial_leader: false,
-  })
-
-  // Update the state definitions for OkForLunch and ValidationForOffer
-  // Replace the existing okForLunchData state
+  // OkForLunch data state
   const [okForLunchData, setOkForLunchData] = useState({
     check: false,
     upload: null,
@@ -167,7 +280,7 @@ const MassPdCreate = () => {
     comments: "",
   })
 
-  // Replace the existing validationForOfferData state
+  // ValidationForOffer data state
   const [validationForOfferData, setValidationForOfferData] = useState({
     name: "",
     check: false,
@@ -176,7 +289,6 @@ const MassPdCreate = () => {
     comments: "",
   })
 
-  // Replace the existing checkin data states
   // Checkin data for ValidationForOffer
   const [validationForOfferCheckinData, setValidationForOfferCheckinData] = useState(
     roleFields.reduce((acc, field) => {
@@ -279,25 +391,6 @@ const MassPdCreate = () => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Handle product designation selection
-  const handleProductDesignationChange = (id) => {
-    setSelectedProductDesignations((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((item) => item !== id)
-      } else {
-        return [...prev, id]
-      }
-    })
-  }
-
-  // Handle checkin checkbox changes
-  const handleCheckinChange = (field, checked) => {
-    setCheckinData((prev) => ({ ...prev, [field]: checked }))
-  }
-
-  // Update the handler functions for OkForLunch and ValidationForOffer
-  // Replace the existing handler functions
-
   // Handle ok for lunch changes
   const handleOkForLunchChange = (field, value) => {
     setOkForLunchData((prev) => ({ ...prev, [field]: value }))
@@ -347,47 +440,7 @@ const MassPdCreate = () => {
     setValidationForOfferData((prev) => ({ ...prev, upload: e.target.files[0] }))
   }
 
-  // Handle ValidationForOffer checkin checkbox changes
-  const handleValidationForOfferCheckinChange = (field, checked) => {
-    setValidationForOfferCheckinData((prev) => {
-      const updatedData = {
-        ...prev,
-        [field]: {
-          ...prev[field],
-          value: checked === true,
-          date: checked === true ? new Date().toISOString() : prev[field].date,
-        },
-      }
-      console.log(`Updated ValidationForOffer checkin ${field}:`, checked)
-      console.log("Updated ValidationForOffer checkin data:", updatedData)
-      return updatedData
-    })
-  }
-
-  // Handle OkForLunch checkin checkbox changes
-  const handleOkForLunchCheckinChange = (field, checked) => {
-    setOkForLunchCheckinData((prev) => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        value: checked,
-      },
-    }))
-  }
-
-  // Handle Feasibility checkin changes
-  const handleFeasibilityCheckinChange = (field, checked) => {
-    setFeasibilityCheckinData((prev) => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        value: checked === true,
-        date: checked === true ? new Date().toISOString() : prev[field].date,
-      },
-    }))
-  }
-
-  // Handle file upload for kick-off tasks
+  // Handle file upload for various sections
   const handleKickOffFileChange = (field, file) => {
     setKickOffData((prev) => ({
       ...prev,
@@ -398,18 +451,6 @@ const MassPdCreate = () => {
     }))
   }
 
-  // Handle date changes for kick-off tasks
-  const handleKickOffDateChange = (field, dateType, value) => {
-    setKickOffData((prev) => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        task: { ...prev[field].task, [dateType]: value },
-      },
-    }))
-  }
-
-  // Add handler for design file uploads
   const handleDesignFileChange = (field, file) => {
     setDesignData((prev) => ({
       ...prev,
@@ -420,18 +461,6 @@ const MassPdCreate = () => {
     }))
   }
 
-  // Add handler for design date changes
-  const handleDesignDateChange = (field, dateType, value) => {
-    setDesignData((prev) => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        task: { ...prev[field].task, [dateType]: value },
-      },
-    }))
-  }
-
-  // Add handler for facilities file uploads
   const handleFacilitiesFileChange = (field, file) => {
     setFacilitiesData((prev) => ({
       ...prev,
@@ -442,18 +471,6 @@ const MassPdCreate = () => {
     }))
   }
 
-  // Add handler for facilities date changes
-  const handleFacilitiesDateChange = (field, dateType, value) => {
-    setFacilitiesData((prev) => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        task: { ...prev[field].task, [dateType]: value },
-      },
-    }))
-  }
-
-  // Add handler for P/P Tuning file uploads
   const handlePPTuningFileChange = (field, file) => {
     setPPTuningData((prev) => ({
       ...prev,
@@ -464,18 +481,6 @@ const MassPdCreate = () => {
     }))
   }
 
-  // Add handler for P/P Tuning date changes
-  const handlePPTuningDateChange = (field, dateType, value) => {
-    setPPTuningData((prev) => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        task: { ...prev[field].task, [dateType]: value },
-      },
-    }))
-  }
-
-  // Add handler for process qualification file uploads
   const handleProcessQualifFileChange = (field, file) => {
     setProcessQualifData((prev) => ({
       ...prev,
@@ -486,35 +491,12 @@ const MassPdCreate = () => {
     }))
   }
 
-  // Add handler for process qualification date changes
-  const handleProcessQualifDateChange = (field, dateType, value) => {
-    setProcessQualifData((prev) => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        task: { ...prev[field].task, [dateType]: value },
-      },
-    }))
-  }
-
-  // Add handler for qualification confirmation file uploads
   const handleQualificationConfirmationFileChange = (field, file) => {
     setQualificationConfirmationData((prev) => ({
       ...prev,
       [field]: {
         ...prev[field],
         task: { ...prev[field].task, filePath: file },
-      },
-    }))
-  }
-
-  // Add handler for qualification confirmation date changes
-  const handleQualificationConfirmationDateChange = (field, dateType, value) => {
-    setQualificationConfirmationData((prev) => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        task: { ...prev[field].task, [dateType]: value },
       },
     }))
   }
@@ -565,50 +547,34 @@ const MassPdCreate = () => {
 
       console.log("✅ Feasibility created successfully:", feasibilityResponse)
 
+      // Make sure we're properly logging the response to debug
+      console.log("Checkin data sent:", JSON.stringify(feasibilityCheckinData, null, 2))
+
       // Extract the feasibility ID correctly from the nested response structure
       let feasibilityId = null
-      // Check the nested response structure based on the console output
       if (feasibilityResponse && feasibilityResponse.data) {
         if (feasibilityResponse.data.data && feasibilityResponse.data.data.feasibility) {
-          // Extract from the nested structure where feasibility is in data.data.feasibility
-          if (feasibilityResponse.data.data.feasibility._id) {
-            feasibilityId = feasibilityResponse.data.data.feasibility._id
-          } else if (feasibilityResponse.data.data.feasibility.id) {
-            feasibilityId = feasibilityResponse.data.data.feasibility.id
-          }
+          feasibilityId = feasibilityResponse.data.data.feasibility._id || feasibilityResponse.data.data.feasibility.id
         } else if (feasibilityResponse.data._id) {
-          // Fallback to direct data._id if available
           feasibilityId = feasibilityResponse.data._id
         } else if (feasibilityResponse.data.id) {
-          // Fallback to direct data.id if available
           feasibilityId = feasibilityResponse.data.id
         } else if (feasibilityResponse.data.feasibility) {
-          // Check if feasibility is directly in data
-          if (feasibilityResponse.data.feasibility._id) {
-            feasibilityId = feasibilityResponse.data.feasibility._id
-          } else if (feasibilityResponse.data.feasibility.id) {
-            feasibilityId = feasibilityResponse.data.feasibility.id
-          }
+          feasibilityId = feasibilityResponse.data.feasibility._id || feasibilityResponse.data.feasibility.id
         }
       }
 
-      console.log("✅ Extracted feasibility ID:", feasibilityId)
-
-      // Add additional debugging to see the exact structure
       if (!feasibilityId) {
         console.error(
           "Failed to extract feasibility ID from response. Response structure:",
           JSON.stringify(feasibilityResponse.data, null, 2),
         )
 
-        // Try one more approach - look for any _id in the response that might be the feasibility ID
         if (feasibilityResponse.data && feasibilityResponse.data.data && feasibilityResponse.data.data.feasibility) {
-          console.log("Attempting to extract ID from feasibility object:", feasibilityResponse.data.data.feasibility)
           feasibilityId =
             feasibilityResponse.data.data.feasibility._id ||
             feasibilityResponse.data.data.feasibility.id ||
             feasibilityResponse.data.data.feasibility
-          console.log("Final attempt at ID extraction:", feasibilityId)
         }
 
         if (!feasibilityId) {
@@ -622,7 +588,7 @@ const MassPdCreate = () => {
         }
       }
 
-      // Process kickOffData to handle file paths
+      // Process data to handle file paths
       const processedKickOffData = { ...kickOffData }
       Object.keys(processedKickOffData).forEach((field) => {
         if (processedKickOffData[field].task.filePath instanceof File) {
@@ -701,28 +667,9 @@ const MassPdCreate = () => {
       }
 
       // Convert checkin data to the format expected by the API
-      const okForLunchCheckinDataObj = {}
-      Object.keys(okForLunchCheckinData).forEach((key) => {
-        okForLunchCheckinDataObj[key] = okForLunchCheckinData[key]
-      })
-      okForLunchFormData.append("checkin", JSON.stringify(okForLunchCheckinDataObj))
-
-      console.log(
-        "✅ OkForLunch data to be sent:",
-        JSON.stringify(
-          {
-            check: okForLunchData.check,
-            date: okForLunchData.date,
-            comments: okForLunchData.comments,
-            checkin: okForLunchCheckinDataObj,
-          },
-          null,
-          2,
-        ),
-      )
+      okForLunchFormData.append("checkin", JSON.stringify(okForLunchCheckinData))
 
       const okForLunchResponse = await createOkForLunch(okForLunchFormData)
-      console.log("✅ OkForLunch created successfully:", okForLunchResponse)
 
       // Create validation for offer record with embedded checkin data
       const validationForOfferFormData = new FormData()
@@ -735,34 +682,14 @@ const MassPdCreate = () => {
       }
 
       // Convert checkin data to the format expected by the API
-      const validationForOfferCheckinDataObj = {}
-      Object.keys(validationForOfferCheckinData).forEach((key) => {
-        validationForOfferCheckinDataObj[key] = validationForOfferCheckinData[key]
-      })
-      validationForOfferFormData.append("checkin", JSON.stringify(validationForOfferCheckinDataObj))
-
-      console.log(
-        "✅ ValidationForOffer data to be sent:",
-        JSON.stringify(
-          {
-            name: validationForOfferData.name,
-            check: validationForOfferData.check,
-            date: validationForOfferData.date,
-            comments: validationForOfferData.comments,
-            checkin: validationForOfferCheckinDataObj,
-          },
-          null,
-          2,
-        ),
-      )
+      validationForOfferFormData.append("checkin", JSON.stringify(validationForOfferCheckinData))
 
       const validationForOfferResponse = await createValidationForOffer(validationForOfferFormData)
-      console.log("✅ ValidationForOffer created successfully:", validationForOfferResponse)
 
       // Create the mass production record with references to created records
       const massProductionData = {
         ...updatedFormData,
-        feasibility: feasibilityId, // FIXED: Changed from feasability to feasibility
+        feasibility: feasibilityId,
         kick_off: kickOffResponse.data._id,
         design: designResponse.data._id,
         facilities: facilitiesResponse.data._id,
@@ -773,11 +700,8 @@ const MassPdCreate = () => {
         validation_for_offer: validationForOfferResponse.data._id,
       }
 
-      console.log("✅ Mass Production data to be sent:", massProductionData)
-
       // Create the mass production record
-      const massProductionResponse = await createMassProduction(massProductionData)
-      console.log("✅ Mass Production created successfully:", massProductionResponse)
+      await createMassProduction(massProductionData)
 
       toast({
         title: "Success",
@@ -954,14 +878,12 @@ const MassPdCreate = () => {
                                 onCheckedChange={(checked) => {
                                   if (checked) {
                                     setSelectedProductDesignations((prev) => [...prev, item._id])
-                                    // Also update the formData to keep it in sync
                                     setFormData((prev) => ({
                                       ...prev,
                                       product_designation: [...prev.product_designation, item._id],
                                     }))
                                   } else {
                                     setSelectedProductDesignations((prev) => prev.filter((id) => id !== item._id))
-                                    // Also update the formData to keep it in sync
                                     setFormData((prev) => ({
                                       ...prev,
                                       product_designation: prev.product_designation.filter((id) => id !== item._id),
@@ -1163,39 +1085,40 @@ const MassPdCreate = () => {
                                 </AccordionTrigger>
                                 <AccordionContent>
                                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    {Object.keys(okForLunchCheckinData).map((field) => (
-                                      <div key={field} className="p-3 border rounded-md">
+                                    {roleFields.map((field) => (
+                                      <div key={field.id} className="p-3 border rounded-md">
                                         <div className="flex items-center mb-2 space-x-2">
                                           <Checkbox
-                                            id={`ok-for-lunch-${field}`}
-                                            checked={okForLunchCheckinData[field].value || false}
+                                            id={`ok-for-lunch-${field.id}`}
+                                            checked={okForLunchCheckinData[field.id]?.value || false}
                                             onCheckedChange={(checked) =>
                                               setOkForLunchCheckinData((prev) => ({
                                                 ...prev,
-                                                [field]: {
-                                                  ...prev[field],
+                                                [field.id]: {
+                                                  ...prev[field.id],
                                                   value: checked === true,
-                                                  date: checked === true ? new Date().toISOString() : prev[field].date,
+                                                  date:
+                                                    checked === true ? new Date().toISOString() : prev[field.id].date,
                                                 },
                                               }))
                                             }
                                           />
                                           <Label
-                                            htmlFor={`ok-for-lunch-${field}`}
-                                            className="text-sm font-medium leading-none capitalize"
+                                            htmlFor={`ok-for-lunch-${field.id}`}
+                                            className="text-sm font-medium leading-none"
                                           >
-                                            {field.replace(/_/g, " ")}
+                                            {field.label}
                                           </Label>
                                         </div>
                                         <div className="space-y-2">
                                           <Input
                                             placeholder="Name"
-                                            value={okForLunchCheckinData[field].name || ""}
+                                            value={okForLunchCheckinData[field.id]?.name || ""}
                                             onChange={(e) =>
                                               setOkForLunchCheckinData((prev) => ({
                                                 ...prev,
-                                                [field]: {
-                                                  ...prev[field],
+                                                [field.id]: {
+                                                  ...prev[field.id],
                                                   name: e.target.value,
                                                 },
                                               }))
@@ -1204,12 +1127,12 @@ const MassPdCreate = () => {
                                           />
                                           <Textarea
                                             placeholder="Comments"
-                                            value={okForLunchCheckinData[field].comment || ""}
+                                            value={okForLunchCheckinData[field.id]?.comment || ""}
                                             onChange={(e) =>
                                               setOkForLunchCheckinData((prev) => ({
                                                 ...prev,
-                                                [field]: {
-                                                  ...prev[field],
+                                                [field.id]: {
+                                                  ...prev[field.id],
                                                   comment: e.target.value,
                                                 },
                                               }))
@@ -1312,39 +1235,40 @@ const MassPdCreate = () => {
                                 </AccordionTrigger>
                                 <AccordionContent>
                                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    {Object.keys(validationForOfferCheckinData).map((field) => (
-                                      <div key={field} className="p-3 border rounded-md">
+                                    {roleFields.map((field) => (
+                                      <div key={field.id} className="p-3 border rounded-md">
                                         <div className="flex items-center mb-2 space-x-2">
                                           <Checkbox
-                                            id={`validation-for-offer-${field}`}
-                                            checked={validationForOfferCheckinData[field].value || false}
+                                            id={`validation-for-offer-${field.id}`}
+                                            checked={validationForOfferCheckinData[field.id]?.value || false}
                                             onCheckedChange={(checked) =>
                                               setValidationForOfferCheckinData((prev) => ({
                                                 ...prev,
-                                                [field]: {
-                                                  ...prev[field],
+                                                [field.id]: {
+                                                  ...prev[field.id],
                                                   value: checked === true,
-                                                  date: checked === true ? new Date().toISOString() : prev[field].date,
+                                                  date:
+                                                    checked === true ? new Date().toISOString() : prev[field.id].date,
                                                 },
                                               }))
                                             }
                                           />
                                           <Label
-                                            htmlFor={`validation-for-offer-${field}`}
-                                            className="text-sm font-medium leading-none capitalize"
+                                            htmlFor={`validation-for-offer-${field.id}`}
+                                            className="text-sm font-medium leading-none"
                                           >
-                                            {field.replace(/_/g, " ")}
+                                            {field.label}
                                           </Label>
                                         </div>
                                         <div className="space-y-2">
                                           <Input
                                             placeholder="Name"
-                                            value={validationForOfferCheckinData[field].name || ""}
+                                            value={validationForOfferCheckinData[field.id]?.name || ""}
                                             onChange={(e) =>
                                               setValidationForOfferCheckinData((prev) => ({
                                                 ...prev,
-                                                [field]: {
-                                                  ...prev[field],
+                                                [field.id]: {
+                                                  ...prev[field.id],
                                                   name: e.target.value,
                                                 },
                                               }))
@@ -1353,12 +1277,12 @@ const MassPdCreate = () => {
                                           />
                                           <Textarea
                                             placeholder="Comments"
-                                            value={validationForOfferCheckinData[field].comment || ""}
+                                            value={validationForOfferCheckinData[field.id]?.comment || ""}
                                             onChange={(e) =>
                                               setValidationForOfferCheckinData((prev) => ({
                                                 ...prev,
-                                                [field]: {
-                                                  ...prev[field],
+                                                [field.id]: {
+                                                  ...prev[field.id],
                                                   comment: e.target.value,
                                                 },
                                               }))
@@ -1568,53 +1492,68 @@ const MassPdCreate = () => {
                                   </AccordionTrigger>
                                   <AccordionContent>
                                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                      {Object.keys(feasibilityCheckinData).map((field) => (
-                                        <div key={field} className="p-4 border rounded-lg">
+                                      {roleFields.map((field) => (
+                                        <div key={field.id} className="p-4 border rounded-lg">
                                           <div className="flex items-start justify-between mb-3">
                                             <div className="flex items-start space-x-3">
                                               <Checkbox
-                                                id={`feasibility-${field}`}
-                                                checked={feasibilityCheckinData[field].value || false}
+                                                id={`feasibility-${field.id}`}
+                                                checked={feasibilityCheckinData[field.id]?.value || false}
                                                 onCheckedChange={(checked) =>
-                                                  handleFeasibilityCheckinChange(field, checked)
+                                                  setFeasibilityCheckinData((prev) => ({
+                                                    ...prev,
+                                                    [field.id]: {
+                                                      ...prev[field.id],
+                                                      value: checked === true,
+                                                      date:
+                                                        checked === true
+                                                          ? new Date().toISOString()
+                                                          : prev[field.id].date,
+                                                    },
+                                                  }))
                                                 }
                                               />
                                               <label
-                                                htmlFor={`feasibility-${field}`}
+                                                htmlFor={`feasibility-${field.id}`}
                                                 className="text-sm font-medium leading-none capitalize"
                                               >
-                                                {field.replace(/_/g, " ")}
+                                                {field.label}
                                               </label>
                                             </div>
 
                                             <div
                                               className={`text-xs flex items-center ${
-                                                feasibilityCheckinData[field].value ? "text-green-600" : "text-gray-400"
+                                                feasibilityCheckinData[field.id]?.value
+                                                  ? "text-green-600"
+                                                  : "text-gray-400"
                                               }`}
                                             >
                                               <Clock size={12} className="mr-1" />
-                                              {feasibilityCheckinData[field].value
-                                                ? format(new Date(feasibilityCheckinData[field].date), "MMM d, yyyy")
+                                              {feasibilityCheckinData[field.id]?.value
+                                                ? format(
+                                                    new Date(feasibilityCheckinData[field.id]?.date),
+                                                    "MMM d, yyyy",
+                                                  )
                                                 : "Not submitted"}
                                             </div>
                                           </div>
 
                                           <div className="mb-3">
                                             <Label
-                                              htmlFor={`feasibility-${field}-name`}
+                                              htmlFor={`feasibility-${field.id}-name`}
                                               className="block mb-1 text-xs text-gray-500"
                                             >
                                               Name
                                             </Label>
                                             <Input
-                                              id={`feasibility-${field}-name`}
+                                              id={`feasibility-${field.id}-name`}
                                               placeholder="Enter name"
-                                              value={feasibilityCheckinData[field].name || ""}
+                                              value={feasibilityCheckinData[field.id]?.name || ""}
                                               onChange={(e) =>
                                                 setFeasibilityCheckinData((prev) => ({
                                                   ...prev,
-                                                  [field]: {
-                                                    ...prev[field],
+                                                  [field.id]: {
+                                                    ...prev[field.id],
                                                     name: e.target.value,
                                                   },
                                                 }))
@@ -1624,20 +1563,20 @@ const MassPdCreate = () => {
                                           </div>
 
                                           <Label
-                                            htmlFor={`feasibility-${field}-comment`}
+                                            htmlFor={`feasibility-${field.id}-comment`}
                                             className="block mb-1 text-xs text-gray-500"
                                           >
                                             Comments
                                           </Label>
                                           <Textarea
-                                            id={`feasibility-${field}-comment`}
+                                            id={`feasibility-${field.id}-comment`}
                                             placeholder="Add comments here..."
-                                            value={feasibilityCheckinData[field].comment || ""}
+                                            value={feasibilityCheckinData[field.id]?.comment || ""}
                                             onChange={(e) =>
                                               setFeasibilityCheckinData((prev) => ({
                                                 ...prev,
-                                                [field]: {
-                                                  ...prev[field],
+                                                [field.id]: {
+                                                  ...prev[field.id],
                                                   comment: e.target.value,
                                                 },
                                               }))
@@ -1815,7 +1754,9 @@ const MassPdCreate = () => {
                                           id={`${field}-done`}
                                           type="date"
                                           value={designData[field].task.done}
-                                          onChange={(e) => handleDesignDateChange(field, "done", e.target.value)}
+                                          onChange={(e) =>
+                                            handleTaskChange(setDesignData, field, "done", e.target.value)
+                                          }
                                         />
                                       </div>
                                       <div className="space-y-2 md:col-span-2">
@@ -1916,7 +1857,9 @@ const MassPdCreate = () => {
                                           id={`${field}-done`}
                                           type="date"
                                           value={facilitiesData[field].task.done}
-                                          onChange={(e) => handleFacilitiesDateChange(field, "done", e.target.value)}
+                                          onChange={(e) =>
+                                            handleTaskChange(setFacilitiesData, field, "done", e.target.value)
+                                          }
                                         />
                                       </div>
                                       <div className="space-y-2 md:col-span-2">
@@ -2017,7 +1960,9 @@ const MassPdCreate = () => {
                                           id={`${field}-done`}
                                           type="date"
                                           value={ppTuningData[field].task.done}
-                                          onChange={(e) => handlePPTuningDateChange(field, "done", e.target.value)}
+                                          onChange={(e) =>
+                                            handleTaskChange(setPPTuningData, field, "done", e.target.value)
+                                          }
                                         />
                                       </div>
                                       <div className="space-y-2 md:col-span-2">
@@ -2118,7 +2063,9 @@ const MassPdCreate = () => {
                                           id={`${field}-done`}
                                           type="date"
                                           value={processQualifData[field].task.done}
-                                          onChange={(e) => handleProcessQualifDateChange(field, "done", e.target.value)}
+                                          onChange={(e) =>
+                                            handleTaskChange(setProcessQualifData, field, "done", e.target.value)
+                                          }
                                         />
                                       </div>
                                       <div className="space-y-2 md:col-span-2">
@@ -2234,7 +2181,12 @@ const MassPdCreate = () => {
                                           type="date"
                                           value={qualificationConfirmationData[field].task.done}
                                           onChange={(e) =>
-                                            handleQualificationConfirmationDateChange(field, "done", e.target.value)
+                                            handleTaskChange(
+                                              setQualificationConfirmationData,
+                                              field,
+                                              "done",
+                                              e.target.value,
+                                            )
                                           }
                                         />
                                       </div>
@@ -2311,132 +2263,5 @@ const MassPdCreate = () => {
     </MainLayout>
   )
 }
-
-// Field definitions
-const feasibilityFields = [
-  "product",
-  "raw_material_type",
-  "raw_material_qty",
-  "packaging",
-  "purchased_part",
-  "injection_cycle_time",
-  "moulding_labor",
-  "press_size",
-  "assembly_finishing_paint_cycle_time",
-  "assembly_finishing_paint_labor",
-  "ppm_level",
-  "pre_study",
-  "project_management",
-  "study_design",
-  "cae_design",
-  "monitoring",
-  "measurement_metrology",
-  "validation",
-  "molds",
-  "special_machines",
-  "checking_fixture",
-  "equipment_painting_prehension",
-  "run_validation",
-  "stock_production_coverage",
-  "is_presentation",
-  "documentation_update",
-]
-
-const kickOffFields = [
-  "timeScheduleApproved",
-  "modificationLaunchOrder",
-  "projectRiskAssessment",
-  "standardsImpact",
-  "validationOfCosts",
-]
-
-const designFields = [
-  "Validation_of_the_validation",
-  "Modification_of_bought_product",
-  "Modification_of_tolerance",
-  "Modification_of_checking_fixtures",
-  "Modification_of_Product_FMEA",
-  "Modification_of_part_list_form",
-  "Modification_of_control_plan",
-  "Modification_of_Process_FMEA",
-  "Modification_of_production_facilities",
-  "Modification_of_tools",
-  "Modification_of_packaging",
-  "Modification_of_information_system",
-  "Updating_of_drawings",
-]
-
-const facilitiesFields = [
-  "reception_of_modified_means",
-  "reception_of_modified_tools",
-  "reception_of_modified_fixtures",
-  "reception_of_modified_parts",
-  "control_plan",
-]
-
-const ppTuningFields = [
-  "product_process_tuning",
-  "functional_validation_test",
-  "dimensional_validation_test",
-  "aspect_validation_test",
-  "supplier_order_modification",
-  "acceptation_of_supplier",
-  "capability",
-  "manufacturing_of_control_parts",
-  "product_training",
-  "process_training",
-  "purchase_file",
-  "means_technical_file_data",
-  "means_technical_file_manufacturing",
-  "means_technical_file_maintenance",
-  "tooling_file",
-  "product_file",
-  "internal_process",
-]
-
-const processQualifFields = [
-  "updating_of_capms",
-  "modification_of_customer_logistics",
-  "qualification_of_supplier",
-  "presentation_of_initial_samples",
-  "filing_of_initial_samples",
-  "information_on_modification_implementation",
-  "full_production_run",
-  "request_for_dispensation",
-  "process_qualification",
-  "initial_sample_acceptance",
-]
-
-const qualificationConfirmationFields = [
-  "using_up_old_stock",
-  "using_up_safety_stocks",
-  "updating_version_number_mould",
-  "updating_version_number_product_label",
-  "management_of_manufacturing_programmes",
-  "specific_spotting_of_packaging_with_label",
-  "management_of_galia_identification_labels",
-  "preservation_measure",
-  "product_traceability_label_modification",
-  "information_to_production",
-  "information_to_customer_logistics",
-  "information_to_customer_quality",
-  "updating_customer_programme_data_sheet",
-]
-
-// Add the roleFields array if it doesn't exist
-const roleFields = [
-  { id: "project_manager", label: "Project Manager" },
-  { id: "business_manager", label: "Business Manager" },
-  { id: "engineering_leader_manager", label: "Engineering Leader/Manager" },
-  { id: "quality_leader", label: "Quality Leader" },
-  { id: "plant_quality_leader", label: "Plant Quality Leader" },
-  { id: "industrial_engineering", label: "Industrial Engineering" },
-  { id: "launch_manager_method", label: "Launch Manager Method" },
-  { id: "maintenance", label: "Maintenance" },
-  { id: "purchasing", label: "Purchasing" },
-  { id: "logistics", label: "Logistics" },
-  { id: "sales", label: "Sales" },
-  { id: "economic_financial_leader", label: "Economic Financial Leader" },
-]
 
 export default MassPdCreate
