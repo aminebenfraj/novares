@@ -28,7 +28,7 @@ exports.createMassProduction = async (req, res) => {
       facilities,
       p_p_tuning,
       process_qualif,
-      qualification_confirmation, // Add this line
+      qualification_confirmation,
       ppap_submission_date,
       ppap_submitted,
       closure,
@@ -40,20 +40,13 @@ exports.createMassProduction = async (req, res) => {
       pt1,
       pt2,
       sop,
-      assignedRole,
-      assignedEmail,
+      checkinRoles, // Add this to capture which roles are checked in the form
     } = req.body
 
     // ✅ Ensure customer exists and has "Customer" role
     const customerExists = await User.findById(customer)
     if (!customerExists || !customerExists.roles.includes("Customer")) {
       return res.status(400).json({ error: "Invalid customer ID or user is not a customer" })
-    }
-
-    // ✅ Ensure assignedRole and assignedEmail are provided
-    if (!assignedRole || !assignedEmail) {
-      console.error("❌ Missing assignedRole or assignedEmail:", { assignedRole, assignedEmail })
-      return res.status(400).json({ error: "Assigned role and email are required" })
     }
 
     // ✅ Validate `product_designation` as MongoDB ObjectIds
@@ -89,13 +82,13 @@ exports.createMassProduction = async (req, res) => {
 
     console.log("✅ Valid Products in DB:", validProducts)
 
-    // ✅ Create new MassProduction entry
+    // ✅ Create new MassProduction entry (without assignedRole and assignedEmail)
     const newMassProduction = new MassProduction({
       id,
       status,
       status_type,
       project_n,
-      product_designation: validProducts.map((product) => product._id), // ✅ Store only valid ObjectIds
+      product_designation: validProducts.map((product) => product._id),
       description,
       customer,
       technical_skill,
@@ -111,7 +104,7 @@ exports.createMassProduction = async (req, res) => {
       facilities,
       p_p_tuning,
       process_qualif,
-      qualification_confirmation, // Add this line
+      qualification_confirmation,
       ppap_submission_date,
       ppap_submitted,
       closure,
@@ -124,32 +117,57 @@ exports.createMassProduction = async (req, res) => {
       pt2,
       sop,
       days_until_ppap_submission,
-      assignedRole,
-      assignedEmail,
     })
 
     await newMassProduction.save()
     console.log("✅ Mass Production Saved:", newMassProduction)
 
-    // ✅ Send email notification to assigned user
-    const emailSubject = `Mass Production Task Assigned to ${assignedRole}`
-    const emailBody = `
-      <h3>Dear ${assignedRole},</h3>
-      <p>A new mass production task has been assigned to your role.</p>
-      <p><strong>Project:</strong> ${project_n}</p>
-      <p><strong>Description:</strong> ${description}</p>
-      <p>Please log in and complete the missing fields.</p>
-      <a href="http://your-frontend-url.com/mass-production/${newMassProduction._id}">View Task</a>
-    `
-
-    try {
-      await sendEmail(assignedEmail, emailSubject, emailBody)
-      console.log(`📧 Email sent successfully to ${assignedEmail}`)
-    } catch (emailError) {
-      console.error("❌ Error sending email:", emailError.message)
+    // Get the roles that are checked in the form
+    const checkedRoles = []
+    if (checkinRoles) {
+      // Extract role names from the checkinRoles object
+      // The keys in checkinRoles should match the role names in UserModel
+      Object.keys(checkinRoles).forEach((roleKey) => {
+        if (checkinRoles[roleKey] && checkinRoles[roleKey].value === true) {
+          // Convert the role key to match the format in UserModel
+          const formattedRole = roleKey.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+          checkedRoles.push(formattedRole)
+        }
+      })
     }
 
-    res.status(201).json({ message: "Mass Production task created & email sent!", newMassProduction })
+    // Find all users with the checked roles
+    const usersToNotify = await User.find({
+      roles: { $in: checkedRoles },
+    })
+
+    console.log(`✅ Found ${usersToNotify.length} users to notify with roles:`, checkedRoles)
+
+    // Send email to each user
+    const emailSubject = `Mass Production Task: ${project_n}`
+
+    for (const user of usersToNotify) {
+      const emailBody = `
+        <h3>Dear ${user.username},</h3>
+        <p>A new mass production task has been created that requires your attention.</p>
+        <p><strong>Project:</strong> ${project_n}</p>
+        <p><strong>Description:</strong> ${description}</p>
+        <p>Please log in and review the mass production details.</p>
+        <a href="http://localhost:5173/masspd/detail/${newMassProduction._id}">View Task</a>
+      `
+
+      try {
+        await sendEmail(user.email, emailSubject, emailBody)
+        console.log(`📧 Email sent successfully to ${user.email}`)
+      } catch (emailError) {
+        console.error(`❌ Error sending email to ${user.email}:`, emailError.message)
+      }
+    }
+
+    res.status(201).json({
+      message: `Mass Production task created & emails sent to ${usersToNotify.length} users!`,
+      newMassProduction,
+    })
   } catch (error) {
     console.error("❌ Error creating MassProduction:", error)
     res.status(500).json({ error: "Server error", details: error.message })
@@ -279,4 +297,3 @@ exports.deleteMassProduction = async (req, res) => {
     res.status(500).json({ error: "Server error" })
   }
 }
-

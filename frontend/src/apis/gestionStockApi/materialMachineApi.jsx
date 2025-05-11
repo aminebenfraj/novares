@@ -26,3 +26,7 @@ export const getMachineStockHistory = (machineId) => {
 export const allocateStock = (data) => {
   return apiRequest("POST", BASE_URL, data)
 }
+// Delete an allocation
+export const deleteAllocation = (id) => {
+  return apiRequest("DELETE", `${BASE_URL}/${id}`)
+}

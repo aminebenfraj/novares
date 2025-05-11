@@ -233,3 +233,18 @@ exports.updateAllocation = async (req, res) => {
   }
 }
 
+exports.deleteAllocation = async (req, res) => {
+  try {
+    const deletedAllocation = await MachineMaterial.findByIdAndDelete(req.params.id)
+
+    if (!deletedAllocation) {
+      return res.status(404).json({ message: "Allocation not found." })
+    }
+
+    res.status(200).json({ message: "Allocation deleted successfully." })
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting allocation.", error })
+  }
+}
+
+

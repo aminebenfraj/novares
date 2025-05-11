@@ -1,5 +1,5 @@
-const mongoose = require("mongoose");
-const { Schema } = mongoose;
+const mongoose = require("mongoose")
+const { Schema } = mongoose
 
 const massProductionSchema = new Schema(
   {
@@ -18,7 +18,7 @@ const massProductionSchema = new Schema(
     customer_offer: { type: String, enum: ["F", "E"] },
     customer_order: { type: String, enum: ["F", "E"] },
     ok_for_lunch: { type: Schema.Types.ObjectId, ref: "OkForLunch" },
-    qualification_confirmation: { type: Schema.Types.ObjectId, ref: "QualificationConfirmation" }, 
+    qualification_confirmation: { type: Schema.Types.ObjectId, ref: "QualificationConfirmation" },
     kick_off: { type: Schema.Types.ObjectId, ref: "KickOff" },
     design: { type: Schema.Types.ObjectId, ref: "Design" },
     facilities: { type: Schema.Types.ObjectId, ref: "Facilities" },
@@ -35,21 +35,20 @@ const massProductionSchema = new Schema(
     pt1: { type: Date },
     pt2: { type: Date },
     sop: { type: Date },
-    assignedRole: { type: String, required: true },
-    assignedEmail: { type: String, required: true },
+    // Fields removed: assignedRole, assignedEmail
   },
-  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
-);
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },
+)
 
 // ✅ Virtual field for dynamically computing "days_until_ppap_submission"
 massProductionSchema.virtual("days_until_ppap_submission").get(function () {
-  if (!this.ppap_submission_date) return null;
+  if (!this.ppap_submission_date) return null
 
-  const today = new Date();
-  const ppapDate = new Date(this.ppap_submission_date);
-  return Math.max(0, Math.ceil((ppapDate - today) / (1000 * 60 * 60 * 24)));
-});
+  const today = new Date()
+  const ppapDate = new Date(this.ppap_submission_date)
+  return Math.max(0, Math.ceil((ppapDate - today) / (1000 * 60 * 60 * 24)))
+})
 
-massProductionSchema.index({ id: 1, createdAt: -1 });
+massProductionSchema.index({ id: 1, createdAt: -1 })
 
-module.exports = mongoose.model("MassProduction", massProductionSchema);
+module.exports = mongoose.model("MassProduction", massProductionSchema)
