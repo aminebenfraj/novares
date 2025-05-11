@@ -241,7 +241,7 @@ exports.updateMassProduction = async (req, res) => {
     // ✅ Ensure customer exists if updating it
     if (updatedData.customer) {
       const customerExists = await User.findById(updatedData.customer)
-      if (!customerExists || customerExists.role !== "customer") {
+      if (!customerExists || !customerExists.roles.includes("Customer")) {
         return res.status(400).json({ error: "Invalid customer ID or user is not a customer" })
       }
     }

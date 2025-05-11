@@ -52,8 +52,6 @@ const EditMassProductionForm = () => {
     pt1: "",
     pt2: "",
     sop: "",
-    assignedRole: "",
-    assignedEmail: "",
   })
 
   // Helper function to extract ID from object or string
@@ -121,6 +119,7 @@ const EditMassProductionForm = () => {
         pt2: data.pt2 ? new Date(data.pt2).toISOString().split("T")[0] : "",
         sop: data.sop ? new Date(data.sop).toISOString().split("T")[0] : "",
         product_designation: data.product_designation ? data.product_designation.map((pd) => pd._id || pd) : [],
+        customer: data.customer._id,
       }
 
       // Set main form data
@@ -350,6 +349,7 @@ const EditMassProductionForm = () => {
                         <Label htmlFor="customer">Customer</Label>
                         <Select
                           value={formData.customer}
+                          defaultValue={formData.customer}
                           onValueChange={(value) => handleSelectChange("customer", value)}
                         >
                           <SelectTrigger>
@@ -615,33 +615,6 @@ const EditMassProductionForm = () => {
                         <Label htmlFor="sop">SOP</Label>
                         <Input id="sop" name="sop" type="date" value={formData.sop} onChange={handleInputChange} />
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="assignedRole">
-                        Assigned Role <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="assignedRole"
-                        name="assignedRole"
-                        value={formData.assignedRole}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="assignedEmail">
-                        Assigned Email <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="assignedEmail"
-                        name="assignedEmail"
-                        type="email"
-                        value={formData.assignedEmail}
-                        onChange={handleInputChange}
-                        required
-                      />
                     </div>
                   </CardContent>
                   <CardFooter>
