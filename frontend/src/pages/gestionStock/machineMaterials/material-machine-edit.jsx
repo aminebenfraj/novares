@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -42,7 +41,7 @@ const MaterialMachineEdit = () => {
   const [material, setMaterial] = useState(null)
   const [machine, setMachine] = useState(null)
   const [allocatedStock, setAllocatedStock] = useState(0)
-  const [adjustmentMode, setAdjustmentMode] = useState("absolute") // "absolute" or "relative"
+  const [adjustmentMode, setAdjustmentMode] = useState("absolute") // Only using "absolute" mode
   const [adjustmentAmount, setAdjustmentAmount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -74,19 +73,10 @@ const MaterialMachineEdit = () => {
     }
   }, [material, originalStock])
 
-  // Update allocated stock when adjustment amount changes in relative mode
+  // Update adjustment amount when allocated stock changes
   useEffect(() => {
-    if (adjustmentMode === "relative") {
-      setAllocatedStock(Math.max(0, originalStock + adjustmentAmount))
-    }
-  }, [adjustmentAmount, adjustmentMode, originalStock])
-
-  // Update adjustment amount when allocated stock changes in absolute mode
-  useEffect(() => {
-    if (adjustmentMode === "absolute") {
-      setAdjustmentAmount(allocatedStock - originalStock)
-    }
-  }, [allocatedStock, adjustmentMode, originalStock])
+    setAdjustmentAmount(allocatedStock - originalStock)
+  }, [allocatedStock, originalStock])
 
   const fetchAllocationDetails = async () => {
     try {
@@ -277,7 +267,7 @@ const MaterialMachineEdit = () => {
                   <div className="space-y-6">
                     <div className="grid gap-6 md:grid-cols-2">
                       <div className="space-y-2">
-                        <h3 className="font-medium flex items-center gap-2">
+                        <h3 className="flex items-center gap-2 font-medium">
                           <Package className="w-4 h-4 text-violet-500" />
                           Material Information
                         </h3>
@@ -304,7 +294,7 @@ const MaterialMachineEdit = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <h3 className="font-medium flex items-center gap-2">
+                        <h3 className="flex items-center gap-2 font-medium">
                           <Settings className="w-4 h-4 text-violet-500" />
                           Machine Information
                         </h3>
@@ -343,28 +333,14 @@ const MaterialMachineEdit = () => {
                             <RefreshCw className="w-3 h-3 mr-1" />
                             Reset
                           </Button>
-                          <div className="flex items-center border rounded-md overflow-hidden">
+                          <div className="flex items-center overflow-hidden border rounded-md">
                             <Button
                               type="button"
-                              variant={adjustmentMode === "absolute" ? "default" : "ghost"}
+                              variant="default"
                               size="sm"
-                              onClick={() => setAdjustmentMode("absolute")}
-                              className={`h-8 px-3 rounded-none ${
-                                adjustmentMode === "absolute" ? "bg-violet-600 hover:bg-violet-700 text-white" : ""
-                              }`}
+                              className="h-8 px-3 text-white rounded-none bg-violet-600 hover:bg-violet-700"
                             >
                               Set Value
-                            </Button>
-                            <Button
-                              type="button"
-                              variant={adjustmentMode === "relative" ? "default" : "ghost"}
-                              size="sm"
-                              onClick={() => setAdjustmentMode("relative")}
-                              className={`h-8 px-3 rounded-none ${
-                                adjustmentMode === "relative" ? "bg-violet-600 hover:bg-violet-700 text-white" : ""
-                              }`}
-                            >
-                              Add/Remove
                             </Button>
                           </div>
                         </div>
@@ -374,12 +350,12 @@ const MaterialMachineEdit = () => {
                       <div className="p-4 border rounded-md bg-muted/30">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm text-muted-foreground">Current Allocation</span>
-                          <span className="font-medium text-lg">{originalStock}</span>
+                          <span className="text-lg font-medium">{originalStock}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">New Allocation</span>
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-lg">{calculatedNewStock}</span>
+                            <span className="text-lg font-medium">{calculatedNewStock}</span>
                             {stockDifference !== 0 && (
                               <Badge
                                 variant={stockDifference > 0 ? "default" : "destructive"}
@@ -402,222 +378,35 @@ const MaterialMachineEdit = () => {
                       </div>
 
                       {/* Adjustment controls */}
-                      <div className="space-y-4">
-                        {adjustmentMode === "absolute" ? (
-                          <div className="space-y-2">
-                            <Label htmlFor="allocatedStock">Set Exact Stock Value</Label>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                onClick={() => handleQuickAdjustment(-1)}
-                                disabled={allocatedStock <= 0}
-                                className="h-10 w-10"
-                              >
-                                <Minus className="w-4 h-4" />
-                              </Button>
-                              <Input
-                                id="allocatedStock"
-                                type="number"
-                                min="0"
-                                value={allocatedStock}
-                                onChange={(e) => setAllocatedStock(Math.max(0, Number.parseInt(e.target.value) || 0))}
-                                className="text-center text-lg font-medium h-10"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                onClick={() => handleQuickAdjustment(1)}
-                                className="h-10 w-10"
-                              >
-                                <Plus className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            <div className="flex justify-between pt-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleQuickAdjustment(-5)}
-                                disabled={allocatedStock < 5}
-                                className="h-8"
-                              >
-                                -5
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleQuickAdjustment(-10)}
-                                disabled={allocatedStock < 10}
-                                className="h-8"
-                              >
-                                -10
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleQuickAdjustment(5)}
-                                className="h-8"
-                              >
-                                +5
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleQuickAdjustment(10)}
-                                className="h-8"
-                              >
-                                +10
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <Label htmlFor="adjustmentAmount">Adjust Stock By</Label>
-                                <span
-                                  className={`font-medium ${adjustmentAmount > 0 ? "text-green-600" : adjustmentAmount < 0 ? "text-red-600" : ""}`}
-                                >
-                                  {adjustmentAmount > 0 ? `+${adjustmentAmount}` : adjustmentAmount}
-                                </span>
-                              </div>
-                              <div className="pt-4">
-                                <Slider
-                                  id="adjustmentAmount"
-                                  min={-Math.min(50, originalStock)}
-                                  max={50}
-                                  step={1}
-                                  value={[adjustmentAmount]}
-                                  onValueChange={(value) => setAdjustmentAmount(value[0])}
-                                  className="py-2"
-                                />
-                              </div>
-                              <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>-{Math.min(50, originalStock)}</span>
-                                <span>0</span>
-                                <span>+50</span>
-                              </div>
-                            </div>
-                            <div className="flex justify-between">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setAdjustmentAmount(Math.max(-originalStock, adjustmentAmount - 5))}
-                                className="h-8"
-                              >
-                                -5
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setAdjustmentAmount(Math.max(-originalStock, adjustmentAmount - 1))}
-                                className="h-8"
-                              >
-                                -1
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setAdjustmentAmount(0)}
-                                className="h-8"
-                              >
-                                0
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setAdjustmentAmount(adjustmentAmount + 1)}
-                                className="h-8"
-                              >
-                                +1
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setAdjustmentAmount(adjustmentAmount + 5)}
-                                className="h-8"
-                              >
-                                +5
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Quick allocation presets */}
                       <div className="space-y-2">
-                        <Label>Quick Allocation Presets</Label>
-                        <div className="grid grid-cols-4 gap-2">
+                        <Label htmlFor="allocatedStock">Set Exact Stock Value</Label>
+                        <div className="flex items-center gap-2">
                           <Button
                             type="button"
                             variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              if (adjustmentMode === "absolute") {
-                                setAllocatedStock(Math.floor(maxAvailableStock * 0.25))
-                              } else {
-                                setAdjustmentAmount(Math.floor(maxAvailableStock * 0.25) - originalStock)
-                              }
-                            }}
-                            className="h-10"
+                            size="icon"
+                            onClick={() => handleQuickAdjustment(-1)}
+                            disabled={allocatedStock <= 0}
+                            className="w-10 h-10"
                           >
-                            25%
+                            <Minus className="w-4 h-4" />
                           </Button>
+                          <Input
+                            id="allocatedStock"
+                            type="number"
+                            min="0"
+                            value={allocatedStock}
+                            onChange={(e) => setAllocatedStock(Math.max(0, Number.parseInt(e.target.value) || 0))}
+                            className="h-10 text-lg font-medium text-center"
+                          />
                           <Button
                             type="button"
                             variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              if (adjustmentMode === "absolute") {
-                                setAllocatedStock(Math.floor(maxAvailableStock * 0.5))
-                              } else {
-                                setAdjustmentAmount(Math.floor(maxAvailableStock * 0.5) - originalStock)
-                              }
-                            }}
-                            className="h-10"
+                            size="icon"
+                            onClick={() => handleQuickAdjustment(1)}
+                            className="w-10 h-10"
                           >
-                            50%
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              if (adjustmentMode === "absolute") {
-                                setAllocatedStock(Math.floor(maxAvailableStock * 0.75))
-                              } else {
-                                setAdjustmentAmount(Math.floor(maxAvailableStock * 0.75) - originalStock)
-                              }
-                            }}
-                            className="h-10"
-                          >
-                            75%
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              if (adjustmentMode === "absolute") {
-                                setAllocatedStock(maxAvailableStock)
-                              } else {
-                                setAdjustmentAmount(maxAvailableStock - originalStock)
-                              }
-                            }}
-                            className="h-10"
-                          >
-                            100%
+                            <Plus className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
