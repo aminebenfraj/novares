@@ -25,6 +25,24 @@ const PedidoSchema = new mongoose.Schema({
   ano: { type: Number, index: true },
 })
 
+
+
+const QRCode = require("qrcode")
+
+PedidoSchema.methods.generateQRCode = async function () {
+  try {
+    const qrContent = this._id.toString() // You can customize this if needed
+    const qrDataURL = await QRCode.toDataURL(qrContent)
+
+    this.qrCode = qrDataURL
+    await this.save()
+  } catch (error) {
+    throw new Error("Failed to generate QR code: " + error.message)
+  }
+}
+
+
+
 // Create a compound index for the most common search fields
 PedidoSchema.index({
   referencia: 1,

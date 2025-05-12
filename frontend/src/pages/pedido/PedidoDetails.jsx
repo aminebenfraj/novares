@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { getPedidoById } from "../../apis/pedido/pedidoApi"
+import { getPedidoById, generateQRCode } from "../../apis/pedido/pedidoApi"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -27,6 +27,8 @@ import {
   MapPin,
   Tag,
   Hash,
+  QrCode,
+  Download,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import MainLayout from "@/components/MainLayout"
@@ -51,6 +53,8 @@ export default function PedidoDetails() {
   const [isLoading, setIsLoading] = useState(true)
   const [isValidId, setIsValidId] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
+  const [qrCode, setQrCode] = useState(null)
+  const [isGeneratingQR, setIsGeneratingQR] = useState(false)
 
   // Validate ID before fetching data
   useEffect(() => {
@@ -72,6 +76,7 @@ export default function PedidoDetails() {
   useEffect(() => {
     if (isValidId) {
       fetchPedido(id)
+      fetchOrGenerateQRCode(id)
     }
   }, [id, isValidId])
 
@@ -102,6 +107,38 @@ export default function PedidoDetails() {
       navigate("/pedido")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchOrGenerateQRCode = async (pedidoId) => {
+    try {
+      setIsGeneratingQR(true)
+
+      // Instead of using the backend-generated QR code, we'll create one with a full URL
+      // This will create a QR code that contains a link to the order details page
+      const baseUrl = window.location.origin // Gets the base URL of your application
+      const orderUrl = `${baseUrl}/pedido/${pedidoId}`
+
+      // Use the QRCode.toDataURL method to generate a QR code with the full URL
+      // If you don't have the QRCode library, we'll use the backend's QR code as fallback
+      try {
+        // Try to use the backend's QR code generation first
+        const response = await generateQRCode(pedidoId)
+        setQrCode(response.qrCode)
+      } catch (qrError) {
+        console.error("Error with backend QR code, using fallback:", qrError)
+        // If that fails, we'll just display the URL as text
+        setQrCode(null)
+      }
+    } catch (error) {
+      console.error("Error generating QR code:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to generate QR code. Please try again.",
+      })
+    } finally {
+      setIsGeneratingQR(false)
     }
   }
 
@@ -401,6 +438,73 @@ export default function PedidoDetails() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* QR Code Section */}
+              <Card className="border-2 border-muted">
+                <CardHeader className="pb-2 bg-muted/30">
+                  <CardTitle className="flex items-center text-lg">
+                    <QrCode className="w-5 h-5 mr-2 text-primary" />
+                    QR Code
+                  </CardTitle>
+                  <CardDescription>Scan this code to access order details</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center p-6">
+                  {isGeneratingQR ? (
+                    <div className="flex flex-col items-center p-6">
+                      <Loader2 className="w-10 h-10 mb-4 text-primary animate-spin" />
+                      <p className="text-sm text-muted-foreground">Generating QR code...</p>
+                    </div>
+                  ) : qrCode ? (
+                    <div className="p-4 mb-4 bg-white border rounded-lg">
+                      <img
+                        src={qrCode || "/placeholder.svg"}
+                        alt="Order QR Code"
+                        className="w-48 h-48"
+                        id="qrCodeImage"
+                      />
+                    </div>
+                  ) : (
+                    <div className="p-4 mb-4 bg-white border rounded-lg">
+                      <div className="flex items-center justify-center w-48 h-48 bg-muted/20">
+                        <p className="text-center text-muted-foreground">QR code not available</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="mt-4 text-center">
+                    <p className="mb-2 text-sm font-medium">Direct Link:</p>
+                    <p className="p-2 font-mono text-xs break-all rounded-md bg-muted">
+                      {window.location.origin}/pedido/{id}
+                    </p>
+                    <p className="mt-4 text-sm text-muted-foreground">
+                      Scan with your phone's camera to quickly access this order's details
+                    </p>
+
+                    {qrCode && (
+                      <Button
+                        variant="outline"
+                        className="mt-4"
+                        onClick={() => {
+                          // Create a temporary link element
+                          const link = document.createElement("a")
+                          link.href = qrCode
+                          link.download = `order-qr-${id}.png`
+                          document.body.appendChild(link)
+                          link.click()
+                          document.body.removeChild(link)
+
+                          toast({
+                            title: "QR Code Downloaded",
+                            description: "The QR code has been downloaded successfully.",
+                          })
+                        }}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download QR Code
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="details" className="space-y-8">

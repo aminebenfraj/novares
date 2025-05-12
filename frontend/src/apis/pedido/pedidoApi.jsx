@@ -80,3 +80,11 @@ export const deletePedido = (id) => {
   return apiRequest("DELETE", `${BASE_URL}/${id}`)
 }
 
+export const generateQRCode = (id) => {
+  return apiRequest("GET", `${BASE_URL}/${id}/qrcode`)
+}
+
+// Get pedido by QR code
+export const getPedidoByQRCode = (qrCode) => {
+  return apiRequest("GET", `${BASE_URL}/qrcode/${qrCode}`)
+}

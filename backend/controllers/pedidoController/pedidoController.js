@@ -972,26 +972,3 @@ exports.getPedidoByQRCode = async (req, res) => {
     res.status(500).json({ message: "Error fetching pedido", error: error.message })
   }
 }
-// Get pedidos by QR code
-exports.getPedidoByQRCode = async (req, res) => {
-  try {
-    const { qrCode } = req.params
-
-    const pedido = await Pedido.findOne({ qrCode })
-      .populate("tipo", "name")
-      .populate("referencia", "description price reference manufacturer")
-      .populate("solicitante", "name email number")
-      .populate("proveedor", "name contact email phone address")
-      .populate("table_status", "name color")
-      .lean()
-
-    if (!pedido) {
-      return res.status(404).json({ message: "Pedido not found" })
-    }
-
-    res.status(200).json(pedido)
-  } catch (error) {
-    console.error("Error fetching pedido by QR code:", error)
-    res.status(500).json({ message: "Error fetching pedido", error: error.message })
-  }
-}
