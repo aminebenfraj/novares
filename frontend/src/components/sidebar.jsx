@@ -1,5 +1,6 @@
+"use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -425,164 +426,177 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
   })
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [lastFetchTime, setLastFetchTime] = useState(0)
   const location = useLocation()
 
-  // Fetch user data
+  // Cache to prevent duplicate API calls
+  const apiCache = React.useRef({
+    data: {},
+    timestamp: {},
+  })
+
+  // Fetch user data only once
   useEffect(() => {
+    let isMounted = true
+
     const fetchUser = async () => {
       try {
         const userData = await getCurrentUser()
-        setUser(userData)
+        if (isMounted) {
+          setUser(userData)
+        }
       } catch (error) {
         console.error("Failed to fetch user data:", error)
       }
     }
 
     fetchUser()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
-  // Fetch counts for badges
-  useEffect(() => {
-    const fetchCounts = async () => {
+  // Fetch counts with caching
+  const fetchCounts = useCallback(
+    async (force = false) => {
+      const now = Date.now()
+      // Only fetch if forced or if it's been more than 5 minutes since last fetch
+      if (!force && now - lastFetchTime < 5 * 60 * 1000) {
+        return
+      }
+
       setLoading(true)
+
       try {
-        // Fetch materials count
-        let materialsCount = 0
-        try {
-          const materialsData = await getAllMaterials()
-          materialsCount =
-            materialsData?.totalDocs ||
-            materialsData?.docs?.length ||
-            (Array.isArray(materialsData) ? materialsData.length : 0)
-        } catch (error) {
-          console.error("Error fetching materials:", error)
+        // Use Promise.all to fetch all data in parallel
+        const [materialsData, allocationsData, massProductionsData, ordersData, callsData, readinessData] =
+          await Promise.all([
+            getAllMaterials(),
+            getAllAllocations(),
+            getAllMassProductions(),
+            getAllPedidos(),
+            getCalls({ status: "Pendiente" }),
+            getAllReadiness(),
+          ])
+
+        // Helper function to safely extract count
+        const getCount = (data, filterFn = null) => {
+          if (!data) return 0
+
+          if (Array.isArray(data)) {
+            return filterFn ? data.filter(filterFn).length : data.length
+          }
+
+          return data.totalDocs || (data.docs ? data.docs.length : 0)
         }
 
-        // Fetch allocations count
-        let allocationsCount = 0
-        try {
-          const allocationsData = await getAllAllocations()
-          allocationsCount =
-            allocationsData?.totalDocs ||
-            allocationsData?.docs?.length ||
-            (Array.isArray(allocationsData) ? allocationsData.length : 0)
-        } catch (error) {
-          console.error("Error fetching allocations:", error)
+        // Calculate counts
+        const newCounts = {
+          materials: getCount(materialsData),
+          allocations: getCount(allocationsData),
+          massProductions: getCount(massProductionsData, (mp) => mp.status === "on-going"),
+          orders: getCount(ordersData, (order) => order.table_status === "Pendiente"),
+          calls: getCount(callsData),
+          readiness: getCount(readinessData),
         }
 
-        // Fetch mass productions count
-        let massProductionsCount = 0
-        try {
-          const massProductionsData = await getAllMassProductions()
-          const massProductions = Array.isArray(massProductionsData)
-            ? massProductionsData
-            : massProductionsData?.docs || []
-
-          // Filter for on-going mass productions
-          massProductionsCount = massProductions.filter((mp) => mp.status === "on-going").length
-        } catch (error) {
-          console.error("Error fetching mass productions:", error)
-        }
-
-        // Fetch orders count
-        let ordersCount = 0
-        try {
-          const ordersData = await getAllPedidos()
-          const orders = Array.isArray(ordersData) ? ordersData : ordersData?.docs || []
-
-          // Filter for pending orders
-          ordersCount = orders.filter((order) => order.table_status === "Pendiente").length
-        } catch (error) {
-          console.error("Error fetching orders:", error)
-        }
-
-        // Fetch calls count
-        let callsCount = 0
-        try {
-          const callsData = await getCalls({ status: "Pendiente" })
-          callsCount = Array.isArray(callsData) ? callsData.length : 0
-        } catch (error) {
-          console.error("Error fetching calls:", error)
-        }
-
-        // Fetch readiness count
-        let readinessCount = 0
-        try {
-          const readinessData = await getAllReadiness()
-          readinessCount =
-            readinessData?.totalDocs ||
-            readinessData?.docs?.length ||
-            (Array.isArray(readinessData) ? readinessData.length : 0)
-        } catch (error) {
-          console.error("Error fetching readiness:", error)
-        }
-
-        // Update counts state
-        setCounts({
-          materials: materialsCount,
-          allocations: allocationsCount,
-          massProductions: massProductionsCount,
-          orders: ordersCount,
-          calls: callsCount,
-          readiness: readinessCount,
-        })
+        setCounts(newCounts)
+        setLastFetchTime(now)
       } catch (error) {
         console.error("Failed to fetch counts:", error)
       } finally {
         setLoading(false)
       }
-    }
+    },
+    [lastFetchTime],
+  )
 
-    // Fetch counts initially
-    fetchCounts()
+  // Initial fetch and set up less frequent refresh (5 minutes)
+  useEffect(() => {
+    // Initial fetch
+    fetchCounts(true)
 
-    // Set up interval to refresh counts every 60 seconds
-    const intervalId = setInterval(fetchCounts, 60000)
+    // Set up interval for less frequent updates (5 minutes)
+    const intervalId = setInterval(() => fetchCounts(true), 5 * 60 * 1000)
 
     // Clean up interval on component unmount
     return () => clearInterval(intervalId)
-  }, [])
+  }, [fetchCounts])
 
-  // Auto-expand the menu item that matches the current path
+  // Handle expanding menu items based on current path
   useEffect(() => {
+    // Create a new object to avoid direct state mutation
+    const newExpandedItems = { ...expandedItems }
+    let hasChanges = false
+
     navigationItems.forEach((item) => {
       if (item.children) {
         const shouldExpand = item.children.some(
           (child) => location.pathname === child.path || location.pathname.startsWith(`${child.path}/`),
         )
-        if (shouldExpand) {
-          setExpandedItems((prev) => ({ ...prev, [item.id]: true }))
+
+        if (shouldExpand && !newExpandedItems[item.id]) {
+          newExpandedItems[item.id] = true
+          hasChanges = true
         }
       }
     })
+
+    if (hasChanges) {
+      setExpandedItems(newExpandedItems)
+    }
   }, [location.pathname])
 
-  const toggleItem = (itemId) => {
+  // Toggle menu item expansion
+  const toggleItem = useCallback((itemId) => {
     setExpandedItems((prev) => ({
       ...prev,
       [itemId]: !prev[itemId],
     }))
-  }
+  }, [])
 
-  // Filter navigation items based on search term
-  const filteredItems = searchTerm
-    ? navigationItems
-        .map((item) => {
-          if (item.label.toLowerCase().includes(searchTerm.toLowerCase())) {
-            return item
+  // Filter navigation items based on search
+  const filteredItems = useMemo(() => {
+    if (!searchTerm) return navigationItems
+
+    const searchLower = searchTerm.toLowerCase()
+
+    return navigationItems
+      .map((item) => {
+        if (item.label.toLowerCase().includes(searchLower)) {
+          return item
+        }
+
+        if (item.children) {
+          const filteredChildren = item.children.filter((child) => child.label.toLowerCase().includes(searchLower))
+
+          if (filteredChildren.length > 0) {
+            return { ...item, children: filteredChildren }
           }
-          if (item.children) {
-            const filteredChildren = item.children.filter((child) =>
-              child.label.toLowerCase().includes(searchTerm.toLowerCase()),
-            )
-            if (filteredChildren.length > 0) {
-              return { ...item, children: filteredChildren }
-            }
-          }
-          return null
-        })
-        .filter(Boolean)
-    : navigationItems
+        }
+
+        return null
+      })
+      .filter(Boolean)
+  }, [searchTerm])
+
+  // Handle navigation click - fix for the bug when clicking on pages
+  const handleNavigationClick = useCallback(
+    (e, path) => {
+      // Only close sidebar on mobile
+      if (window.innerWidth < 768) {
+        toggleSidebar()
+      }
+
+      // If we're already on this path, prevent default and stop propagation
+      if (location.pathname === path) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    },
+    [location.pathname, toggleSidebar],
+  )
 
   return (
     <>
@@ -604,11 +618,11 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
         animate={{
           width: isOpen ? 280 : 0,
           opacity: isOpen ? 1 : 0,
-          transition: { duration: 0.3 },
         }}
-        className={`h-full bg-white dark:bg-zinc-900 border-r dark:border-zinc-800 overflow-hidden ${
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className={`fixed md:relative h-full bg-white dark:bg-zinc-900 border-r dark:border-zinc-800 overflow-hidden ${
           isOpen ? "block" : "hidden md:block"
-        } shadow-sm`}
+        } shadow-sm z-50`}
       >
         <div className="flex flex-col h-full">
           {/* User profile section */}
@@ -657,7 +671,7 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
                         ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
                         : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/50"
                     }`}
-                    onClick={() => window.innerWidth < 768 && toggleSidebar()}
+                    onClick={(e) => handleNavigationClick(e, page.path)}
                   >
                     <page.icon
                       className={`w-5 h-5 mb-1 ${
@@ -684,7 +698,7 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
           {/* Menu items */}
           <ScrollArea className="flex-1">
             <div className="px-2 py-2">
-              {loading ? (
+              {loading && filteredItems.length === 0 ? (
                 // Show loading indicators for menu items
                 <div className="flex flex-col px-2 space-y-2">
                   {[1, 2, 3, 4, 5].map((i) => (
@@ -712,7 +726,7 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
                             ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-medium"
                             : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/50"
                         }`}
-                        onClick={() => window.innerWidth < 768 && toggleSidebar()}
+                        onClick={(e) => handleNavigationClick(e, item.path)}
                       >
                         <item.icon
                           className={`w-5 h-5 ${
@@ -769,7 +783,7 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
                                 }
                                 ${child.isMainPage ? "font-medium" : ""}
                                 `}
-                                onClick={() => window.innerWidth < 768 && toggleSidebar()}
+                                onClick={(e) => handleNavigationClick(e, child.path)}
                               >
                                 <div className="flex items-center gap-3">
                                   <child.icon
