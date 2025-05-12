@@ -324,3 +324,40 @@ exports.deleteMaterial = async (req, res) => {
   }
 }
 
+// Remove a reference from history
+exports.removeReferenceFromHistory = async (req, res) => {
+  try {
+    const { materialId, historyId } = req.params
+
+    const material = await Material.findById(materialId)
+console.log("Material ID:", materialId, "History ID:", historyId);
+
+    if (!material) {
+      return res.status(404).json({ message: "Material not found" })
+    }
+
+    // Find the index of the history item to remove
+    const historyIndex = material.referenceHistory.findIndex((item) => item._id.toString() === historyId)
+
+    if (historyIndex === -1) {
+      return res.status(404).json({ message: "History item not found" })
+    }
+
+    // Remove the history item
+    material.referenceHistory.splice(historyIndex, 1)
+
+    // Save the updated material
+    await material.save()
+
+    res.status(200).json({
+      message: "Reference history item removed successfully",
+      material,
+    })
+  } catch (error) {
+    console.error("Error removing reference history:", error)
+    res.status(500).json({
+      message: "Error removing reference history item",
+      error: error.message,
+    })
+  }
+}

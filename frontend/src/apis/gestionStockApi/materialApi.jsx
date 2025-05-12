@@ -67,3 +67,7 @@ export const deleteMaterial = (id) => {
   return apiRequest("DELETE", `${BASE_URL}/${id}`)
 }
 
+// Remove a reference from history
+export const removeReferenceFromHistory = (materialId, historyId) => {
+  return apiRequest("DELETE", `${BASE_URL}/${materialId}/reference-history/${historyId}`)
+}
