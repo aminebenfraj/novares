@@ -58,7 +58,6 @@ import {
   Settings,
   ShieldCheck,
   Trash2,
-  User,
   XCircle,
 } from "lucide-react"
 import { getDesignById } from "../../apis/designApi"
@@ -868,17 +867,6 @@ const MassProductionDashboard = () => {
                           </div>
                         </div>
                       </div>
-
-                      <div>
-                        <h3 className="mb-2 text-sm font-medium text-muted-foreground">Assigned To</h3>
-                        <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
-                          <div className="flex items-center">
-                            <User className="w-4 h-4 mr-2 text-slate-500" />
-                            <p className="font-medium">{massProduction.assignedRole || "Not assigned"}</p>
-                          </div>
-                          <p className="mt-1 text-xs text-muted-foreground">{massProduction.assignedEmail || ""}</p>
-                        </div>
-                      </div>
                     </div>
 
                     {/* Key Dates */}
@@ -891,7 +879,9 @@ const MassProductionDashboard = () => {
                         </div>
                         <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
                           <p className="text-xs text-muted-foreground">Closure Date</p>
-                          <p className="font-medium">{formatDate(massProduction.closure_date)}</p>
+                          <p className="font-medium">
+                            {massProduction.closure ? formatDate(massProduction.closure) : "N/A"}
+                          </p>
                         </div>
                         <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
                           <div className="flex justify-between text-sm">

@@ -24,7 +24,6 @@ const massProductionSchema = new Schema(
     p_p_tuning: { type: Schema.Types.ObjectId, ref: "P_P_Tuning" },
     process_qualif: { type: Schema.Types.ObjectId, ref: "ProcessQualif" },
     ppap_submission_date: { type: Date },
-    ppap_submitted: { type: Boolean },
     closure: { type: Date },
     comment: { type: String, trim: true },
     mlo: { type: Date },

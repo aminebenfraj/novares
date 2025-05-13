@@ -84,7 +84,7 @@ exports.createMassProduction = async (req, res) => {
     // ✅ Automatically set closure date when status is closed or cancelled
     if (status === "closed" || status === "cancelled") {
       if (!closure) {
-        closure = new Date().toISOString()
+        const closure = new Date().toISOString()
       }
     }
 
@@ -134,15 +134,15 @@ exports.createMassProduction = async (req, res) => {
     const checkedRoles = []
     if (checkinRoles) {
       // Extract role names from the checkinRoles object
-      // The keys in checkinRoles should match the role names in UserModel
       Object.keys(checkinRoles).forEach((roleKey) => {
-        if (checkinRoles[roleKey] && checkinRoles[roleKey].value === true) {
-          // Convert the role key to match the format in UserModel
-          const formattedRole = roleKey.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
-          checkedRoles.push(formattedRole)
-        }
+        // Add all roles regardless of their value - we want to notify all role holders
+        // Convert the role key to match the format in UserModel
+        const formattedRole = roleKey.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+        checkedRoles.push(formattedRole)
       })
     }
+
+    console.log("✅ Roles to notify:", checkedRoles)
 
     // Find all users with the checked roles
     const usersToNotify = await User.find({
@@ -150,23 +150,27 @@ exports.createMassProduction = async (req, res) => {
     })
 
     console.log(`✅ Found ${usersToNotify.length} users to notify with roles:`, checkedRoles)
+    console.log(
+      "✅ Users to notify:",
+      usersToNotify.map((user) => ({ username: user.username, email: user.email, roles: user.roles })),
+    )
 
     // Send email to each user
     const emailSubject = `Mass Production Task: ${project_n}`
 
     for (const user of usersToNotify) {
       const emailBody = `
-        <h3>Dear ${user.username},</h3>
-        <p>A new mass production task has been created that requires your attention.</p>
-        <p><strong>Project:</strong> ${project_n}</p>
-        <p><strong>Description:</strong> ${description}</p>
-        <p>Please log in and review the mass production details.</p>
-        <a href="http://localhost:5173/masspd/detail/${newMassProduction._id}">View Task</a>
-      `
+    <h3>Dear ${user.username},</h3>
+    <p>A new mass production task has been created that requires your attention.</p>
+    <p><strong>Project:</strong> ${project_n}</p>
+    <p><strong>Description:</strong> ${description || "No description provided"}</p>
+    <p>Please log in and review the mass production details.</p>
+    <a href="http://localhost:5173/masspd/detail/${newMassProduction._id}">View Task</a>
+  `
 
       try {
         await sendEmail(user.email, emailSubject, emailBody)
-        console.log(`📧 Email sent successfully to ${user.email}`)
+        console.log(`📧 Email sent successfully to ${user.email} (${user.roles.join(", ")})`)
       } catch (emailError) {
         console.error(`❌ Error sending email to ${user.email}:`, emailError.message)
       }

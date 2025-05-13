@@ -1,45 +1,42 @@
-import { Button } from "../ui/button"
-import { Calendar } from "../ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form"
-import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
+"use client"
 
-export function DatePickerField({ form, name, label }) {
+import { useState } from "react"
+import { useField } from "formik"
+import DatePicker from "react-datepicker"
+import { format } from "date-fns"
+import "react-datepicker/dist/react-datepicker.css"
+
+const DatePickerField = ({ ...props }) => {
+  const [field, meta, helpers] = useField(props)
+  const [startDate, setStartDate] = useState(null)
+
+  const handleChange = (date) => {
+    setStartDate(date)
+  }
+
   return (
-    <FormField
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <FormItem className="flex flex-col">
-          <FormLabel>{label}</FormLabel>
-          <Popover>
-            <PopoverTrigger asChild>
-              <FormControl>
-                <Button
-                  variant={"outline"}
-                  className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                >
-                  {field.value ? format(new Date(field.value), "PPP") : <span>Pick a date</span>}
-                  <CalendarIcon className="w-4 h-4 ml-auto opacity-50" />
-                </Button>
-              </FormControl>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={field.value ? new Date(field.value) : undefined}
-                onSelect={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
-                disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+    <div>
+      <DatePicker
+        selected={startDate}
+        onChange={handleChange}
+        dateFormat="yyyy-MM-dd"
+        name={field.name}
+        onBlur={field.onBlur}
+        onSelect={(date) => {
+          if (date) {
+            // Add one day to fix timezone issue
+            const adjustedDate = new Date(date)
+            adjustedDate.setDate(adjustedDate.getDate() + 1)
+            field.onChange(adjustedDate ? format(adjustedDate, "yyyy-MM-dd") : "")
+          } else {
+            field.onChange("")
+          }
+        }}
+        {...props}
+      />
+      {meta.touched && meta.error ? <div className="error">{meta.error}</div> : null}
+    </div>
   )
 }
 
+export default DatePickerField

@@ -24,12 +24,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, ArrowLeft, Upload } from "lucide-react"
+import { Loader2, ArrowLeft, Upload, CalendarIcon } from "lucide-react"
 import MainLayout from "@/components/MainLayout"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 // Define role fields for checkin
 const roleFields = [
@@ -803,13 +803,38 @@ const MassPdCreate = () => {
 
                       <div className="space-y-2">
                         <Label htmlFor="closure">Closure Date</Label>
-                        <Input
-                          id="closure"
-                          name="closure"
-                          type="date"
-                          value={formData.closure}
-                          onChange={handleInputChange}
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              id="closure"
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !formData.closure && "text-muted-foreground",
+                              )}
+                              disabled={formData.status === "closed" || formData.status === "cancelled"}
+                            >
+                              <CalendarIcon className="w-4 h-4 mr-2" />
+                              {formData.closure ? format(new Date(formData.closure), "PPP") : "Pick a date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={formData.closure ? new Date(formData.closure) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const formattedDate = date.toISOString().split("T")[0]
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    closure: formattedDate,
+                                  }))
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
 
@@ -925,14 +950,39 @@ const MassPdCreate = () => {
                         <Label htmlFor="initial_request">
                           Initial Request Date <span className="text-red-500">*</span>
                         </Label>
-                        <Input
-                          id="initial_request"
-                          name="initial_request"
-                          type="date"
-                          value={formData.initial_request}
-                          onChange={handleInputChange}
-                          required
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              id="initial_request"
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !formData.initial_request && "text-muted-foreground",
+                              )}
+                            >
+                              <CalendarIcon className="w-4 h-4 mr-2" />
+                              {formData.initial_request
+                                ? format(new Date(formData.initial_request), "PPP")
+                                : "Pick a date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={formData.initial_request ? new Date(formData.initial_request) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const formattedDate = date.toISOString().split("T")[0]
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    initial_request: formattedDate,
+                                  }))
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       <div className="space-y-2">
@@ -987,25 +1037,42 @@ const MassPdCreate = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="ppap_submitted"
-                          checked={formData.ppap_submitted}
-                          onCheckedChange={(checked) => handleCheckboxChange("ppap_submitted", checked)}
-                        />
-                        <Label htmlFor="ppap_submitted">PPAP Submitted</Label>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
                       <Label htmlFor="ppap_submission_date">PPAP Submission Date</Label>
-                      <Input
-                        id="ppap_submission_date"
-                        name="ppap_submission_date"
-                        type="date"
-                        value={formData.ppap_submission_date}
-                        onChange={handleInputChange}
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            id="ppap_submission_date"
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !formData.ppap_submission_date && "text-muted-foreground",
+                            )}
+                          >
+                            <CalendarIcon className="w-4 h-4 mr-2" />
+                            {formData.ppap_submission_date
+                              ? format(new Date(formData.ppap_submission_date), "PPP")
+                              : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={
+                              formData.ppap_submission_date ? new Date(formData.ppap_submission_date) : undefined
+                            }
+                            onSelect={(date) => {
+                              if (date) {
+                                const formattedDate = date.toISOString().split("T")[0]
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  ppap_submission_date: formattedDate,
+                                }))
+                              }
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
 
                     <div className="space-y-2">
@@ -1049,8 +1116,13 @@ const MassPdCreate = () => {
                               <PopoverContent className="w-auto p-0" align="start">
                                 <Calendar
                                   mode="single"
-                                  selected={new Date(okForLunchData.date)}
-                                  onSelect={(date) => handleOkForLunchChange("date", date.toISOString().split("T")[0])}
+                                  selected={okForLunchData.date ? new Date(okForLunchData.date) : undefined}
+                                  onSelect={(date) => {
+                                    if (date) {
+                                      const formattedDate = date.toISOString().split("T")[0]
+                                      handleOkForLunchChange("date", formattedDate)
+                                    }
+                                  }}
                                   initialFocus
                                 />
                               </PopoverContent>
@@ -1126,10 +1198,15 @@ const MassPdCreate = () => {
                               <PopoverContent className="w-auto p-0" align="start">
                                 <Calendar
                                   mode="single"
-                                  selected={new Date(validationForOfferData.date)}
-                                  onSelect={(date) =>
-                                    handleValidationForOfferChange("date", date.toISOString().split("T")[0])
+                                  selected={
+                                    validationForOfferData.date ? new Date(validationForOfferData.date) : undefined
                                   }
+                                  onSelect={(date) => {
+                                    if (date) {
+                                      const formattedDate = date.toISOString().split("T")[0]
+                                      handleValidationForOfferChange("date", formattedDate)
+                                    }
+                                  }}
                                   initialFocus
                                 />
                               </PopoverContent>
@@ -1174,50 +1251,217 @@ const MassPdCreate = () => {
                     <CardDescription>Enter the key dates for the mass production record.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="closure">Closure Date</Label>
-                        <Input
-                          id="closure"
-                          name="closure"
-                          type="date"
-                          value={formData.closure}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-
                     <h3 className="text-lg font-medium">Milestone Dates</h3>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                       <div className="space-y-2">
                         <Label htmlFor="mlo">MLO</Label>
-                        <Input id="mlo" name="mlo" type="date" value={formData.mlo} onChange={handleInputChange} />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              id="mlo"
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !formData.mlo && "text-muted-foreground",
+                              )}
+                            >
+                              <CalendarIcon className="w-4 h-4 mr-2" />
+                              {formData.mlo ? format(new Date(formData.mlo), "PPP") : "Pick a date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={formData.mlo ? new Date(formData.mlo) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const formattedDate = date.toISOString().split("T")[0]
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    mlo: formattedDate,
+                                  }))
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="tko">TKO</Label>
-                        <Input id="tko" name="tko" type="date" value={formData.tko} onChange={handleInputChange} />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              id="tko"
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !formData.tko && "text-muted-foreground",
+                              )}
+                            >
+                              <CalendarIcon className="w-4 h-4 mr-2" />
+                              {formData.tko ? format(new Date(formData.tko), "PPP") : "Pick a date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={formData.tko ? new Date(formData.tko) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const formattedDate = date.toISOString().split("T")[0]
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    tko: formattedDate,
+                                  }))
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="cv">CV</Label>
-                        <Input id="cv" name="cv" type="date" value={formData.cv} onChange={handleInputChange} />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              id="cv"
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !formData.cv && "text-muted-foreground",
+                              )}
+                            >
+                              <CalendarIcon className="w-4 h-4 mr-2" />
+                              {formData.cv ? format(new Date(formData.cv), "PPP") : "Pick a date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={formData.cv ? new Date(formData.cv) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const formattedDate = date.toISOString().split("T")[0]
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    cv: formattedDate,
+                                  }))
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="pt1">PT1</Label>
-                        <Input id="pt1" name="pt1" type="date" value={formData.pt1} onChange={handleInputChange} />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              id="pt1"
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !formData.pt1 && "text-muted-foreground",
+                              )}
+                            >
+                              <CalendarIcon className="w-4 h-4 mr-2" />
+                              {formData.pt1 ? format(new Date(formData.pt1), "PPP") : "Pick a date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={formData.pt1 ? new Date(formData.pt1) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const formattedDate = date.toISOString().split("T")[0]
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    pt1: formattedDate,
+                                  }))
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="pt2">PT2</Label>
-                        <Input id="pt2" name="pt2" type="date" value={formData.pt2} onChange={handleInputChange} />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              id="pt2"
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !formData.pt2 && "text-muted-foreground",
+                              )}
+                            >
+                              <CalendarIcon className="w-4 h-4 mr-2" />
+                              {formData.pt2 ? format(new Date(formData.pt2), "PPP") : "Pick a date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={formData.pt2 ? new Date(formData.pt2) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const formattedDate = date.toISOString().split("T")[0]
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    pt2: formattedDate,
+                                  }))
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="sop">SOP</Label>
-                        <Input id="sop" name="sop" type="date" value={formData.sop} onChange={handleInputChange} />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              id="sop"
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !formData.sop && "text-muted-foreground",
+                              )}
+                            >
+                              <CalendarIcon className="w-4 h-4 mr-2" />
+                              {formData.sop ? format(new Date(formData.sop), "PPP") : "Pick a date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={formData.sop ? new Date(formData.sop) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const formattedDate = date.toISOString().split("T")[0]
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    sop: formattedDate,
+                                  }))
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </CardContent>
@@ -1351,25 +1595,77 @@ const MassPdCreate = () => {
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor={`${field}-planned`}>Planned Date</Label>
-                                        <Input
-                                          id={`${field}-planned`}
-                                          type="date"
-                                          value={kickOffData[field].task.planned}
-                                          onChange={(e) =>
-                                            handleTaskChange(setKickOffData, field, "planned", e.target.value)
-                                          }
-                                        />
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              id={`${field}-planned`}
+                                              variant="outline"
+                                              className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !kickOffData[field].task.planned && "text-muted-foreground",
+                                              )}
+                                            >
+                                              <CalendarIcon className="w-4 h-4 mr-2" />
+                                              {kickOffData[field].task.planned
+                                                ? format(new Date(kickOffData[field].task.planned), "PPP")
+                                                : "Pick a date"}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                              mode="single"
+                                              selected={
+                                                kickOffData[field].task.planned
+                                                  ? new Date(kickOffData[field].task.planned)
+                                                  : undefined
+                                              }
+                                              onSelect={(date) => {
+                                                if (date) {
+                                                  const formattedDate = date.toISOString().split("T")[0]
+                                                  handleTaskChange(setKickOffData, field, "planned", formattedDate)
+                                                }
+                                              }}
+                                              initialFocus
+                                            />
+                                          </PopoverContent>
+                                        </Popover>
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor={`${field}-done`}>Completion Date</Label>
-                                        <Input
-                                          id={`${field}-done`}
-                                          type="date"
-                                          value={kickOffData[field].task.done}
-                                          onChange={(e) =>
-                                            handleTaskChange(setKickOffData, field, "done", e.target.value)
-                                          }
-                                        />
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              id={`${field}-done`}
+                                              variant="outline"
+                                              className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !kickOffData[field].task.done && "text-muted-foreground",
+                                              )}
+                                            >
+                                              <CalendarIcon className="w-4 h-4 mr-2" />
+                                              {kickOffData[field].task.done
+                                                ? format(new Date(kickOffData[field].task.done), "PPP")
+                                                : "Pick a date"}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                              mode="single"
+                                              selected={
+                                                kickOffData[field].task.done
+                                                  ? new Date(kickOffData[field].task.done)
+                                                  : undefined
+                                              }
+                                              onSelect={(date) => {
+                                                if (date) {
+                                                  const formattedDate = date.toISOString().split("T")[0]
+                                                  handleTaskChange(setKickOffData, field, "done", formattedDate)
+                                                }
+                                              }}
+                                              initialFocus
+                                            />
+                                          </PopoverContent>
+                                        </Popover>
                                       </div>
                                       <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
@@ -1450,25 +1746,77 @@ const MassPdCreate = () => {
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor={`${field}-planned`}>Planned Date</Label>
-                                        <Input
-                                          id={`${field}-planned`}
-                                          type="date"
-                                          value={designData[field].task.planned}
-                                          onChange={(e) =>
-                                            handleTaskChange(setDesignData, field, "planned", e.target.value)
-                                          }
-                                        />
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              id={`${field}-planned`}
+                                              variant="outline"
+                                              className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !designData[field].task.planned && "text-muted-foreground",
+                                              )}
+                                            >
+                                              <CalendarIcon className="w-4 h-4 mr-2" />
+                                              {designData[field].task.planned
+                                                ? format(new Date(designData[field].task.planned), "PPP")
+                                                : "Pick a date"}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                              mode="single"
+                                              selected={
+                                                designData[field].task.planned
+                                                  ? new Date(designData[field].task.planned)
+                                                  : undefined
+                                              }
+                                              onSelect={(date) => {
+                                                if (date) {
+                                                  const formattedDate = date.toISOString().split("T")[0]
+                                                  handleTaskChange(setDesignData, field, "planned", formattedDate)
+                                                }
+                                              }}
+                                              initialFocus
+                                            />
+                                          </PopoverContent>
+                                        </Popover>
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor={`${field}-done`}>Completion Date</Label>
-                                        <Input
-                                          id={`${field}-done`}
-                                          type="date"
-                                          value={designData[field].task.done}
-                                          onChange={(e) =>
-                                            handleTaskChange(setDesignData, field, "done", e.target.value)
-                                          }
-                                        />
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              id={`${field}-done`}
+                                              variant="outline"
+                                              className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !designData[field].task.done && "text-muted-foreground",
+                                              )}
+                                            >
+                                              <CalendarIcon className="w-4 h-4 mr-2" />
+                                              {designData[field].task.done
+                                                ? format(new Date(designData[field].task.done), "PPP")
+                                                : "Pick a date"}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                              mode="single"
+                                              selected={
+                                                designData[field].task.done
+                                                  ? new Date(designData[field].task.done)
+                                                  : undefined
+                                              }
+                                              onSelect={(date) => {
+                                                if (date) {
+                                                  const formattedDate = date.toISOString().split("T")[0]
+                                                  handleTaskChange(setDesignData, field, "done", formattedDate)
+                                                }
+                                              }}
+                                              initialFocus
+                                            />
+                                          </PopoverContent>
+                                        </Popover>
                                       </div>
                                       <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
@@ -1546,25 +1894,77 @@ const MassPdCreate = () => {
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor={`${field}-planned`}>Planned Date</Label>
-                                        <Input
-                                          id={`${field}-planned`}
-                                          type="date"
-                                          value={facilitiesData[field].task.planned}
-                                          onChange={(e) =>
-                                            handleTaskChange(setFacilitiesData, field, "planned", e.target.value)
-                                          }
-                                        />
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              id={`${field}-planned`}
+                                              variant="outline"
+                                              className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !facilitiesData[field].task.planned && "text-muted-foreground",
+                                              )}
+                                            >
+                                              <CalendarIcon className="w-4 h-4 mr-2" />
+                                              {facilitiesData[field].task.planned
+                                                ? format(new Date(facilitiesData[field].task.planned), "PPP")
+                                                : "Pick a date"}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                              mode="single"
+                                              selected={
+                                                facilitiesData[field].task.planned
+                                                  ? new Date(facilitiesData[field].task.planned)
+                                                  : undefined
+                                              }
+                                              onSelect={(date) => {
+                                                if (date) {
+                                                  const formattedDate = date.toISOString().split("T")[0]
+                                                  handleTaskChange(setFacilitiesData, field, "planned", formattedDate)
+                                                }
+                                              }}
+                                              initialFocus
+                                            />
+                                          </PopoverContent>
+                                        </Popover>
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor={`${field}-done`}>Completion Date</Label>
-                                        <Input
-                                          id={`${field}-done`}
-                                          type="date"
-                                          value={facilitiesData[field].task.done}
-                                          onChange={(e) =>
-                                            handleTaskChange(setFacilitiesData, field, "done", e.target.value)
-                                          }
-                                        />
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              id={`${field}-done`}
+                                              variant="outline"
+                                              className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !facilitiesData[field].task.done && "text-muted-foreground",
+                                              )}
+                                            >
+                                              <CalendarIcon className="w-4 h-4 mr-2" />
+                                              {facilitiesData[field].task.done
+                                                ? format(new Date(facilitiesData[field].task.done), "PPP")
+                                                : "Pick a date"}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                              mode="single"
+                                              selected={
+                                                facilitiesData[field].task.done
+                                                  ? new Date(facilitiesData[field].task.done)
+                                                  : undefined
+                                              }
+                                              onSelect={(date) => {
+                                                if (date) {
+                                                  const formattedDate = date.toISOString().split("T")[0]
+                                                  handleTaskChange(setFacilitiesData, field, "done", formattedDate)
+                                                }
+                                              }}
+                                              initialFocus
+                                            />
+                                          </PopoverContent>
+                                        </Popover>
                                       </div>
                                       <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
@@ -1642,25 +2042,77 @@ const MassPdCreate = () => {
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor={`${field}-planned`}>Planned Date</Label>
-                                        <Input
-                                          id={`${field}-planned`}
-                                          type="date"
-                                          value={ppTuningData[field].task.planned}
-                                          onChange={(e) =>
-                                            handleTaskChange(setPPTuningData, field, "planned", e.target.value)
-                                          }
-                                        />
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              id={`${field}-planned`}
+                                              variant="outline"
+                                              className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !ppTuningData[field].task.planned && "text-muted-foreground",
+                                              )}
+                                            >
+                                              <CalendarIcon className="w-4 h-4 mr-2" />
+                                              {ppTuningData[field].task.planned
+                                                ? format(new Date(ppTuningData[field].task.planned), "PPP")
+                                                : "Pick a date"}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                              mode="single"
+                                              selected={
+                                                ppTuningData[field].task.planned
+                                                  ? new Date(ppTuningData[field].task.planned)
+                                                  : undefined
+                                              }
+                                              onSelect={(date) => {
+                                                if (date) {
+                                                  const formattedDate = date.toISOString().split("T")[0]
+                                                  handleTaskChange(setPPTuningData, field, "planned", formattedDate)
+                                                }
+                                              }}
+                                              initialFocus
+                                            />
+                                          </PopoverContent>
+                                        </Popover>
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor={`${field}-done`}>Completion Date</Label>
-                                        <Input
-                                          id={`${field}-done`}
-                                          type="date"
-                                          value={ppTuningData[field].task.done}
-                                          onChange={(e) =>
-                                            handleTaskChange(setPPTuningData, field, "done", e.target.value)
-                                          }
-                                        />
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              id={`${field}-done`}
+                                              variant="outline"
+                                              className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !ppTuningData[field].task.done && "text-muted-foreground",
+                                              )}
+                                            >
+                                              <CalendarIcon className="w-4 h-4 mr-2" />
+                                              {ppTuningData[field].task.done
+                                                ? format(new Date(ppTuningData[field].task.done), "PPP")
+                                                : "Pick a date"}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                              mode="single"
+                                              selected={
+                                                ppTuningData[field].task.done
+                                                  ? new Date(ppTuningData[field].task.done)
+                                                  : undefined
+                                              }
+                                              onSelect={(date) => {
+                                                if (date) {
+                                                  const formattedDate = date.toISOString().split("T")[0]
+                                                  handleTaskChange(setPPTuningData, field, "done", formattedDate)
+                                                }
+                                              }}
+                                              initialFocus
+                                            />
+                                          </PopoverContent>
+                                        </Popover>
                                       </div>
                                       <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
@@ -1738,25 +2190,82 @@ const MassPdCreate = () => {
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor={`${field}-planned`}>Planned Date</Label>
-                                        <Input
-                                          id={`${field}-planned`}
-                                          type="date"
-                                          value={processQualifData[field].task.planned}
-                                          onChange={(e) =>
-                                            handleTaskChange(setProcessQualifData, field, "planned", e.target.value)
-                                          }
-                                        />
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              id={`${field}-planned`}
+                                              variant="outline"
+                                              className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !processQualifData[field].task.planned && "text-muted-foreground",
+                                              )}
+                                            >
+                                              <CalendarIcon className="w-4 h-4 mr-2" />
+                                              {processQualifData[field].task.planned
+                                                ? format(new Date(processQualifData[field].task.planned), "PPP")
+                                                : "Pick a date"}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                              mode="single"
+                                              selected={
+                                                processQualifData[field].task.planned
+                                                  ? new Date(processQualifData[field].task.planned)
+                                                  : undefined
+                                              }
+                                              onSelect={(date) => {
+                                                if (date) {
+                                                  const formattedDate = date.toISOString().split("T")[0]
+                                                  handleTaskChange(
+                                                    setProcessQualifData,
+                                                    field,
+                                                    "planned",
+                                                    formattedDate,
+                                                  )
+                                                }
+                                              }}
+                                              initialFocus
+                                            />
+                                          </PopoverContent>
+                                        </Popover>
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor={`${field}-done`}>Completion Date</Label>
-                                        <Input
-                                          id={`${field}-done`}
-                                          type="date"
-                                          value={processQualifData[field].task.done}
-                                          onChange={(e) =>
-                                            handleTaskChange(setProcessQualifData, field, "done", e.target.value)
-                                          }
-                                        />
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              id={`${field}-done`}
+                                              variant="outline"
+                                              className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !processQualifData[field].task.done && "text-muted-foreground",
+                                              )}
+                                            >
+                                              <CalendarIcon className="w-4 h-4 mr-2" />
+                                              {processQualifData[field].task.done
+                                                ? format(new Date(processQualifData[field].task.done), "PPP")
+                                                : "Pick a date"}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                              mode="single"
+                                              selected={
+                                                processQualifData[field].task.done
+                                                  ? new Date(processQualifData[field].task.done)
+                                                  : undefined
+                                              }
+                                              onSelect={(date) => {
+                                                if (date) {
+                                                  const formattedDate = date.toISOString().split("T")[0]
+                                                  handleTaskChange(setProcessQualifData, field, "done", formattedDate)
+                                                }
+                                              }}
+                                              initialFocus
+                                            />
+                                          </PopoverContent>
+                                        </Popover>
                                       </div>
                                       <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
@@ -1843,35 +2352,95 @@ const MassPdCreate = () => {
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor={`${field}-planned`}>Planned Date</Label>
-                                        <Input
-                                          id={`${field}-planned`}
-                                          type="date"
-                                          value={qualificationConfirmationData[field].task.planned}
-                                          onChange={(e) =>
-                                            handleTaskChange(
-                                              setQualificationConfirmationData,
-                                              field,
-                                              "planned",
-                                              e.target.value,
-                                            )
-                                          }
-                                        />
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              id={`${field}-planned`}
+                                              variant="outline"
+                                              className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !qualificationConfirmationData[field].task.planned &&
+                                                  "text-muted-foreground",
+                                              )}
+                                            >
+                                              <CalendarIcon className="w-4 h-4 mr-2" />
+                                              {qualificationConfirmationData[field].task.planned
+                                                ? format(
+                                                    new Date(qualificationConfirmationData[field].task.planned),
+                                                    "PPP",
+                                                  )
+                                                : "Pick a date"}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                              mode="single"
+                                              selected={
+                                                qualificationConfirmationData[field].task.planned
+                                                  ? new Date(qualificationConfirmationData[field].task.planned)
+                                                  : undefined
+                                              }
+                                              onSelect={(date) => {
+                                                if (date) {
+                                                  const formattedDate = date.toISOString().split("T")[0]
+                                                  handleTaskChange(
+                                                    setQualificationConfirmationData,
+                                                    field,
+                                                    "planned",
+                                                    formattedDate,
+                                                  )
+                                                }
+                                              }}
+                                              initialFocus
+                                            />
+                                          </PopoverContent>
+                                        </Popover>
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor={`${field}-done`}>Completion Date</Label>
-                                        <Input
-                                          id={`${field}-done`}
-                                          type="date"
-                                          value={qualificationConfirmationData[field].task.done}
-                                          onChange={(e) =>
-                                            handleTaskChange(
-                                              setQualificationConfirmationData,
-                                              field,
-                                              "done",
-                                              e.target.value,
-                                            )
-                                          }
-                                        />
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              id={`${field}-done`}
+                                              variant="outline"
+                                              className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !qualificationConfirmationData[field].task.done &&
+                                                  "text-muted-foreground",
+                                              )}
+                                            >
+                                              <CalendarIcon className="w-4 h-4 mr-2" />
+                                              {qualificationConfirmationData[field].task.done
+                                                ? format(
+                                                    new Date(qualificationConfirmationData[field].task.done),
+                                                    "PPP",
+                                                  )
+                                                : "Pick a date"}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                              mode="single"
+                                              selected={
+                                                qualificationConfirmationData[field].task.done
+                                                  ? new Date(qualificationConfirmationData[field].task.done)
+                                                  : undefined
+                                              }
+                                              onSelect={(date) => {
+                                                if (date) {
+                                                  const formattedDate = date.toISOString().split("T")[0]
+                                                  handleTaskChange(
+                                                    setQualificationConfirmationData,
+                                                    field,
+                                                    "done",
+                                                    formattedDate,
+                                                  )
+                                                }
+                                              }}
+                                              initialFocus
+                                            />
+                                          </PopoverContent>
+                                        </Popover>
                                       </div>
                                       <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor={`${field}-comments`}>Comments</Label>
