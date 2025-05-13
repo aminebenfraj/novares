@@ -10,12 +10,30 @@ export default {
   			lg: '1537px'
   		},
   		fontFamily: {
-  			inter: ["inter", "sans-serif"],
-  			opensans: ["opensans", "sans-serif"],
-  			poppins: ["poppins", "sans-serif"],
-  			lexend: ["lexend", "sans-serif"],
-  			lato: ["lato", "sans-serif"],
-  			rubik: ["rubik", "sans-serif"]
+  			inter: [
+  				'inter',
+  				'sans-serif'
+  			],
+  			opensans: [
+  				'opensans',
+  				'sans-serif'
+  			],
+  			poppins: [
+  				'poppins',
+  				'sans-serif'
+  			],
+  			lexend: [
+  				'lexend',
+  				'sans-serif'
+  			],
+  			lato: [
+  				'lato',
+  				'sans-serif'
+  			],
+  			rubik: [
+  				'rubik',
+  				'sans-serif'
+  			]
   		},
   		backgroundColor: {
   			transparent: 'rgba(254, 254, 254, 0.9)',

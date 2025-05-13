@@ -46,15 +46,8 @@ import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { getCurrentUser } from "../apis/userApi"
-import { getAllMassProductions } from "../apis/massProductionApi"
-import { getAllPedidos } from "../apis/pedido/pedidoApi"
-import { getCalls } from "../apis/logistic/callApi"
-import { getAllMaterials } from "../apis/gestionStockApi/materialApi"
-import { getAllAllocations } from "../apis/gestionStockApi/materialMachineApi"
-import { getAllReadiness } from "../apis/readiness/readinessApi"
 
 // Navigation structure based on user's grouping
 const navigationItems = [
@@ -75,7 +68,6 @@ const navigationItems = [
         label: "Materials",
         icon: Package,
         path: "/materials",
-        badgeKey: "materials",
         isMainPage: true,
       },
       {
@@ -89,7 +81,6 @@ const navigationItems = [
         label: "Machine Material",
         icon: Layers,
         path: "/machinematerial",
-        badgeKey: "allocations",
         isMainPage: true,
       },
       {
@@ -122,7 +113,6 @@ const navigationItems = [
         label: "Call",
         icon: Phone,
         path: "/call",
-        badgeKey: "calls",
         isMainPage: true,
       },
     ],
@@ -137,7 +127,6 @@ const navigationItems = [
         label: "Orders",
         icon: ShoppingCart,
         path: "/pedido",
-        badgeKey: "orders",
         isMainPage: true,
       },
       {
@@ -170,7 +159,6 @@ const navigationItems = [
         label: "Mass Production",
         icon: Atom,
         path: "/masspd",
-        badgeKey: "massProductions",
         isMainPage: true,
       },
       {
@@ -251,12 +239,6 @@ const navigationItems = [
         icon: CheckSquare,
         path: "/validationforoffer",
       },
-      {
-        id: "machineDashboard",
-        label: "Machine Dashboard",
-        icon: BarChart3,
-        path: "/machine-dashboard",
-      },
     ],
   },
   {
@@ -269,7 +251,6 @@ const navigationItems = [
         label: "Readiness",
         icon: ClipboardCheck,
         path: "/readiness",
-        badgeKey: "readiness",
         isMainPage: true,
       },
       {
@@ -374,66 +355,44 @@ const mainPages = [
     label: "Mass Production",
     icon: Atom,
     path: "/masspd",
-    badgeKey: "massProductions",
   },
   {
     id: "readiness",
     label: "Readiness",
     icon: ClipboardCheck,
     path: "/readiness",
-    badgeKey: "readiness",
   },
   {
     id: "pedido",
     label: "Orders",
     icon: ShoppingCart,
     path: "/pedido",
-    badgeKey: "orders",
   },
   {
     id: "call",
     label: "Calls",
     icon: Phone,
     path: "/call",
-    badgeKey: "calls",
   },
   {
     id: "machineMaterial",
     label: "Machine Material",
     icon: Layers,
     path: "/machinematerial",
-    badgeKey: "allocations",
   },
   {
     id: "materials",
     label: "Materials",
     icon: Package,
     path: "/materials",
-    badgeKey: "materials",
   },
 ]
 
 export const Sidebar = ({ isOpen, toggleSidebar }) => {
   const [expandedItems, setExpandedItems] = useState({})
   const [user, setUser] = useState({ username: "Loading...", email: "..." })
-  const [counts, setCounts] = useState({
-    materials: 0,
-    allocations: 0,
-    massProductions: 0,
-    orders: 0,
-    calls: 0,
-    readiness: 0,
-  })
-  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [lastFetchTime, setLastFetchTime] = useState(0)
   const location = useLocation()
-
-  // Cache to prevent duplicate API calls
-  const apiCache = React.useRef({
-    data: {},
-    timestamp: {},
-  })
 
   // Fetch user data only once
   useEffect(() => {
@@ -456,73 +415,6 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
       isMounted = false
     }
   }, [])
-
-  // Fetch counts with caching
-  const fetchCounts = useCallback(
-    async (force = false) => {
-      const now = Date.now()
-      // Only fetch if forced or if it's been more than 5 minutes since last fetch
-      if (!force && now - lastFetchTime < 5 * 60 * 1000) {
-        return
-      }
-
-      setLoading(true)
-
-      try {
-        // Use Promise.all to fetch all data in parallel
-        const [materialsData, allocationsData, massProductionsData, ordersData, callsData, readinessData] =
-          await Promise.all([
-            getAllMaterials(),
-            getAllAllocations(),
-            getAllMassProductions(),
-            getAllPedidos(),
-            getCalls({ status: "Pendiente" }),
-            getAllReadiness(),
-          ])
-
-        // Helper function to safely extract count
-        const getCount = (data, filterFn = null) => {
-          if (!data) return 0
-
-          if (Array.isArray(data)) {
-            return filterFn ? data.filter(filterFn).length : data.length
-          }
-
-          return data.totalDocs || (data.docs ? data.docs.length : 0)
-        }
-
-        // Calculate counts
-        const newCounts = {
-          materials: getCount(materialsData),
-          allocations: getCount(allocationsData),
-          massProductions: getCount(massProductionsData, (mp) => mp.status === "on-going"),
-          orders: getCount(ordersData, (order) => order.table_status === "Pendiente"),
-          calls: getCount(callsData),
-          readiness: getCount(readinessData),
-        }
-
-        setCounts(newCounts)
-        setLastFetchTime(now)
-      } catch (error) {
-        console.error("Failed to fetch counts:", error)
-      } finally {
-        setLoading(false)
-      }
-    },
-    [lastFetchTime],
-  )
-
-  // Initial fetch and set up less frequent refresh (5 minutes)
-  useEffect(() => {
-    // Initial fetch
-    fetchCounts(true)
-
-    // Set up interval for less frequent updates (5 minutes)
-    const intervalId = setInterval(() => fetchCounts(true), 5 * 60 * 1000)
-
-    // Clean up interval on component unmount
-    return () => clearInterval(intervalId)
-  }, [fetchCounts])
 
   // Handle expanding menu items based on current path
   useEffect(() => {
@@ -681,14 +573,6 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
                       }`}
                     />
                     <span className="text-xs">{page.label}</span>
-                    {page.badgeKey && counts[page.badgeKey] > 0 && (
-                      <Badge
-                        className="mt-1 text-[10px] h-4 min-w-4 bg-slate-500 dark:bg-zinc-700 text-white"
-                        variant="secondary"
-                      >
-                        {counts[page.badgeKey]}
-                      </Badge>
-                    )}
                   </Link>
                 ))}
               </div>
@@ -698,14 +582,7 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
           {/* Menu items */}
           <ScrollArea className="flex-1">
             <div className="px-2 py-2">
-              {loading && filteredItems.length === 0 ? (
-                // Show loading indicators for menu items
-                <div className="flex flex-col px-2 space-y-2">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="h-10 rounded-md bg-slate-100 dark:bg-zinc-800 animate-pulse"></div>
-                  ))}
-                </div>
-              ) : filteredItems.length === 0 ? (
+              {filteredItems.length === 0 ? (
                 <div className="px-4 py-8 text-center text-muted-foreground">
                   <p>No menu items found</p>
                   <Button variant="link" onClick={() => setSearchTerm("")} className="mt-2">
@@ -797,11 +674,6 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
                                   />
                                   <span>{child.label}</span>
                                 </div>
-                                {child.badgeKey && counts[child.badgeKey] > 0 && (
-                                  <Badge className="text-white bg-slate-500 dark:bg-zinc-700" variant="secondary">
-                                    {counts[child.badgeKey]}
-                                  </Badge>
-                                )}
                               </Link>
                             ))}
                           </div>
