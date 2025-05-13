@@ -173,7 +173,6 @@ const MassPdCreate = () => {
   const [formData, setFormData] = useState({
     id: "",
     status: "on-going",
-    status_type: "ok",
     project_n: "",
     product_designation: [],
     description: "",
@@ -181,13 +180,12 @@ const MassPdCreate = () => {
     technical_skill: "sc",
     initial_request: new Date().toISOString().split("T")[0],
     request_original: "customer",
-    customer_offer: "F",
-    customer_order: "F",
+    customer_offer: "fulfilled",
+    customer_order: "fulfilled",
     ppap_submission_date: "",
     ppap_submitted: false,
     closure: "",
     comment: "",
-    next_review: "",
     mlo: "",
     tko: "",
     cv: "",
@@ -499,6 +497,16 @@ const MassPdCreate = () => {
     }))
   }
 
+  // Add this effect to handle automatic closure date setting
+  useEffect(() => {
+    if (formData.status === "closed" || formData.status === "cancelled") {
+      setFormData((prev) => ({
+        ...prev,
+        closure: new Date().toISOString().split("T")[0],
+      }))
+    }
+  }, [formData.status])
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -794,21 +802,14 @@ const MassPdCreate = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="status_type">
-                          Status Type <span className="text-red-500">*</span>
-                        </Label>
-                        <Select
-                          value={formData.status_type}
-                          onValueChange={(value) => handleSelectChange("status_type", value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="ok">OK</SelectItem>
-                            <SelectItem value="no">NO</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Label htmlFor="closure">Closure Date</Label>
+                        <Input
+                          id="closure"
+                          name="closure"
+                          type="date"
+                          value={formData.closure}
+                          onChange={handleInputChange}
+                        />
                       </div>
                     </div>
 
@@ -962,8 +963,8 @@ const MassPdCreate = () => {
                             <SelectValue placeholder="Select customer offer" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="F">F</SelectItem>
-                            <SelectItem value="E">E</SelectItem>
+                            <SelectItem value="fulfilled">Fulfilled</SelectItem>
+                            <SelectItem value="expected/inprogress">Expected/In Progress</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -978,8 +979,8 @@ const MassPdCreate = () => {
                             <SelectValue placeholder="Select customer order" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="F">F</SelectItem>
-                            <SelectItem value="E">E</SelectItem>
+                            <SelectItem value="fulfilled">Fulfilled</SelectItem>
+                            <SelectItem value="expected/inprogress">Expected/In Progress</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1174,17 +1175,6 @@ const MassPdCreate = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="next_review">Next Review Date</Label>
-                        <Input
-                          id="next_review"
-                          name="next_review"
-                          type="date"
-                          value={formData.next_review}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="closure">Closure Date</Label>
                         <Input

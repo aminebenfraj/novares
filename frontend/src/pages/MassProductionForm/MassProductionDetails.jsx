@@ -883,43 +883,33 @@ const MassProductionDashboard = () => {
 
                     {/* Key Dates */}
                     <div className="space-y-4">
-                      <h3 className="mb-2 text-sm font-medium text-muted-foreground">Key Dates</h3>
-                      <div className="grid grid-cols-2 gap-3">
+                      <h3 className="mb-2 text-sm font-medium text-muted-foreground">Basic Information</h3>
+                      <div className="grid grid-cols-1 gap-3">
                         <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
                           <p className="text-xs text-muted-foreground">Initial Request</p>
                           <p className="font-medium">{formatDate(massProduction.initial_request)}</p>
                         </div>
                         <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
-                          <p className="text-xs text-muted-foreground">Next Review</p>
-                          <p className="font-medium">{formatDate(massProduction.next_review)}</p>
+                          <p className="text-xs text-muted-foreground">Closure Date</p>
+                          <p className="font-medium">{formatDate(massProduction.closure_date)}</p>
                         </div>
                         <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
-                          <p className="text-xs text-muted-foreground">PPAP Submission</p>
-                          <p className="font-medium">{formatDate(massProduction.ppap_submission_date)}</p>
-                        </div>
-                        <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
-                          <p className="text-xs text-muted-foreground">SOP</p>
-                          <p className="font-medium">{formatDate(massProduction.sop)}</p>
-                        </div>
-                      </div>
-
-                      {massProduction.days_until_ppap_submission !== undefined && (
-                        <div className="mt-3">
-                          <h3 className="mb-2 text-sm font-medium text-muted-foreground">PPAP Timeline</h3>
-                          <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm">Days Remaining:</span>
-                              <Badge variant={massProduction.days_until_ppap_submission > 30 ? "outline" : "warning"}>
-                                {massProduction.days_until_ppap_submission} days
-                              </Badge>
-                            </div>
-                            <Progress
-                              value={Math.min(100, ((60 - massProduction.days_until_ppap_submission) / 60) * 100)}
-                              className="h-2"
-                            />
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Customer Offer:</span>
+                            <span className="font-medium">
+                              {massProduction.customer_offer === "fulfilled" ? "Fulfilled" : "Expected/In Progress"}
+                            </span>
                           </div>
                         </div>
-                      )}
+                        <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Customer Order:</span>
+                            <span className="font-medium">
+                              {massProduction.customer_order === "fulfilled" ? "Fulfilled" : "Expected/In Progress"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Product Designations */}

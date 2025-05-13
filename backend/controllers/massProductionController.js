@@ -80,6 +80,14 @@ exports.createMassProduction = async (req, res) => {
       }
     }
 
+    // Add this after the days_until_ppap_submission calculation
+    // ✅ Automatically set closure date when status is closed or cancelled
+    if (status === "closed" || status === "cancelled") {
+      if (!closure) {
+        closure = new Date().toISOString()
+      }
+    }
+
     console.log("✅ Valid Products in DB:", validProducts)
 
     // ✅ Create new MassProduction entry (without assignedRole and assignedEmail)
@@ -263,6 +271,11 @@ exports.updateMassProduction = async (req, res) => {
       const today = new Date()
       const ppapDate = new Date(updatedData.ppap_submission_date)
       updatedData.days_until_ppap_submission = Math.max(0, Math.ceil((ppapDate - today) / (1000 * 60 * 60 * 24))) // Convert to days
+    }
+
+    // ✅ Automatically set closure date when status is closed or cancelled
+    if (updatedData.status === "closed" || updatedData.status === "cancelled") {
+      updatedData.closure = new Date().toISOString()
     }
 
     const updatedMassProduction = await MassProduction.findByIdAndUpdate(

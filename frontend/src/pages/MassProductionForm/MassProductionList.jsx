@@ -926,14 +926,15 @@ const MassProductionList = () => {
                 </div>
               </TableHead>
               <TableHead>
-                <div className="flex items-center cursor-pointer" onClick={() => requestSort("status")}>
+                <div
+                  className="flex items-center cursor-pointer"
+                  onClick={() =>
+                    requestSort(
+                      '                <div className="flex items-center cursor-pointer" onClick={() => requestSort("status',
+                    )
+                  }
+                >
                   Status
-                  <ArrowUpDown className="w-4 h-4 ml-1" />
-                </div>
-              </TableHead>
-              <TableHead>
-                <div className="flex items-center cursor-pointer" onClick={() => requestSort("next_review")}>
-                  Next Review
                   <ArrowUpDown className="w-4 h-4 ml-1" />
                 </div>
               </TableHead>
@@ -998,7 +999,8 @@ const MassProductionList = () => {
                         {item.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatDate(item.next_review)}</TableCell>
+                    <TableCell>{item.customer_offer === "fulfilled" ? "Fulfilled" : "Expected/In Progress"}</TableCell>
+                    <TableCell>{item.customer_order === "fulfilled" ? "Fulfilled" : "Expected/In Progress"}</TableCell>
                     <TableCell>
                       <TooltipProvider>
                         <Tooltip>
@@ -1031,7 +1033,7 @@ const MassProductionList = () => {
                           <DropdownMenuItem onClick={() => navigate(`/masspd/detail/${item._id}`)}>
                             <Eye className="w-4 h-4 mr-2" />
                             View
-                          </DropdownMenuItem> 
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => navigate(`/masspd/edit/${item._id}`)}>
                             <Edit className="w-4 h-4 mr-2" />
                             Edit
@@ -1132,8 +1134,12 @@ const MassProductionList = () => {
                       <span>{formatDate(item.initial_request)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Next Review:</span>
-                      <span>{formatDate(item.next_review)}</span>
+                      <span className="text-muted-foreground">Customer Offer:</span>
+                      <span>{item.customer_offer === "fulfilled" ? "Fulfilled" : "Expected/In Progress"}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Customer Order:</span>
+                      <span>{item.customer_order === "fulfilled" ? "Fulfilled" : "Expected/In Progress"}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Progress:</span>
@@ -1379,4 +1385,3 @@ const MassProductionList = () => {
 }
 
 export default MassProductionList
-
