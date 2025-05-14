@@ -2,12 +2,10 @@
 
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { productSchema } from "../../lib/PdValidation"
 import { Loader2 } from "lucide-react"
 import { createPD } from "../../apis/ProductDesignation-api"
 import { Navbar } from "../../components/Navbar"
-import ContactUs from "../../components/ContactUs";
+import ContactUs from "../../components/ContactUs"
 
 export default function ProductForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -20,20 +18,26 @@ export default function ProductForm() {
     reset,
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(productSchema),
+    defaultValues: {
+      part_name: "",
+      reference: "",
+    },
   })
 
   const onSubmit = async (data) => {
+    console.log("Form submitted with data:", data)
     setIsSubmitting(true)
     setErrorMessage("")
     setSubmitSuccess(false)
 
     try {
       const response = await createPD(data)
-      if (response.error) {
+      console.log("API response:", response)
+
+      if (response && response.error) {
         throw new Error(response.message || "Failed to create product")
       }
-      console.log("Product Created:", response)
+
       setSubmitSuccess(true)
       reset()
     } catch (error) {
@@ -52,21 +56,32 @@ export default function ProductForm() {
           <div className="px-4 py-5 sm:p-6">
             <h2 className="mb-6 text-2xl font-bold text-gray-900">Product Designation</h2>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {["id", "part_name", "reference"].map((field) => (
-                <div key={field}>
-                  <label htmlFor={field} className="block mb-1 text-sm font-medium text-gray-700">
-                    {field === "id" ? "Product ID" : field === "part_name" ? "Part Name" : "Reference (Optional)"}
-                  </label>
-                  <input
-                    type="text"
-                    id={field}
-                    {...register(field)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={`Enter ${field === "id" ? "product ID" : field === "part_name" ? "part name" : "reference number"}`}
-                  />
-                  {errors[field] && <p className="mt-1 text-sm text-red-600">{errors[field].message}</p>}
-                </div>
-              ))}
+              <div>
+                <label htmlFor="part_name" className="block mb-1 text-sm font-medium text-gray-700">
+                  Part Name
+                </label>
+                <input
+                  type="text"
+                  id="part_name"
+                  {...register("part_name", { required: "Part name is required" })}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter part name"
+                />
+                {errors.part_name && <p className="mt-1 text-sm text-red-600">{errors.part_name.message}</p>}
+              </div>
+              <div>
+                <label htmlFor="reference" className="block mb-1 text-sm font-medium text-gray-700">
+                  Reference (Optional)
+                </label>
+                <input
+                  type="text"
+                  id="reference"
+                  {...register("reference")}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter reference number"
+                />
+                {errors.reference && <p className="mt-1 text-sm text-red-600">{errors.reference.message}</p>}
+              </div>
               <div className="flex justify-end pt-4 space-x-3">
                 <button
                   type="button"
@@ -104,9 +119,7 @@ export default function ProductForm() {
           </div>
         </div>
       </div>
-            <ContactUs />
-      
+      <ContactUs />
     </div>
   )
 }
-
