@@ -1,7 +1,8 @@
 "use client"
 
-import MainLayout from "@/components/MainLayout"
-import { useState, useEffect } from "react"
+import { BreadcrumbPage } from "@/components/ui/breadcrumb"
+
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { getMassProductionById, deleteMassProduction } from "../../apis/massProductionApi"
@@ -13,6 +14,14 @@ import { getfacilitiesById } from "../../apis/facilitiesApi"
 import { getP_P_TuningById } from "../../apis/p-p-tuning-api"
 import { getValidationForOfferById } from "../../apis/validationForOfferApi"
 import { getQualificationConfirmationById } from "../../apis/qualificationconfirmationApi"
+import { getDesignById } from "../../apis/designApi"
+import { getAllpd } from "../../apis/ProductDesignation-api"
+import { format } from "date-fns"
+import { useToast } from "@/hooks/use-toast"
+import MainLayout from "@/components/MainLayout"
+import ContactUs from "@/components/ContactUs"
+
+// UI Components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -31,10 +40,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
-import { format } from "date-fns"
-import { useToast } from "@/hooks/use-toast"
-import ContactUs from "@/components/ContactUs"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 
+// Icons
 import {
   ArrowLeft,
   Calendar,
@@ -59,34 +73,35 @@ import {
   ShieldCheck,
   Trash2,
   XCircle,
+  CalendarDays,
+  Tag,
 } from "lucide-react"
-import { getDesignById } from "../../apis/designApi"
 
-// Animation variants for Framer Motion
+// Optimized animation variants with reduced motion
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
+      staggerChildren: 0.05, // Reduced from 0.1
+      duration: 0.3, // Added explicit duration
     },
   },
 }
 
 const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
+  hidden: { y: 10, opacity: 0 }, // Reduced y distance from 20 to 10
   visible: {
     y: 0,
     opacity: 1,
     transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 15,
+      type: "tween", // Changed from "spring" to "tween" for smoother animation
+      duration: 0.2, // Reduced duration
     },
   },
 }
 
-const MassProductionDashboard = () => {
+const MassProductionDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -97,6 +112,7 @@ const MassProductionDashboard = () => {
   const [completionPercentage, setCompletionPercentage] = useState(0)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [productDesignations, setProductDesignations] = useState([])
 
   // State for section data
   const [sectionData, setSectionData] = useState({
@@ -124,38 +140,42 @@ const MassProductionDashboard = () => {
     qualifConfirm: false,
   })
 
-  const navigateToEditPage = (path, stageData) => {
-    // Store the current mass production ID in localStorage for fallback
-    if (id) {
-      localStorage.setItem("lastMassProductionId", id)
-    }
+  const navigateToEditPage = useCallback(
+    (path, stageData) => {
+      // Store the current mass production ID in localStorage for fallback
+      if (id) {
+        localStorage.setItem("lastMassProductionId", id)
+      }
 
-    // Determine the correct ID to use for the edit page
-    let editId
-    if (stageData) {
-      // If the stage data is an object with an _id property
-      if (typeof stageData === "object" && stageData._id) {
-        editId = stageData._id
-      }
-      // If the stage data is a string (direct ID reference)
-      else if (typeof stageData === "string") {
-        editId = stageData
-      }
-      // If we couldn't extract an ID, use the mass production ID
-      else {
+      // Determine the correct ID to use for the edit page
+      let editId
+      if (stageData) {
+        // If the stage data is an object with an _id property
+        if (typeof stageData === "object" && stageData._id) {
+          editId = stageData._id
+        }
+        // If the stage data is a string (direct ID reference)
+        else if (typeof stageData === "string") {
+          editId = stageData
+        }
+        // If we couldn't extract an ID, use the mass production ID
+        else {
+          editId = id
+        }
+      } else {
         editId = id
       }
-    } else {
-      editId = id
-    }
 
-    // Navigate to the edit page with the ID and a query parameter for the mass production ID
-    navigate(`/${path}/edit/${editId}?massProductionId=${id}`)
-  }
+      // Navigate to the edit page with the ID and a query parameter for the mass production ID
+      navigate(`/${path}/edit/${editId}?massProductionId=${id}`)
+    },
+    [id, navigate],
+  )
 
   // Fetch main data on component mount
   useEffect(() => {
     fetchMassProduction()
+    fetchProductDesignations()
   }, [id])
 
   // Calculate completion percentage when data changes
@@ -182,9 +202,7 @@ const MassProductionDashboard = () => {
 
     try {
       setLoading(true)
-      console.log("Fetching mass production with ID:", id)
       const response = await getMassProductionById(id)
-      console.log("Fetched mass production data:", response)
 
       if (!response) {
         throw new Error("Failed to fetch mass production data")
@@ -202,6 +220,15 @@ const MassProductionDashboard = () => {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchProductDesignations = async () => {
+    try {
+      const data = await getAllpd()
+      setProductDesignations(data || [])
+    } catch (error) {
+      console.error("Failed to fetch product designations:", error)
     }
   }
 
@@ -298,10 +325,7 @@ const MassProductionDashboard = () => {
 
     try {
       const id = typeof feasibilityId === "object" ? feasibilityId._id : feasibilityId
-      console.log("Fetching feasibility with ID:", id)
       const response = await getFeasibilityById(id)
-      console.log("Fetched feasibility data:", response)
-
       const data = response.data || response
       setSectionData((prev) => ({ ...prev, feasibility: data }))
     } catch (error) {
@@ -318,18 +342,8 @@ const MassProductionDashboard = () => {
           ? massProduction.validation_for_offer._id
           : massProduction.validation_for_offer
 
-      console.log("Fetching validation for offer with ID:", id)
       const response = await getValidationForOfferById(id)
-      console.log("Fetched validation for offer data:", response)
-
-      // Handle different response structures
-      let data
-      if (response && response.data) {
-        data = response.data
-      } else {
-        data = response
-      }
-
+      const data = response.data || response
       setSectionData((prev) => ({ ...prev, validation: data }))
     } catch (error) {
       console.error("Failed to fetch validation data:", error)
@@ -343,18 +357,8 @@ const MassProductionDashboard = () => {
       const id =
         typeof massProduction.ok_for_lunch === "object" ? massProduction.ok_for_lunch._id : massProduction.ok_for_lunch
 
-      console.log("Fetching OK for launch with ID:", id)
       const response = await getOkForLunchById(id)
-      console.log("Fetched OK for launch data:", response)
-
-      // Handle different response structures
-      let data
-      if (response && response.data) {
-        data = response.data
-      } else {
-        data = response
-      }
-
+      const data = response.data || response
       setSectionData((prev) => ({ ...prev, okForLaunch: data }))
     } catch (error) {
       console.error("Failed to fetch OK for launch data:", error)
@@ -366,11 +370,7 @@ const MassProductionDashboard = () => {
 
     try {
       const id = typeof massProduction.kick_off === "object" ? massProduction.kick_off._id : massProduction.kick_off
-
-      console.log("Fetching kick-off with ID:", id)
       const response = await getKickOffById(id)
-      console.log("Fetched kick-off data:", response)
-
       const data = response.data || response
       setSectionData((prev) => ({ ...prev, kickOff: data }))
     } catch (error) {
@@ -383,11 +383,7 @@ const MassProductionDashboard = () => {
 
     try {
       const id = typeof massProduction.design === "object" ? massProduction.design._id : massProduction.design
-
-      console.log("Fetching design with ID:", id)
       const response = await getDesignById(id)
-      console.log("Fetched design data:", response)
-
       const data = response.data || response
       setSectionData((prev) => ({ ...prev, design: data }))
     } catch (error) {
@@ -401,11 +397,7 @@ const MassProductionDashboard = () => {
     try {
       const id =
         typeof massProduction.facilities === "object" ? massProduction.facilities._id : massProduction.facilities
-
-      console.log("Fetching facilities with ID:", id)
       const response = await getfacilitiesById(id)
-      console.log("Fetched facilities data:", response)
-
       const data = response.data || response
       setSectionData((prev) => ({ ...prev, facilities: data }))
     } catch (error) {
@@ -419,11 +411,7 @@ const MassProductionDashboard = () => {
     try {
       const id =
         typeof massProduction.p_p_tuning === "object" ? massProduction.p_p_tuning._id : massProduction.p_p_tuning
-
-      console.log("Fetching P/P tuning with ID:", id)
       const response = await getP_P_TuningById(id)
-      console.log("Fetched P/P tuning data:", response)
-
       const data = response.data || response
       setSectionData((prev) => ({ ...prev, ppTuning: data }))
     } catch (error) {
@@ -439,11 +427,7 @@ const MassProductionDashboard = () => {
         typeof massProduction.process_qualif === "object"
           ? massProduction.process_qualif._id
           : massProduction.process_qualif
-
-      console.log("Fetching process qualification with ID:", id)
       const response = await getProcessQualificationById(id)
-      console.log("Fetched process qualification data:", response)
-
       const data = response.data || response
       setSectionData((prev) => ({ ...prev, processQualif: data }))
     } catch (error) {
@@ -459,11 +443,7 @@ const MassProductionDashboard = () => {
         typeof massProduction.qualification_confirmation === "object"
           ? massProduction.qualification_confirmation._id
           : massProduction.qualification_confirmation
-
-      console.log("Fetching qualification confirmation with ID:", id)
       const response = await getQualificationConfirmationById(id)
-      console.log("Fetched qualification confirmation data:", response)
-
       const data = response.data || response
       setSectionData((prev) => ({ ...prev, qualifConfirm: data }))
     } catch (error) {
@@ -624,6 +604,11 @@ const MassProductionDashboard = () => {
     }
   }
 
+  // Get product designation details
+  const getProductDesignationDetails = (designationId) => {
+    return productDesignations.find((pd) => pd._id === designationId || pd.id === designationId)
+  }
+
   // Render loading skeleton
   if (loading) {
     return (
@@ -688,23 +673,6 @@ const MassProductionDashboard = () => {
   }
 
   const statusBadge = getStatusBadge(massProduction.status)
-
-  const Milestone = () => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="lucide lucide-milestone"
-    >
-      <path d="M12 5v14M5 12H3m16 0h-2M5.7 5.7l-1.4-1.4M18.3 5.7l1.4-1.4M5.7 18.3l-1.4 1.4M18.3 18.3l1.4 1.4" />
-    </svg>
-  )
 
   // Define stage data for the dashboard
   const stages = [
@@ -777,6 +745,19 @@ const MassProductionDashboard = () => {
     <MainLayout>
       <div className="min-h-screen bg-background">
         <div className="container px-4 py-8 mx-auto">
+          {/* Breadcrumb navigation */}
+          <Breadcrumb className="mb-4">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/masspd">Mass Production</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{massProduction.project_n}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+
           {/* Header with actions */}
           <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center">
@@ -819,17 +800,21 @@ const MassProductionDashboard = () => {
             </div>
           </div>
 
-          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6"
+            transition={{ staggerChildren: 0.05 }}
+          >
             {/* Project Overview Card */}
-            <motion.div variants={itemVariants}>
-              <Card className="overflow-hidden border-2 shadow-md">
-                <CardHeader className="pb-4 bg-slate-50">
+            <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
+              <Card className="overflow-hidden border shadow-sm">
+                <CardHeader className="pb-4 bg-muted/30">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <CardTitle className="text-xl font-semibold text-slate-800">
-                          {massProduction.project_n}
-                        </CardTitle>
+                        <CardTitle className="text-xl font-semibold">{massProduction.project_n}</CardTitle>
                         <Badge variant={statusBadge.variant} className="flex items-center">
                           {statusBadge.icon}
                           {massProduction.status}
@@ -846,13 +831,13 @@ const MassProductionDashboard = () => {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-6 bg-white">
+                <CardContent className="p-6">
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     {/* Customer Info */}
                     <div className="space-y-4">
                       <div>
                         <h3 className="mb-2 text-sm font-medium text-muted-foreground">Customer</h3>
-                        <div className="flex items-center p-3 border rounded-md bg-slate-50 border-slate-200">
+                        <div className="flex items-center p-3 border rounded-md bg-muted/30">
                           <Avatar className="w-10 h-10 mr-3">
                             <AvatarImage src="/placeholder-user.jpg" alt="Customer" />
                             <AvatarFallback>{massProduction.customer?.username?.charAt(0) || "C"}</AvatarFallback>
@@ -873,17 +858,17 @@ const MassProductionDashboard = () => {
                     <div className="space-y-4">
                       <h3 className="mb-2 text-sm font-medium text-muted-foreground">Basic Information</h3>
                       <div className="grid grid-cols-1 gap-3">
-                        <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
+                        <div className="p-3 border rounded-md bg-muted/30">
                           <p className="text-xs text-muted-foreground">Initial Request</p>
                           <p className="font-medium">{formatDate(massProduction.initial_request)}</p>
                         </div>
-                        <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
+                        <div className="p-3 border rounded-md bg-muted/30">
                           <p className="text-xs text-muted-foreground">Closure Date</p>
                           <p className="font-medium">
                             {massProduction.closure ? formatDate(massProduction.closure) : "N/A"}
                           </p>
                         </div>
-                        <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
+                        <div className="p-3 border rounded-md bg-muted/30">
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Customer Offer:</span>
                             <span className="font-medium">
@@ -891,7 +876,7 @@ const MassProductionDashboard = () => {
                             </span>
                           </div>
                         </div>
-                        <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
+                        <div className="p-3 border rounded-md bg-muted/30">
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Customer Order:</span>
                             <span className="font-medium">
@@ -906,35 +891,51 @@ const MassProductionDashboard = () => {
                     <div>
                       <h3 className="mb-2 text-sm font-medium text-muted-foreground">Product Designations</h3>
                       {massProduction.product_designation && massProduction.product_designation.length > 0 ? (
-                        <div className="h-full p-3 border rounded-md bg-slate-50 border-slate-200">
+                        <div className="h-full p-3 border rounded-md bg-muted/30">
                           <div className="flex flex-wrap gap-2">
-                            {massProduction.product_designation.map((product) => (
-                              <TooltipProvider key={product._id || product}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Badge variant="outline" className="px-3 py-1 cursor-help">
-                                      {product.part_name || (typeof product === "string" ? product : "Unknown")}
-                                    </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Reference: {product.reference || "N/A"}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            ))}
+                            {massProduction.product_designation.map((product) => {
+                              const productId = typeof product === "object" ? product._id : product
+                              const productDetail = getProductDesignationDetails(productId)
+
+                              return (
+                                <TooltipProvider key={productId}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge
+                                        variant="outline"
+                                        className="flex items-center gap-1 px-3 py-1 cursor-help"
+                                      >
+                                        <Tag className="w-3 h-3" />
+                                        {productDetail
+                                          ? productDetail.part_name
+                                          : typeof product === "object"
+                                            ? product.part_name
+                                            : "Unknown"}
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Reference: {productDetail ? productDetail.reference : "N/A"}</p>
+                                      {productDetail && productDetail.description && (
+                                        <p className="mt-1 text-xs">{productDetail.description}</p>
+                                      )}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )
+                            })}
                           </div>
 
                           {massProduction.description && (
                             <div className="mt-4">
                               <h4 className="mb-1 text-xs font-medium text-muted-foreground">Description</h4>
-                              <p className="p-2 text-sm bg-white border rounded-md border-slate-100">
+                              <p className="p-2 text-sm bg-white border rounded-md border-muted/50">
                                 {massProduction.description}
                               </p>
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center h-full p-4 border rounded-md bg-slate-50 border-slate-200">
+                        <div className="flex items-center justify-center h-full p-4 border rounded-md bg-muted/30">
                           <p className="text-center text-muted-foreground">No product designations available</p>
                         </div>
                       )}
@@ -945,11 +946,11 @@ const MassProductionDashboard = () => {
             </motion.div>
 
             {/* Process Stages Dashboard */}
-            <motion.div variants={itemVariants}>
-              <Card className="border-2 shadow-md">
-                <CardHeader className="bg-slate-50">
+            <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
+              <Card className="border shadow-sm">
+                <CardHeader className="bg-muted/30">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center text-xl text-slate-800">
+                    <CardTitle className="flex items-center text-xl">
                       <LayoutDashboard className="w-5 h-5 mr-2 text-primary" />
                       Process Stages
                     </CardTitle>
@@ -983,12 +984,17 @@ const MassProductionDashboard = () => {
                   </div>
                   <CardDescription>Track the status of each process stage and add missing information</CardDescription>
                 </CardHeader>
-                <CardContent className="p-6 bg-white">
+                <CardContent className="p-6">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     {stages.map((stage) => {
                       const status = getStageStatus(stage.data)
                       return (
-                        <motion.div key={stage.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <motion.div
+                          key={stage.id}
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          transition={{ type: "tween", duration: 0.1 }}
+                        >
                           <Card
                             className={`border-l-4 ${
                               status.status === "completed"
@@ -996,7 +1002,7 @@ const MassProductionDashboard = () => {
                                 : status.status === "inProgress"
                                   ? "border-l-amber-500"
                                   : "border-l-slate-300"
-                            } hover:shadow-md transition-all cursor-pointer`}
+                            } hover:shadow-sm transition-all cursor-pointer`}
                             onClick={() => {
                               if (status.status === "missing") {
                                 navigate(`/${stage.path}/create?massProductionId=${id}`)
@@ -1051,25 +1057,25 @@ const MassProductionDashboard = () => {
             </motion.div>
 
             {/* Timeline Card */}
-            <motion.div variants={itemVariants}>
-              <Card className="border-2 shadow-md">
-                <CardHeader className="bg-slate-50">
-                  <CardTitle className="flex items-center text-xl text-slate-800">
-                    <Calendar className="w-5 h-5 mr-2 text-primary" />
+            <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
+              <Card className="border shadow-sm">
+                <CardHeader className="bg-muted/30">
+                  <CardTitle className="flex items-center text-xl">
+                    <CalendarDays className="w-5 h-5 mr-2 text-primary" />
                     Project Timeline
                   </CardTitle>
                   <CardDescription>Key milestones and dates for this mass production</CardDescription>
                 </CardHeader>
-                <CardContent className="p-6 bg-white">
+                <CardContent className="p-6">
                   <div className="relative">
                     {/* Timeline line */}
-                    <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-slate-200 ml-6"></div>
+                    <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-muted ml-6"></div>
 
                     <div className="relative space-y-8">
                       {/* Initial Request */}
                       <div className="flex">
-                        <div className="z-10 flex items-center justify-center flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full">
-                          <Calendar className="w-6 h-6 text-blue-600" />
+                        <div className="z-10 flex items-center justify-center flex-shrink-0 w-12 h-12 rounded-full bg-primary/10">
+                          <Calendar className="w-6 h-6 text-primary" />
                         </div>
                         <div className="ml-4">
                           <h3 className="font-medium">Initial Request</h3>
@@ -1086,7 +1092,7 @@ const MassProductionDashboard = () => {
                       {massProduction.mlo && (
                         <div className="flex">
                           <div className="z-10 flex items-center justify-center flex-shrink-0 w-12 h-12 bg-indigo-100 rounded-full">
-                            <Milestone className="w-6 h-6 text-indigo-600" />
+                            <CalendarDays className="w-6 h-6 text-indigo-600" />
                           </div>
                           <div className="ml-4">
                             <h3 className="font-medium">MLO</h3>
@@ -1105,7 +1111,7 @@ const MassProductionDashboard = () => {
                       {massProduction.tko && (
                         <div className="flex">
                           <div className="z-10 flex items-center justify-center flex-shrink-0 w-12 h-12 bg-purple-100 rounded-full">
-                            <Milestone className="w-6 h-6 text-purple-600" />
+                            <CalendarDays className="w-6 h-6 text-purple-600" />
                           </div>
                           <div className="ml-4">
                             <h3 className="font-medium">TKO</h3>
@@ -1163,8 +1169,8 @@ const MassProductionDashboard = () => {
             </motion.div>
 
             {/* Missing Information Card */}
-            <motion.div variants={itemVariants}>
-              <Card className="border-2 shadow-md border-amber-200">
+            <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
+              <Card className="border shadow-sm border-amber-200">
                 <CardHeader className="bg-amber-50">
                   <CardTitle className="flex items-center text-xl text-amber-800">
                     <AlertTriangle className="w-5 h-5 mr-2 text-amber-500" />
@@ -1174,7 +1180,7 @@ const MassProductionDashboard = () => {
                     The following information is missing or incomplete
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-6 bg-white">
+                <CardContent className="p-6">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     {stages
                       .filter((stage) => getStageStatus(stage.data).status === "missing")
@@ -1224,14 +1230,14 @@ const MassProductionDashboard = () => {
               <motion.div
                 variants={itemVariants}
                 id="section-details"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.2 }}
               >
-                <Card className="border-2 shadow-md">
-                  <CardHeader className="bg-slate-50">
+                <Card className="border shadow-sm">
+                  <CardHeader className="bg-muted/30">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center text-xl text-slate-800">
+                      <CardTitle className="flex items-center text-xl">
                         {stages.find((s) => s.id === activeTab)?.icon}
                         <span className="ml-2">{stages.find((s) => s.id === activeTab)?.name} Details</span>
                       </CardTitle>
@@ -1250,11 +1256,11 @@ const MassProductionDashboard = () => {
                     </div>
                     <CardDescription>Detailed information about this process stage</CardDescription>
                   </CardHeader>
-                  <CardContent className="p-6 bg-white">
+                  <CardContent className="p-6">
                     {sectionLoading[activeTab] ? (
                       <div className="flex flex-col items-center justify-center p-12">
-                        <div className="w-10 h-10 border-4 rounded-full border-slate-200 border-t-primary animate-spin"></div>
-                        <p className="mt-4 font-medium text-slate-600">Loading data...</p>
+                        <div className="w-10 h-10 border-4 rounded-full border-muted border-t-primary animate-spin"></div>
+                        <p className="mt-4 font-medium text-muted-foreground">Loading data...</p>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -1325,4 +1331,4 @@ const MassProductionDashboard = () => {
   )
 }
 
-export default MassProductionDashboard
+export default MassProductionDetails

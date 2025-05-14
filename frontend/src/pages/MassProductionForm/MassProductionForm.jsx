@@ -9,7 +9,7 @@ import { createFeasibility } from "../../apis/feasabilityApi"
 import { createQualificationProcess } from "../../apis/process_qualifApi"
 import { createQualificationConfirmation } from "../../apis/qualificationconfirmationapi"
 import { getAllCustomers } from "../../apis/customerApi"
-import { getAllpd } from "../../apis/ProductDesignation-api"
+import { getAllpd, createPD } from "../../apis/ProductDesignation-api"
 import { createMassProduction } from "../../apis/massProductionApi"
 import { createP_P_Tuning } from "../../apis/p-p-tuning-api"
 import { createOkForLunch } from "../../apis/okForLunch"
@@ -22,14 +22,26 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, ArrowLeft, Upload, CalendarIcon } from "lucide-react"
+import { Loader2, ArrowLeft, Upload, CalendarIcon, Plus, X, RefreshCw } from "lucide-react"
 import MainLayout from "@/components/MainLayout"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 // Define role fields for checkin
 const roleFields = [
@@ -168,6 +180,15 @@ const MassPdCreate = () => {
   const [customers, setCustomers] = useState([])
   const [productDesignations, setProductDesignations] = useState([])
   const [selectedProductDesignations, setSelectedProductDesignations] = useState([])
+  const [newProductDesignations, setNewProductDesignations] = useState([])
+  const [isCreatingPD, setIsCreatingPD] = useState(false)
+  const [refreshingPD, setRefreshingPD] = useState(false)
+
+  // New product designation form state
+  const [newPD, setNewPD] = useState({
+    part_name: "",
+    reference: "",
+  })
 
   // Initial form state with all required fields
   const [formData, setFormData] = useState({
@@ -289,7 +310,7 @@ const MassPdCreate = () => {
   const [validationForOfferCheckinData, setValidationForOfferCheckinData] = useState(
     roleFields.reduce((acc, field) => {
       acc[field.id] = {
-        value: false, // Changed from true to false so users can check manually
+        value: false,
         comment: "",
         date: new Date().toISOString(),
         name: "",
@@ -302,7 +323,7 @@ const MassPdCreate = () => {
   const [okForLunchCheckinData, setOkForLunchCheckinData] = useState(
     roleFields.reduce((acc, field) => {
       acc[field.id] = {
-        value: false, // Changed from true to false so users can check manually
+        value: false,
         comment: "",
         date: new Date().toISOString(),
         name: "",
@@ -315,7 +336,7 @@ const MassPdCreate = () => {
   const [feasibilityCheckinData, setFeasibilityCheckinData] = useState(
     roleFields.reduce((acc, field) => {
       acc[field.id] = {
-        value: false, // Changed from true to false so users can check manually
+        value: false,
         comment: "",
         date: new Date().toISOString(),
         name: "",
@@ -326,50 +347,77 @@ const MassPdCreate = () => {
 
   // Fetch customers and product designations on component mount
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [customersData, productDesignationsData] = await Promise.all([getAllCustomers(), getAllpd()])
+    fetchData()
+  }, [])
 
-        // Validate customers data
-        if (Array.isArray(customersData)) {
-          setCustomers(customersData)
-        } else {
-          console.error("Invalid customers data format:", customersData)
-          setCustomers([])
-        }
+  const fetchData = async () => {
+    try {
+      const [customersData, productDesignationsData] = await Promise.all([getAllCustomers(), getAllpd()])
 
-        // Validate product designations data
-        if (Array.isArray(productDesignationsData)) {
-          // Filter out any invalid product designations
-          const validProductDesignations = productDesignationsData.filter(
-            (pd) => pd && pd._id && typeof pd._id === "string" && pd.part_name,
-          )
-
-          if (validProductDesignations.length !== productDesignationsData.length) {
-            console.warn(
-              `Filtered out ${productDesignationsData.length - validProductDesignations.length} invalid product designations`,
-            )
-          }
-
-          setProductDesignations(validProductDesignations)
-        } else {
-          console.error("Invalid product designations data format:", productDesignationsData)
-          setProductDesignations([])
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load initial data. Please refresh the page.",
-          variant: "destructive",
-        })
+      // Validate customers data
+      if (Array.isArray(customersData)) {
+        setCustomers(customersData)
+      } else {
+        console.error("Invalid customers data format:", customersData)
         setCustomers([])
+      }
+
+      // Validate product designations data
+      if (Array.isArray(productDesignationsData)) {
+        // Normalize product designations data
+        const normalizedDesignations = productDesignationsData.map((pd) => ({
+          _id: pd.id, // Use id from API response as _id
+          part_name: pd.part_name,
+          reference: pd.reference || "",
+        }))
+
+        setProductDesignations(normalizedDesignations)
+      } else {
+        console.error("Invalid product designations data format:", productDesignationsData)
         setProductDesignations([])
       }
+    } catch (error) {
+      console.error("Error fetching data:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load initial data. Please refresh the page.",
+        variant: "destructive",
+      })
+      setCustomers([])
+      setProductDesignations([])
     }
+  }
 
-    fetchData()
-  }, [toast])
+  const refreshProductDesignations = async () => {
+    setRefreshingPD(true)
+    try {
+      const productDesignationsData = await getAllpd()
+
+      if (Array.isArray(productDesignationsData)) {
+        // Normalize product designations data
+        const normalizedDesignations = productDesignationsData.map((pd) => ({
+          _id: pd.id, // Use id from API response as _id
+          part_name: pd.part_name,
+          reference: pd.reference || "",
+        }))
+
+        setProductDesignations(normalizedDesignations)
+        toast({
+          title: "Success",
+          description: "Product designations refreshed successfully",
+        })
+      }
+    } catch (error) {
+      console.error("Error refreshing product designations:", error)
+      toast({
+        title: "Error",
+        description: "Failed to refresh product designations",
+        variant: "destructive",
+      })
+    } finally {
+      setRefreshingPD(false)
+    }
+  }
 
   // Handle input changes for main form
   const handleInputChange = (e) => {
@@ -497,6 +545,86 @@ const MassPdCreate = () => {
     }))
   }
 
+  // Handle new product designation input changes
+  const handleNewPDChange = (e) => {
+    const { name, value } = e.target
+    setNewPD((prev) => ({ ...prev, [name]: value }))
+  }
+
+  // Create a new product designation
+  const createNewProductDesignation = async () => {
+    if (!newPD.part_name) {
+      toast({
+        title: "Error",
+        description: "Part name is required",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsCreatingPD(true)
+    try {
+      // Only send the required fields to avoid id conflicts
+      const response = await createPD({
+        part_name: newPD.part_name,
+        reference: newPD.reference || "",
+      })
+
+      if (response && response.data) {
+        // Extract the ID from the response
+        const newId = response.data.id || (response.data.data && response.data.data.id)
+
+        if (!newId) {
+          throw new Error("Failed to get ID from server response")
+        }
+
+        // Create a new product designation object with the correct ID
+        const newProductDesignation = {
+          _id: newId,
+          part_name: newPD.part_name,
+          reference: newPD.reference || "",
+          isNew: true,
+        }
+
+        // Add to new product designations list
+        setNewProductDesignations((prev) => [...prev, newProductDesignation])
+
+        // Automatically select the new product designation
+        setSelectedProductDesignations((prev) => [...prev, newId])
+
+        // Reset the form
+        setNewPD({
+          part_name: "",
+          reference: "",
+        })
+
+        toast({
+          title: "Success",
+          description: "Product designation created successfully",
+        })
+      } else {
+        throw new Error("Invalid response from server")
+      }
+    } catch (error) {
+      console.error("Error creating product designation:", error)
+      // Improved error message with more details
+      const errorMessage = error.response?.data?.error || error.message || "Failed to create product designation"
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setIsCreatingPD(false)
+    }
+  }
+
+  // Remove a newly created product designation
+  const removeNewProductDesignation = (id) => {
+    setNewProductDesignations((prev) => prev.filter((pd) => pd._id !== id))
+    setSelectedProductDesignations((prev) => prev.filter((pdId) => pdId !== id))
+  }
+
   // Add this effect to handle automatic closure date setting
   useEffect(() => {
     if (formData.status === "closed" || formData.status === "cancelled") {
@@ -524,21 +652,6 @@ const MassPdCreate = () => {
         return
       }
 
-      // Verify that all selected product designations exist in the productDesignations array
-      const validProductDesignationIds = productDesignations.map((pd) => pd._id)
-      const invalidSelections = selectedProductDesignations.filter((id) => !validProductDesignationIds.includes(id))
-
-      if (invalidSelections.length > 0) {
-        console.error("Invalid product designations detected:", invalidSelections)
-        toast({
-          title: "Error",
-          description: `${invalidSelections.length} invalid product designation(s) detected. Please refresh and try again.`,
-          variant: "destructive",
-        })
-        setLoading(false)
-        return
-      }
-
       // Update product designations in form data
       const updatedFormData = {
         ...formData,
@@ -552,9 +665,6 @@ const MassPdCreate = () => {
       })
 
       console.log("✅ Feasibility created successfully:", feasibilityResponse)
-
-      // Make sure we're properly logging the response to debug
-      console.log("Checkin data sent:", JSON.stringify(feasibilityCheckinData, null, 2))
 
       // Extract the feasibility ID correctly from the nested response structure
       let feasibilityId = null
@@ -696,16 +806,17 @@ const MassPdCreate = () => {
       const massProductionData = {
         ...updatedFormData,
         feasibility: feasibilityId,
-        kick_off: kickOffResponse.data._id,
-        design: designResponse.data._id,
-        facilities: facilitiesResponse.data._id,
-        p_p_tuning: ppTuningResponse.data._id,
-        process_qualif: processQualifResponse.data._id,
-        qualification_confirmation: qualificationConfirmationResponse.data._id,
-        ok_for_lunch: okForLunchResponse.data._id,
-        validation_for_offer: validationForOfferResponse.data._id,
+        kick_off: kickOffResponse.data._id || kickOffResponse.data.id,
+        design: designResponse.data._id || designResponse.data.id,
+        facilities: facilitiesResponse.data._id || facilitiesResponse.data.id,
+        p_p_tuning: ppTuningResponse.data._id || ppTuningResponse.data.id,
+        process_qualif: processQualifResponse.data._id || processQualifResponse.data.id,
+        qualification_confirmation:
+          qualificationConfirmationResponse.data._id || qualificationConfirmationResponse.data.id,
+        ok_for_lunch: okForLunchResponse.data._id || okForLunchResponse.data.id,
+        validation_for_offer: validationForOfferResponse.data._id || validationForOfferResponse.data.id,
         checkinRoles: roleFields.reduce((acc, role) => {
-          acc[role.id] = { value: false } // Changed from true to false so users can check manually
+          acc[role.id] = { value: false }
           return acc
         }, {}),
       }
@@ -720,7 +831,7 @@ const MassPdCreate = () => {
       })
 
       // Redirect to the mass production list page
-      navigate("/masspd/create")
+      navigate("/masspd")
     } catch (error) {
       console.error("Failed to create mass production record:", error)
       toast({
@@ -750,7 +861,7 @@ const MassPdCreate = () => {
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
                 <TabsTrigger value="details">Project Details</TabsTrigger>
                 <TabsTrigger value="dates">Key Dates</TabsTrigger>
-                <TabsTrigger value="stages">Process Stages</TabsTrigger>
+                <TabsTrigger value="product-designation">Product Designation</TabsTrigger>
               </TabsList>
 
               {/* Basic Information Tab */}
@@ -861,7 +972,7 @@ const MassPdCreate = () => {
                           </SelectTrigger>
                           <SelectContent>
                             {customers.map((customer) => (
-                              <SelectItem key={customer._id} value={customer._id}>
+                              <SelectItem key={customer._id || customer.id} value={customer._id || customer.id}>
                                 {customer.username}
                               </SelectItem>
                             ))}
@@ -884,54 +995,6 @@ const MassPdCreate = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-base">Product Designation</Label>
-                      <p className="mb-2 text-sm text-muted-foreground">
-                        Select the product designations for this mass production.
-                      </p>
-                      {productDesignations.length === 0 ? (
-                        <div className="p-4 border rounded-md bg-muted/20">
-                          <p className="text-sm text-muted-foreground">
-                            No product designations available. Please check the database.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                          {productDesignations.map((item) => (
-                            <div key={item._id} className="flex flex-row items-start p-3 space-x-3 border rounded-md">
-                              <Checkbox
-                                id={`pd-${item._id}`}
-                                checked={selectedProductDesignations.includes(item._id)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedProductDesignations((prev) => [...prev, item._id])
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      product_designation: [...prev.product_designation, item._id],
-                                    }))
-                                  } else {
-                                    setSelectedProductDesignations((prev) => prev.filter((id) => id !== item._id))
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      product_designation: prev.product_designation.filter((id) => id !== item._id),
-                                    }))
-                                  }
-                                }}
-                              />
-                              <Label htmlFor={`pd-${item._id}`} className="font-normal">
-                                {item.part_name}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {selectedProductDesignations.length > 0 && (
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          {selectedProductDesignations.length} product designation(s) selected
-                        </p>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1468,1024 +1531,256 @@ const MassPdCreate = () => {
                 </Card>
               </TabsContent>
 
-              {/* Process Stages Tab */}
-              <TabsContent value="stages">
+              {/* Product Designation Tab */}
+              <TabsContent value="product-designation">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Process Stages</CardTitle>
-                    <CardDescription>Configure all process stages for this mass production record.</CardDescription>
+                    <CardTitle>Product Designation</CardTitle>
+                    <CardDescription>
+                      Create and select product designations for this mass production record.
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <Tabs defaultValue="feasibility" className="w-full">
-                      <TabsList className="grid w-full grid-cols-7">
-                        <TabsTrigger value="feasibility">Feasibility</TabsTrigger>
-                        <TabsTrigger value="kickoff">Kick-Off</TabsTrigger>
-                        <TabsTrigger value="design">Design</TabsTrigger>
-                        <TabsTrigger value="facilities">Facilities</TabsTrigger>
-                        <TabsTrigger value="pptuning">P/P Tuning</TabsTrigger>
-                        <TabsTrigger value="processqualif">Process Qualif</TabsTrigger>
-                        <TabsTrigger value="qualifconfirm">Qualif Confirm</TabsTrigger>
-                      </TabsList>
+                  <CardContent className="space-y-6">
+                    {/* Create New Product Designation */}
+                    <div>
+                      <h3 className="mb-4 text-lg font-medium">Create New Product Designation</h3>
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label htmlFor="part_name">
+                                Part Name <span className="text-red-500">*</span>
+                              </Label>
+                              <Input
+                                id="part_name"
+                                name="part_name"
+                                value={newPD.part_name}
+                                onChange={handleNewPDChange}
+                                placeholder="Enter part name"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="reference">Reference (Optional)</Label>
+                              <Input
+                                id="reference"
+                                name="reference"
+                                value={newPD.reference}
+                                onChange={handleNewPDChange}
+                                placeholder="Enter reference"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end mt-4">
+                            <Button
+                              type="button"
+                              onClick={createNewProductDesignation}
+                              disabled={isCreatingPD || !newPD.part_name}
+                            >
+                              {isCreatingPD ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Creating...
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Create Product Designation
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
 
-                      {/* Feasibility Tab */}
-                      <TabsContent value="feasibility">
+                    {/* Newly Created Product Designations */}
+                    {newProductDesignations.length > 0 && (
+                      <div>
+                        <h3 className="mb-4 text-lg font-medium">Newly Created Product Designations</h3>
                         <Card>
-                          <CardHeader>
-                            <CardTitle>Feasibility</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <Accordion type="single" collapsible className="w-full">
-                              {feasibilityFields.map((field, index) => (
-                                <AccordionItem key={field} value={`item-${index}`}>
-                                  <AccordionTrigger className="text-lg font-semibold">
-                                    <div className="flex items-center space-x-2">
-                                      <Checkbox
-                                        id={field}
-                                        checked={feasibilityData[field].value}
-                                        onCheckedChange={(checked) =>
-                                          handleAccordionCheckboxChange(setFeasibilityData, field, checked)
+                          <CardContent className="pt-6">
+                            <div className="space-y-3">
+                              {newProductDesignations.map((pd) => (
+                                <div
+                                  key={`new-${pd._id}`}
+                                  className="flex items-center justify-between p-3 border rounded-md"
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    <Checkbox
+                                      id={`new-pd-${pd._id}`}
+                                      checked={selectedProductDesignations.includes(pd._id)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setSelectedProductDesignations((prev) => [...prev, pd._id])
+                                        } else {
+                                          setSelectedProductDesignations((prev) => prev.filter((id) => id !== pd._id))
                                         }
-                                      />
-                                      <Label htmlFor={field} className="text-left">
-                                        {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                      }}
+                                    />
+                                    <div>
+                                      <Label htmlFor={`new-pd-${pd._id}`} className="font-medium">
+                                        {pd.part_name}
                                       </Label>
+                                      {pd.reference && (
+                                        <p className="text-sm text-muted-foreground">Ref: {pd.reference}</p>
+                                      )}
                                     </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent>
-                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-description`}>Description</Label>
-                                        <Textarea
-                                          id={`${field}-description`}
-                                          value={feasibilityData[field].details.description}
-                                          onChange={(e) => handleDetailsChange(field, "description", e.target.value)}
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-cost`}>Cost</Label>
-                                        <Input
-                                          id={`${field}-cost`}
-                                          type="number"
-                                          value={feasibilityData[field].details.cost}
-                                          onChange={(e) => handleDetailsChange(field, "cost", e.target.value)}
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-sales-price`}>Sales Price</Label>
-                                        <Input
-                                          id={`${field}-sales-price`}
-                                          type="number"
-                                          value={feasibilityData[field].details.sales_price}
-                                          onChange={(e) => handleDetailsChange(field, "sales_price", e.target.value)}
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
-                                        <Textarea
-                                          id={`${field}-comments`}
-                                          value={feasibilityData[field].details.comments}
-                                          onChange={(e) => handleDetailsChange(field, "comments", e.target.value)}
-                                        />
-                                      </div>
-                                    </div>
-                                  </AccordionContent>
-                                </AccordionItem>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Badge variant="outline" className="bg-green-50">
+                                      New
+                                    </Badge>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="text-destructive">
+                                          <X className="w-4 h-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Remove Product Designation</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Are you sure you want to remove this newly created product designation?
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => removeNewProductDesignation(pd._id)}>
+                                            Remove
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                </div>
                               ))}
-                            </Accordion>
+                            </div>
                           </CardContent>
                         </Card>
-                      </TabsContent>
+                      </div>
+                    )}
 
-                      {/* Kick-Off Tab */}
-                      <TabsContent value="kickoff">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle>Kick-Off</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <Accordion type="single" collapsible className="w-full">
-                              {kickOffFields.map((field, index) => (
-                                <AccordionItem key={field} value={`item-${index}`}>
-                                  <AccordionTrigger className="text-lg font-semibold">
-                                    <div className="flex items-center space-x-2">
+                    {/* Existing Product Designations */}
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-medium">Existing Product Designations</h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={refreshProductDesignations}
+                          disabled={refreshingPD}
+                        >
+                          {refreshingPD ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                          )}
+                          Refresh
+                        </Button>
+                      </div>
+                      <Card>
+                        <CardContent className="pt-6">
+                          {productDesignations.length === 0 ? (
+                            <div className="p-4 text-center border rounded-md bg-muted/20">
+                              <p className="text-sm text-muted-foreground">
+                                No existing product designations available. Create new ones above.
+                              </p>
+                            </div>
+                          ) : (
+                            <ScrollArea className="h-[300px] pr-4">
+                              <div className="space-y-3">
+                                {productDesignations.map((item) => (
+                                  <div
+                                    key={item._id}
+                                    className="flex items-center justify-between p-3 border rounded-md"
+                                  >
+                                    <div className="flex items-center space-x-3">
                                       <Checkbox
-                                        id={field}
-                                        checked={kickOffData[field].value}
-                                        onCheckedChange={(checked) =>
-                                          handleAccordionCheckboxChange(setKickOffData, field, checked)
-                                        }
-                                      />
-                                      <Label htmlFor={field} className="text-left">
-                                        {field.replace(/([A-Z])/g, " $1").trim()}
-                                      </Label>
-                                    </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent>
-                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-responsible`}>Responsible</Label>
-                                        <Input
-                                          id={`${field}-responsible`}
-                                          type="text"
-                                          value={kickOffData[field].task.responsible}
-                                          onChange={(e) =>
-                                            handleTaskChange(setKickOffData, field, "responsible", e.target.value)
-                                          }
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-planned`}>Planned Date</Label>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              id={`${field}-planned`}
-                                              variant="outline"
-                                              className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !kickOffData[field].task.planned && "text-muted-foreground",
-                                              )}
-                                            >
-                                              <CalendarIcon className="w-4 h-4 mr-2" />
-                                              {kickOffData[field].task.planned
-                                                ? format(new Date(kickOffData[field].task.planned), "PPP")
-                                                : "Pick a date"}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                              mode="single"
-                                              selected={
-                                                kickOffData[field].task.planned
-                                                  ? new Date(kickOffData[field].task.planned)
-                                                  : undefined
-                                              }
-                                              onSelect={(date) => {
-                                                if (date) {
-                                                  const formattedDate = date.toISOString().split("T")[0]
-                                                  handleTaskChange(setKickOffData, field, "planned", formattedDate)
-                                                }
-                                              }}
-                                              initialFocus
-                                            />
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              id={`${field}-done`}
-                                              variant="outline"
-                                              className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !kickOffData[field].task.done && "text-muted-foreground",
-                                              )}
-                                            >
-                                              <CalendarIcon className="w-4 h-4 mr-2" />
-                                              {kickOffData[field].task.done
-                                                ? format(new Date(kickOffData[field].task.done), "PPP")
-                                                : "Pick a date"}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                              mode="single"
-                                              selected={
-                                                kickOffData[field].task.done
-                                                  ? new Date(kickOffData[field].task.done)
-                                                  : undefined
-                                              }
-                                              onSelect={(date) => {
-                                                if (date) {
-                                                  const formattedDate = date.toISOString().split("T")[0]
-                                                  handleTaskChange(setKickOffData, field, "done", formattedDate)
-                                                }
-                                              }}
-                                              initialFocus
-                                            />
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                      <div className="space-y-2 md:col-span-2">
-                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
-                                        <Textarea
-                                          id={`${field}-comments`}
-                                          value={kickOffData[field].task.comments}
-                                          onChange={(e) =>
-                                            handleTaskChange(setKickOffData, field, "comments", e.target.value)
-                                          }
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
-                                        <Input
-                                          id={`${field}-file`}
-                                          type="file"
-                                          onChange={(e) => handleKickOffFileChange(field, e.target.files[0])}
-                                        />
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`${field}-check`}
-                                          checked={kickOffData[field].task.check}
-                                          onCheckedChange={(checked) =>
-                                            handleTaskChange(setKickOffData, field, "check", checked)
-                                          }
-                                        />
-                                        <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
-                                      </div>
-                                    </div>
-                                  </AccordionContent>
-                                </AccordionItem>
-                              ))}
-                            </Accordion>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-
-                      {/* Design Tab */}
-                      <TabsContent value="design">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle>Design</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <Accordion type="single" collapsible className="w-full">
-                              {designFields.map((field, index) => (
-                                <AccordionItem key={field} value={`item-${index}`}>
-                                  <AccordionTrigger className="text-lg font-semibold">
-                                    <div className="flex items-center space-x-2">
-                                      <Checkbox
-                                        id={field}
-                                        checked={designData[field].value}
-                                        onCheckedChange={(checked) =>
-                                          handleAccordionCheckboxChange(setDesignData, field, checked)
-                                        }
-                                      />
-                                      <Label htmlFor={field} className="text-left">
-                                        {field
-                                          .replace(/_/g, " ")
-                                          .replace(/([A-Z])/g, " $1")
-                                          .trim()}
-                                      </Label>
-                                    </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent>
-                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-responsible`}>Responsible</Label>
-                                        <Input
-                                          id={`${field}-responsible`}
-                                          type="text"
-                                          value={designData[field].task.responsible}
-                                          onChange={(e) =>
-                                            handleTaskChange(setDesignData, field, "responsible", e.target.value)
-                                          }
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-planned`}>Planned Date</Label>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              id={`${field}-planned`}
-                                              variant="outline"
-                                              className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !designData[field].task.planned && "text-muted-foreground",
-                                              )}
-                                            >
-                                              <CalendarIcon className="w-4 h-4 mr-2" />
-                                              {designData[field].task.planned
-                                                ? format(new Date(designData[field].task.planned), "PPP")
-                                                : "Pick a date"}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                              mode="single"
-                                              selected={
-                                                designData[field].task.planned
-                                                  ? new Date(designData[field].task.planned)
-                                                  : undefined
-                                              }
-                                              onSelect={(date) => {
-                                                if (date) {
-                                                  const formattedDate = date.toISOString().split("T")[0]
-                                                  handleTaskChange(setDesignData, field, "planned", formattedDate)
-                                                }
-                                              }}
-                                              initialFocus
-                                            />
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              id={`${field}-done`}
-                                              variant="outline"
-                                              className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !designData[field].task.done && "text-muted-foreground",
-                                              )}
-                                            >
-                                              <CalendarIcon className="w-4 h-4 mr-2" />
-                                              {designData[field].task.done
-                                                ? format(new Date(designData[field].task.done), "PPP")
-                                                : "Pick a date"}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                              mode="single"
-                                              selected={
-                                                designData[field].task.done
-                                                  ? new Date(designData[field].task.done)
-                                                  : undefined
-                                              }
-                                              onSelect={(date) => {
-                                                if (date) {
-                                                  const formattedDate = date.toISOString().split("T")[0]
-                                                  handleTaskChange(setDesignData, field, "done", formattedDate)
-                                                }
-                                              }}
-                                              initialFocus
-                                            />
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                      <div className="space-y-2 md:col-span-2">
-                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
-                                        <Textarea
-                                          id={`${field}-comments`}
-                                          value={designData[field].task.comments}
-                                          onChange={(e) =>
-                                            handleTaskChange(setDesignData, field, "comments", e.target.value)
-                                          }
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
-                                        <Input
-                                          id={`${field}-file`}
-                                          type="file"
-                                          onChange={(e) => handleDesignFileChange(field, e.target.files[0])}
-                                        />
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`${field}-check`}
-                                          checked={designData[field].task.check}
-                                          onCheckedChange={(checked) =>
-                                            handleTaskChange(setDesignData, field, "check", checked)
-                                          }
-                                        />
-                                        <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
-                                      </div>
-                                    </div>
-                                  </AccordionContent>
-                                </AccordionItem>
-                              ))}
-                            </Accordion>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-
-                      {/* Facilities Tab */}
-                      <TabsContent value="facilities">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle>Facilities</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <Accordion type="single" collapsible className="w-full">
-                              {facilitiesFields.map((field, index) => (
-                                <AccordionItem key={field} value={`item-${index}`}>
-                                  <AccordionTrigger className="text-lg font-semibold">
-                                    <div className="flex items-center space-x-2">
-                                      <Checkbox
-                                        id={field}
-                                        checked={facilitiesData[field].value}
-                                        onCheckedChange={(checked) =>
-                                          handleAccordionCheckboxChange(setFacilitiesData, field, checked)
-                                        }
-                                      />
-                                      <Label htmlFor={field} className="text-left">
-                                        {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                                      </Label>
-                                    </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent>
-                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-responsible`}>Responsible</Label>
-                                        <Input
-                                          id={`${field}-responsible`}
-                                          type="text"
-                                          value={facilitiesData[field].task.responsible}
-                                          onChange={(e) =>
-                                            handleTaskChange(setFacilitiesData, field, "responsible", e.target.value)
-                                          }
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-planned`}>Planned Date</Label>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              id={`${field}-planned`}
-                                              variant="outline"
-                                              className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !facilitiesData[field].task.planned && "text-muted-foreground",
-                                              )}
-                                            >
-                                              <CalendarIcon className="w-4 h-4 mr-2" />
-                                              {facilitiesData[field].task.planned
-                                                ? format(new Date(facilitiesData[field].task.planned), "PPP")
-                                                : "Pick a date"}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                              mode="single"
-                                              selected={
-                                                facilitiesData[field].task.planned
-                                                  ? new Date(facilitiesData[field].task.planned)
-                                                  : undefined
-                                              }
-                                              onSelect={(date) => {
-                                                if (date) {
-                                                  const formattedDate = date.toISOString().split("T")[0]
-                                                  handleTaskChange(setFacilitiesData, field, "planned", formattedDate)
-                                                }
-                                              }}
-                                              initialFocus
-                                            />
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              id={`${field}-done`}
-                                              variant="outline"
-                                              className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !facilitiesData[field].task.done && "text-muted-foreground",
-                                              )}
-                                            >
-                                              <CalendarIcon className="w-4 h-4 mr-2" />
-                                              {facilitiesData[field].task.done
-                                                ? format(new Date(facilitiesData[field].task.done), "PPP")
-                                                : "Pick a date"}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                              mode="single"
-                                              selected={
-                                                facilitiesData[field].task.done
-                                                  ? new Date(facilitiesData[field].task.done)
-                                                  : undefined
-                                              }
-                                              onSelect={(date) => {
-                                                if (date) {
-                                                  const formattedDate = date.toISOString().split("T")[0]
-                                                  handleTaskChange(setFacilitiesData, field, "done", formattedDate)
-                                                }
-                                              }}
-                                              initialFocus
-                                            />
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                      <div className="space-y-2 md:col-span-2">
-                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
-                                        <Textarea
-                                          id={`${field}-comments`}
-                                          value={facilitiesData[field].task.comments}
-                                          onChange={(e) =>
-                                            handleTaskChange(setFacilitiesData, field, "comments", e.target.value)
-                                          }
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
-                                        <Input
-                                          id={`${field}-file`}
-                                          type="file"
-                                          onChange={(e) => handleFacilitiesFileChange(field, e.target.files[0])}
-                                        />
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`${field}-check`}
-                                          checked={facilitiesData[field].task.check}
-                                          onCheckedChange={(checked) =>
-                                            handleTaskChange(setFacilitiesData, field, "check", checked)
-                                          }
-                                        />
-                                        <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
-                                      </div>
-                                    </div>
-                                  </AccordionContent>
-                                </AccordionItem>
-                              ))}
-                            </Accordion>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-
-                      {/* P/P Tuning Tab */}
-                      <TabsContent value="pptuning">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle>Process/Product Tuning</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <Accordion type="single" collapsible className="w-full">
-                              {ppTuningFields.map((field, index) => (
-                                <AccordionItem key={field} value={`item-${index}`}>
-                                  <AccordionTrigger className="text-lg font-semibold">
-                                    <div className="flex items-center space-x-2">
-                                      <Checkbox
-                                        id={field}
-                                        checked={ppTuningData[field].value}
-                                        onCheckedChange={(checked) =>
-                                          handleAccordionCheckboxChange(setPPTuningData, field, checked)
-                                        }
-                                      />
-                                      <Label htmlFor={field} className="text-left">
-                                        {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                                      </Label>
-                                    </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent>
-                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-responsible`}>Responsible</Label>
-                                        <Input
-                                          id={`${field}-responsible`}
-                                          type="text"
-                                          value={ppTuningData[field].task.responsible}
-                                          onChange={(e) =>
-                                            handleTaskChange(setPPTuningData, field, "responsible", e.target.value)
-                                          }
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-planned`}>Planned Date</Label>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              id={`${field}-planned`}
-                                              variant="outline"
-                                              className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !ppTuningData[field].task.planned && "text-muted-foreground",
-                                              )}
-                                            >
-                                              <CalendarIcon className="w-4 h-4 mr-2" />
-                                              {ppTuningData[field].task.planned
-                                                ? format(new Date(ppTuningData[field].task.planned), "PPP")
-                                                : "Pick a date"}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                              mode="single"
-                                              selected={
-                                                ppTuningData[field].task.planned
-                                                  ? new Date(ppTuningData[field].task.planned)
-                                                  : undefined
-                                              }
-                                              onSelect={(date) => {
-                                                if (date) {
-                                                  const formattedDate = date.toISOString().split("T")[0]
-                                                  handleTaskChange(setPPTuningData, field, "planned", formattedDate)
-                                                }
-                                              }}
-                                              initialFocus
-                                            />
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              id={`${field}-done`}
-                                              variant="outline"
-                                              className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !ppTuningData[field].task.done && "text-muted-foreground",
-                                              )}
-                                            >
-                                              <CalendarIcon className="w-4 h-4 mr-2" />
-                                              {ppTuningData[field].task.done
-                                                ? format(new Date(ppTuningData[field].task.done), "PPP")
-                                                : "Pick a date"}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                              mode="single"
-                                              selected={
-                                                ppTuningData[field].task.done
-                                                  ? new Date(ppTuningData[field].task.done)
-                                                  : undefined
-                                              }
-                                              onSelect={(date) => {
-                                                if (date) {
-                                                  const formattedDate = date.toISOString().split("T")[0]
-                                                  handleTaskChange(setPPTuningData, field, "done", formattedDate)
-                                                }
-                                              }}
-                                              initialFocus
-                                            />
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                      <div className="space-y-2 md:col-span-2">
-                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
-                                        <Textarea
-                                          id={`${field}-comments`}
-                                          value={ppTuningData[field].task.comments}
-                                          onChange={(e) =>
-                                            handleTaskChange(setPPTuningData, field, "comments", e.target.value)
-                                          }
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
-                                        <Input
-                                          id={`${field}-file`}
-                                          type="file"
-                                          onChange={(e) => handlePPTuningFileChange(field, e.target.files[0])}
-                                        />
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`${field}-check`}
-                                          checked={ppTuningData[field].task.check}
-                                          onCheckedChange={(checked) =>
-                                            handleTaskChange(setPPTuningData, field, "check", checked)
-                                          }
-                                        />
-                                        <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
-                                      </div>
-                                    </div>
-                                  </AccordionContent>
-                                </AccordionItem>
-                              ))}
-                            </Accordion>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-
-                      {/* Process Qualification Tab */}
-                      <TabsContent value="processqualif">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle>Process Qualification</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <Accordion type="single" collapsible className="w-full">
-                              {processQualifFields.map((field, index) => (
-                                <AccordionItem key={field} value={`item-${index}`}>
-                                  <AccordionTrigger className="text-lg font-semibold">
-                                    <div className="flex items-center space-x-2">
-                                      <Checkbox
-                                        id={field}
-                                        checked={processQualifData[field].value}
-                                        onCheckedChange={(checked) =>
-                                          handleAccordionCheckboxChange(setProcessQualifData, field, checked)
-                                        }
-                                      />
-                                      <Label htmlFor={field} className="text-left">
-                                        {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                                      </Label>
-                                    </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent>
-                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-responsible`}>Responsible</Label>
-                                        <Input
-                                          id={`${field}-responsible`}
-                                          type="text"
-                                          value={processQualifData[field].task.responsible}
-                                          onChange={(e) =>
-                                            handleTaskChange(setProcessQualifData, field, "responsible", e.target.value)
-                                          }
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-planned`}>Planned Date</Label>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              id={`${field}-planned`}
-                                              variant="outline"
-                                              className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !processQualifData[field].task.planned && "text-muted-foreground",
-                                              )}
-                                            >
-                                              <CalendarIcon className="w-4 h-4 mr-2" />
-                                              {processQualifData[field].task.planned
-                                                ? format(new Date(processQualifData[field].task.planned), "PPP")
-                                                : "Pick a date"}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                              mode="single"
-                                              selected={
-                                                processQualifData[field].task.planned
-                                                  ? new Date(processQualifData[field].task.planned)
-                                                  : undefined
-                                              }
-                                              onSelect={(date) => {
-                                                if (date) {
-                                                  const formattedDate = date.toISOString().split("T")[0]
-                                                  handleTaskChange(
-                                                    setProcessQualifData,
-                                                    field,
-                                                    "planned",
-                                                    formattedDate,
-                                                  )
-                                                }
-                                              }}
-                                              initialFocus
-                                            />
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              id={`${field}-done`}
-                                              variant="outline"
-                                              className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !processQualifData[field].task.done && "text-muted-foreground",
-                                              )}
-                                            >
-                                              <CalendarIcon className="w-4 h-4 mr-2" />
-                                              {processQualifData[field].task.done
-                                                ? format(new Date(processQualifData[field].task.done), "PPP")
-                                                : "Pick a date"}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                              mode="single"
-                                              selected={
-                                                processQualifData[field].task.done
-                                                  ? new Date(processQualifData[field].task.done)
-                                                  : undefined
-                                              }
-                                              onSelect={(date) => {
-                                                if (date) {
-                                                  const formattedDate = date.toISOString().split("T")[0]
-                                                  handleTaskChange(setProcessQualifData, field, "done", formattedDate)
-                                                }
-                                              }}
-                                              initialFocus
-                                            />
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                      <div className="space-y-2 md:col-span-2">
-                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
-                                        <Textarea
-                                          id={`${field}-comments`}
-                                          value={processQualifData[field].task.comments}
-                                          onChange={(e) =>
-                                            handleTaskChange(setProcessQualifData, field, "comments", e.target.value)
-                                          }
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
-                                        <Input
-                                          id={`${field}-file`}
-                                          type="file"
-                                          onChange={(e) => handleProcessQualifFileChange(field, e.target.files[0])}
-                                        />
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`${field}-check`}
-                                          checked={processQualifData[field].task.check}
-                                          onCheckedChange={(checked) =>
-                                            handleTaskChange(setProcessQualifData, field, "check", checked)
-                                          }
-                                        />
-                                        <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
-                                      </div>
-                                    </div>
-                                  </AccordionContent>
-                                </AccordionItem>
-                              ))}
-                            </Accordion>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-
-                      {/* Qualification Confirmation Tab */}
-                      <TabsContent value="qualifconfirm">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle>Qualification Confirmation</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <Accordion type="single" collapsible className="w-full">
-                              {qualificationConfirmationFields.map((field, index) => (
-                                <AccordionItem key={field} value={`item-${index}`}>
-                                  <AccordionTrigger className="text-lg font-semibold">
-                                    <div className="flex items-center space-x-2">
-                                      <Checkbox
-                                        id={field}
-                                        checked={qualificationConfirmationData[field].value}
-                                        onCheckedChange={(checked) =>
-                                          handleAccordionCheckboxChange(
-                                            setQualificationConfirmationData,
-                                            field,
-                                            checked,
-                                          )
-                                        }
-                                      />
-                                      <Label htmlFor={field} className="text-left">
-                                        {field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                                      </Label>
-                                    </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent>
-                                    <div className="grid grid-cols-1 gap-4 mt-2 md:grid-cols-2">
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-responsible`}>Responsible</Label>
-                                        <Input
-                                          id={`${field}-responsible`}
-                                          type="text"
-                                          value={qualificationConfirmationData[field].task.responsible}
-                                          onChange={(e) =>
-                                            handleTaskChange(
-                                              setQualificationConfirmationData,
-                                              field,
-                                              "responsible",
-                                              e.target.value,
+                                        id={`pd-${item._id}`}
+                                        checked={selectedProductDesignations.includes(item._id)}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            setSelectedProductDesignations((prev) => [...prev, item._id])
+                                          } else {
+                                            setSelectedProductDesignations((prev) =>
+                                              prev.filter((id) => id !== item._id),
                                             )
                                           }
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-planned`}>Planned Date</Label>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              id={`${field}-planned`}
-                                              variant="outline"
-                                              className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !qualificationConfirmationData[field].task.planned &&
-                                                  "text-muted-foreground",
-                                              )}
-                                            >
-                                              <CalendarIcon className="w-4 h-4 mr-2" />
-                                              {qualificationConfirmationData[field].task.planned
-                                                ? format(
-                                                    new Date(qualificationConfirmationData[field].task.planned),
-                                                    "PPP",
-                                                  )
-                                                : "Pick a date"}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                              mode="single"
-                                              selected={
-                                                qualificationConfirmationData[field].task.planned
-                                                  ? new Date(qualificationConfirmationData[field].task.planned)
-                                                  : undefined
-                                              }
-                                              onSelect={(date) => {
-                                                if (date) {
-                                                  const formattedDate = date.toISOString().split("T")[0]
-                                                  handleTaskChange(
-                                                    setQualificationConfirmationData,
-                                                    field,
-                                                    "planned",
-                                                    formattedDate,
-                                                  )
-                                                }
-                                              }}
-                                              initialFocus
-                                            />
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-done`}>Completion Date</Label>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              id={`${field}-done`}
-                                              variant="outline"
-                                              className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !qualificationConfirmationData[field].task.done &&
-                                                  "text-muted-foreground",
-                                              )}
-                                            >
-                                              <CalendarIcon className="w-4 h-4 mr-2" />
-                                              {qualificationConfirmationData[field].task.done
-                                                ? format(
-                                                    new Date(qualificationConfirmationData[field].task.done),
-                                                    "PPP",
-                                                  )
-                                                : "Pick a date"}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                              mode="single"
-                                              selected={
-                                                qualificationConfirmationData[field].task.done
-                                                  ? new Date(qualificationConfirmationData[field].task.done)
-                                                  : undefined
-                                              }
-                                              onSelect={(date) => {
-                                                if (date) {
-                                                  const formattedDate = date.toISOString().split("T")[0]
-                                                  handleTaskChange(
-                                                    setQualificationConfirmationData,
-                                                    field,
-                                                    "done",
-                                                    formattedDate,
-                                                  )
-                                                }
-                                              }}
-                                              initialFocus
-                                            />
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                      <div className="space-y-2 md:col-span-2">
-                                        <Label htmlFor={`${field}-comments`}>Comments</Label>
-                                        <Textarea
-                                          id={`${field}-comments`}
-                                          value={qualificationConfirmationData[field].task.comments}
-                                          onChange={(e) =>
-                                            handleTaskChange(
-                                              setQualificationConfirmationData,
-                                              field,
-                                              "comments",
-                                              e.target.value,
-                                            )
-                                          }
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`${field}-file`}>Upload Document</Label>
-                                        <Input
-                                          id={`${field}-file`}
-                                          type="file"
-                                          onChange={(e) =>
-                                            handleQualificationConfirmationFileChange(field, e.target.files[0])
-                                          }
-                                        />
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`${field}-check`}
-                                          checked={qualificationConfirmationData[field].task.check}
-                                          onCheckedChange={(checked) =>
-                                            handleTaskChange(setQualificationConfirmationData, field, "check", checked)
-                                          }
-                                        />
-                                        <Label htmlFor={`${field}-check`}>Mark as Completed</Label>
+                                        }}
+                                      />
+                                      <div>
+                                        <Label htmlFor={`pd-${item._id}`} className="font-medium">
+                                          {item.part_name}
+                                        </Label>
+                                        {item.reference && (
+                                          <p className="text-sm text-muted-foreground">Ref: {item.reference}</p>
+                                        )}
                                       </div>
                                     </div>
-                                  </AccordionContent>
-                                </AccordionItem>
-                              ))}
-                            </Accordion>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-                    </Tabs>
+                                  </div>
+                                ))}
+                              </div>
+                            </ScrollArea>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Selected Product Designations Summary */}
+                    <div>
+                      <h3 className="mb-4 text-lg font-medium">Selected Product Designations</h3>
+                      <Card>
+                        <CardContent className="pt-6">
+                          {selectedProductDesignations.length === 0 ? (
+                            <div className="p-4 text-center border rounded-md bg-muted/20">
+                              <p className="text-sm text-muted-foreground">
+                                No product designations selected. Please select at least one product designation.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {selectedProductDesignations.map((id) => {
+                                // Find the product designation in either existing or new product designations
+                                const pd = [...productDesignations, ...newProductDesignations].find(
+                                  (item) => item._id === id,
+                                )
+                                if (!pd) return null
+
+                                return (
+                                  <div
+                                    key={`selected-${id}`}
+                                    className="flex items-center justify-between p-3 border rounded-md"
+                                  >
+                                    <div>
+                                      <p className="font-medium">{pd.part_name}</p>
+                                      {pd.reference && (
+                                        <p className="text-sm text-muted-foreground">Ref: {pd.reference}</p>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      {newProductDesignations.some((item) => item._id === id) && (
+                                        <Badge variant="outline" className="bg-green-50">
+                                          New
+                                        </Badge>
+                                      )}
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => {
+                                          setSelectedProductDesignations((prev) => prev.filter((pdId) => pdId !== id))
+                                        }}
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
                   </CardContent>
                   <CardFooter className="flex justify-center">
                     <Button type="submit" disabled={loading} className="px-8">

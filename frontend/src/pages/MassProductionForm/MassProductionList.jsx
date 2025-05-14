@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { format } from "date-fns"
@@ -9,7 +9,7 @@ import { getAllCustomers } from "../../apis/customerApi"
 import { getAllpd } from "../../apis/ProductDesignation-api"
 import MainLayout from "@/components/MainLayout"
 
-// shadcn components
+// UI Components
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,7 +49,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Checkbox } from "@/components/ui/checkbox"
 
-// Lucide icons
+// Icons
 import {
   Plus,
   Search,
@@ -60,9 +60,9 @@ import {
   Trash2,
   FileText,
   RefreshCw,
-  CheckCircle2,
+  CheckCircle,
   XCircle,
-  AlertCircle,
+  AlertTriangle,
   Clock,
   ArrowUpDown,
   Loader2,
@@ -70,6 +70,26 @@ import {
   LayoutDashboard,
   SlidersHorizontal,
 } from "lucide-react"
+
+// Optimized animation variants
+const itemVariants = {
+  hidden: { opacity: 0, y: 5 }, // Reduced y distance
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "tween", // Changed from spring to tween
+      duration: 0.2, // Shorter duration
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -5, // Reduced exit distance
+    transition: {
+      duration: 0.1, // Faster exit
+    },
+  },
+}
 
 const MassProductionList = () => {
   const navigate = useNavigate()
@@ -166,7 +186,7 @@ const MassProductionList = () => {
   }, [toast])
 
   // Calculate completion percentage for a mass production item
-  const calculateCompletionPercentage = (item) => {
+  const calculateCompletionPercentage = useCallback((item) => {
     if (!item) return 0
 
     const stages = [
@@ -186,10 +206,10 @@ const MassProductionList = () => {
     const completedStages = stages.filter((stage) => isStageCompleted(stage)).length
 
     return Math.round((completedStages / totalStages) * 100)
-  }
+  }, [])
 
   // Check if a stage is completed
-  const isStageCompleted = (stage) => {
+  const isStageCompleted = useCallback((stage) => {
     if (!stage) return false
 
     // Check if stage has a 'check' property that is true
@@ -225,7 +245,7 @@ const MassProductionList = () => {
     }
 
     return false
-  }
+  }, [])
 
   // Apply filters and sorting
   useEffect(() => {
@@ -353,26 +373,29 @@ const MassProductionList = () => {
   }, [massProductions, searchTerm, statusFilter, customerFilter, sortConfig, dateFilter, progressFilter])
 
   // Get current page items
-  const getCurrentPageItems = () => {
+  const getCurrentPageItems = useCallback(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
     const endIndex = startIndex + itemsPerPage
     return filteredProductions.slice(startIndex, endIndex)
-  }
+  }, [currentPage, filteredProductions, itemsPerPage])
 
   // Handle sort request
-  const requestSort = (key) => {
-    let direction = "asc"
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc"
-    }
-    setSortConfig({ key, direction })
-  }
+  const requestSort = useCallback(
+    (key) => {
+      let direction = "asc"
+      if (sortConfig.key === key && sortConfig.direction === "asc") {
+        direction = "desc"
+      }
+      setSortConfig({ key, direction })
+    },
+    [sortConfig],
+  )
 
   // Handle delete confirmation
-  const handleDeleteClick = (item) => {
+  const handleDeleteClick = useCallback((item) => {
     setItemToDelete(item)
     setDeleteDialogOpen(true)
-  }
+  }, [])
 
   // Handle delete action
   const handleDelete = async () => {
@@ -467,7 +490,7 @@ const MassProductionList = () => {
   }
 
   // Handle checkbox selection
-  const handleSelectItem = (id) => {
+  const handleSelectItem = useCallback((id) => {
     setSelectedItems((prev) => {
       if (prev.includes(id)) {
         return prev.filter((itemId) => itemId !== id)
@@ -475,18 +498,21 @@ const MassProductionList = () => {
         return [...prev, id]
       }
     })
-  }
+  }, [])
 
   // Handle select all items on current page
-  const handleSelectAllOnPage = (checked) => {
-    if (checked) {
-      const currentPageIds = getCurrentPageItems().map((item) => item._id)
-      setSelectedItems((prev) => [...new Set([...prev, ...currentPageIds])])
-    } else {
-      const currentPageIds = getCurrentPageItems().map((item) => item._id)
-      setSelectedItems((prev) => prev.filter((id) => !currentPageIds.includes(id)))
-    }
-  }
+  const handleSelectAllOnPage = useCallback(
+    (checked) => {
+      if (checked) {
+        const currentPageIds = getCurrentPageItems().map((item) => item._id)
+        setSelectedItems((prev) => [...new Set([...prev, ...currentPageIds])])
+      } else {
+        const currentPageIds = getCurrentPageItems().map((item) => item._id)
+        setSelectedItems((prev) => prev.filter((id) => !currentPageIds.includes(id)))
+      }
+    },
+    [getCurrentPageItems],
+  )
 
   // Export selected items to CSV
   const exportToCSV = () => {
@@ -544,58 +570,38 @@ const MassProductionList = () => {
   }
 
   // Get status badge variant
-  const getStatusBadge = (status) => {
+  const getStatusBadge = useCallback((status) => {
     switch (status) {
       case "on-going":
         return { variant: "default", icon: <Clock className="w-3 h-3 mr-1" /> }
       case "stand-by":
-        return { variant: "warning", icon: <AlertCircle className="w-3 h-3 mr-1" /> }
+        return { variant: "warning", icon: <AlertTriangle className="w-3 h-3 mr-1" /> }
       case "closed":
-        return { variant: "success", icon: <CheckCircle2 className="w-3 h-3 mr-1" /> }
+        return { variant: "success", icon: <CheckCircle className="w-3 h-3 mr-1" /> }
       case "cancelled":
         return { variant: "destructive", icon: <XCircle className="w-3 h-3 mr-1" /> }
       default:
         return { variant: "secondary", icon: null }
     }
-  }
+  }, [])
 
   // Format date for display
-  const formatDate = (dateString) => {
+  const formatDate = useCallback((dateString) => {
     if (!dateString) return "N/A"
     try {
       return format(new Date(dateString), "MMM d, yyyy")
     } catch (error) {
       return "Invalid date"
     }
-  }
-
-  // Get customer name
-  const getCustomerName = (customerId) => {
-    const customer = customers.find((c) => c._id === customerId)
-    return customer ? customer.username : "N/A"
-  }
-
-  // Get product designation names
-  const getProductDesignationNames = (designationIds) => {
-    if (!designationIds || !Array.isArray(designationIds) || designationIds.length === 0) {
-      return "N/A"
-    }
-
-    const names = designationIds.map((id) => {
-      const designation = productDesignations.find((pd) => pd._id === id)
-      return designation ? designation.part_name : "Unknown"
-    })
-
-    return names.join(", ")
-  }
+  }, [])
 
   // Get progress color based on percentage
-  const getProgressColor = (percentage) => {
+  const getProgressColor = useCallback((percentage) => {
     if (percentage >= 80) return "bg-green-500"
     if (percentage >= 50) return "bg-amber-500"
     if (percentage >= 20) return "bg-orange-500"
     return "bg-red-500"
-  }
+  }, [])
 
   // Render loading skeletons
   const renderSkeletons = () => {
@@ -625,9 +631,6 @@ const MassProductionList = () => {
             <Skeleton className="h-4 w-[100px]" />
           </TableCell>
           <TableCell>
-            <Skeleton className="h-4 w-[100px]" />
-          </TableCell>
-          <TableCell>
             <Skeleton className="h-4 w-[40px]" />
           </TableCell>
         </TableRow>
@@ -641,9 +644,9 @@ const MassProductionList = () => {
       .map((_, index) => (
         <motion.div
           key={`card-skeleton-${index}`}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: index * 0.05 }}
+          transition={{ duration: 0.2, delay: index * 0.03 }} // Reduced delay
         >
           <Card className="h-[220px]">
             <CardHeader className="pb-2">
@@ -746,35 +749,35 @@ const MassProductionList = () => {
   const renderStatsDashboard = () => {
     return (
       <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-5">
-        <Card className="bg-white">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Records</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
-              <div className="p-2 bg-blue-100 rounded-full">
-                <FileText className="w-5 h-5 text-blue-600" />
+              <div className="p-2 rounded-full bg-primary/10">
+                <FileText className="w-5 h-5 text-primary" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">On-going</p>
                 <p className="text-2xl font-bold">{stats.ongoing}</p>
               </div>
-              <div className="p-2 bg-blue-100 rounded-full">
-                <Clock className="w-5 h-5 text-blue-600" />
+              <div className="p-2 rounded-full bg-primary/10">
+                <Clock className="w-5 h-5 text-primary" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -782,13 +785,13 @@ const MassProductionList = () => {
                 <p className="text-2xl font-bold">{stats.standby}</p>
               </div>
               <div className="p-2 rounded-full bg-amber-100">
-                <AlertCircle className="w-5 h-5 text-amber-600" />
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -796,13 +799,13 @@ const MassProductionList = () => {
                 <p className="text-2xl font-bold">{stats.closed}</p>
               </div>
               <div className="p-2 bg-green-100 rounded-full">
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <CheckCircle className="w-5 h-5 text-green-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -926,14 +929,7 @@ const MassProductionList = () => {
                 </div>
               </TableHead>
               <TableHead>
-                <div
-                  className="flex items-center cursor-pointer"
-                  onClick={() =>
-                    requestSort(
-                      '                <div className="flex items-center cursor-pointer" onClick={() => requestSort("status',
-                    )
-                  }
-                >
+                <div className="flex items-center cursor-pointer" onClick={() => requestSort("status")}>
                   Status
                   <ArrowUpDown className="w-4 h-4 ml-1" />
                 </div>
@@ -952,19 +948,20 @@ const MassProductionList = () => {
               renderSkeletons()
             ) : currentItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center">
+                <TableCell colSpan={8} className="h-24 text-center">
                   No records found.
                 </TableCell>
               </TableRow>
             ) : (
-              <AnimatePresence>
+              <AnimatePresence initial={false} mode="popLayout">
                 {currentItems.map((item, index) => (
                   <motion.tr
                     key={item._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    variants={itemVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    transition={{ duration: 0.2, delay: index * 0.03 }} // Reduced delay
                     className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
                   >
                     <TableCell>
@@ -999,8 +996,6 @@ const MassProductionList = () => {
                         {item.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{item.customer_offer === "fulfilled" ? "Fulfilled" : "Expected/In Progress"}</TableCell>
-                    <TableCell>{item.customer_order === "fulfilled" ? "Fulfilled" : "Expected/In Progress"}</TableCell>
                     <TableCell>
                       <TooltipProvider>
                         <Tooltip>
@@ -1080,15 +1075,16 @@ const MassProductionList = () => {
 
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <AnimatePresence>
+        <AnimatePresence initial={false} mode="popLayout">
           {currentItems.map((item, index) => (
             <motion.div
               key={item._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={{ duration: 0.2, delay: index * 0.03 }} // Reduced delay
+              whileHover={{ y: -3, transition: { duration: 0.1 } }} // Faster hover
               className="h-full"
             >
               <Card
@@ -1162,7 +1158,7 @@ const MassProductionList = () => {
                     variant="outline"
                     size="sm"
                     className="flex-1"
-                    onClick={() => navigate(`/masspd/dashboard/${item._id}`)}
+                    onClick={() => navigate(`/masspd/detail/${item._id}`)}
                   >
                     <LayoutDashboard className="w-4 h-4 mr-2" />
                     Dashboard
