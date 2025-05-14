@@ -13,9 +13,9 @@ const {
 const { protect, verifyAdmin } = require("../middlewares/authMiddleware");
 
 
-router.get("/customers", protect, verifyAdmin, getAllCustomers);
+router.get("/customers", protect, getAllCustomers);
 // 🔹 Get Customer by ID (Admin Only)
-router.get("/customer/:id", protect, verifyAdmin, getCustomerById);
+router.get("/customer/:id", protect, getCustomerById);
 // 🔹 Get Current User Profile (Protected)
 router.get("/profile", protect, showUserInfo);
 

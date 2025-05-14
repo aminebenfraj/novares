@@ -1,7 +1,5 @@
 import { getCurrentUser, login } from "@/lib/Auth";
 import React, { createContext, useState, useEffect, useContext } from "react";
- // Adjust the import path as necessary
-
 
 const AuthContext = createContext(null);
 
@@ -13,7 +11,6 @@ export const AuthProvider = ({ children }) => {
     try {
       const currentUser = await getCurrentUser();
       setUser(currentUser);
-
       return currentUser;
     } catch (error) {
       console.error("Failed to fetch user:", error);
@@ -53,7 +50,8 @@ export const AuthProvider = ({ children }) => {
       await login(email, password);
       await initAuth();
     } catch (error) {
-      console.error("Error fetching cart:", error);
+      console.error("Error logging in:", error);
+      throw error;
     }
   };
 
@@ -62,12 +60,60 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Add role checking functions
+  const hasRole = (role) => {
+    if (!user || !user.roles) return false;
+    return user.roles.includes(role);
+  };
+
+  // Check if user has any of the specified roles
+  const hasAnyRole = (roles) => {
+    if (!user || !user.roles) return false;
+    return roles.some(role => user.roles.includes(role));
+  };
+
+  // Check if user is admin
+  const isAdmin = () => {
+    return hasRole("admin") || hasRole("Admin");
+  };
+
+  // Check if user can edit a specific checkin field
+  const canEditCheckinField = (fieldId) => {
+    if (isAdmin()) return true;
+    
+    // Map from field ID to role name
+    const roleMapping = {
+      Project_Manager: "Project Manager",
+      Business_Manager: "Business Manager",
+      Financial_Leader: "Financial Leader",
+      Manufacturing_Eng_Manager: "Manufacturing Eng. Manager",
+      Manufacturing_Eng_Leader: "Manufacturing Eng. Leader",
+      Methodes_UAP1_3: "Methodes UAP1&3",
+      Methodes_UAP2: "Methodes UAP2",
+      Maintenance_Manager: "Maintenance Manager",
+      Maintenance_Leader_UAP2: "Maintenance Leader UAP2",
+      Prod_Plant_Manager_UAP1: "Prod. Plant Manager UAP1",
+      Prod_Plant_Manager_UAP2: "Prod. Plant Manager UAP2",
+      Quality_Manager: "Quality Manager",
+      Quality_Leader_UAP1: "Quality Leader UAP1",
+      Quality_Leader_UAP2: "Quality Leader UAP2",
+      Quality_Leader_UAP3: "Quality Leader UAP3",
+    };
+
+    const roleName = roleMapping[fieldId];
+    return hasRole(roleName);
+  };
+
   const value = {
     user,
     login: loginUser,
     logout: logoutUser,
     setUser,
     loading,
+    hasRole,
+    hasAnyRole,
+    isAdmin,
+    canEditCheckinField
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
