@@ -6,42 +6,25 @@ import { motion } from "framer-motion"
 import { getOkForLunchById, updateOkForLunch } from "../../apis/okForLunch"
 import { getCheckinById, updateCheckin } from "../../apis/checkIn"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/context/AuthContext"
 import MainLayout from "@/components/MainLayout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { format, parseISO } from "date-fns"
-import { CalendarIcon, Upload, ArrowLeft, Save, Loader2, Clock } from "lucide-react"
-
-// Update roleFields to match the exact field names from the CheckInModel schema
-const roleFields = [
-  { id: "Project_Manager", label: "Project Manager" },
-  { id: "Business_Manager", label: "Business Manager" },
-  { id: "Financial_Leader", label: "Financial Leader" },
-  { id: "Manufacturing_Eng_Manager", label: "Manufacturing Eng. Manager" },
-  { id: "Manufacturing_Eng_Leader", label: "Manufacturing Eng. Leader" },
-  { id: "Methodes_UAP1_3", label: "Methodes UAP1&3" },
-  { id: "Methodes_UAP2", label: "Methodes UAP2" },
-  { id: "Maintenance_Manager", label: "Maintenance Manager" },
-  { id: "Maintenance_Leader_UAP2", label: "Maintenance Leader UAP2" },
-  { id: "Prod_Plant_Manager_UAP1", label: "Prod. Plant Manager UAP1" },
-  { id: "Prod_Plant_Manager_UAP2", label: "Prod. Plant Manager UAP2" },
-  { id: "Quality_Manager", label: "Quality Manager" },
-  { id: "Quality_Leader_UAP1", label: "Quality Leader UAP1" },
-  { id: "Quality_Leader_UAP2", label: "Quality Leader UAP2" },
-  { id: "Quality_Leader_UAP3", label: "Quality Leader UAP3" },
-]
+import { format } from "date-fns"
+import { CalendarIcon, Upload, ArrowLeft, Save, Loader2 } from "lucide-react"
+import RoleBasedCheckin from "../../components/role-based-checkin"
 
 function EditOkForLunch() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user, isAdmin } = useAuth()
 
   // OkForLunch state
   const [okForLunchData, setOkForLunchData] = useState({
@@ -52,23 +35,17 @@ function EditOkForLunch() {
   const [existingFile, setExistingFile] = useState(null)
 
   // Checkin state
-  const [checkinData, setCheckinData] = useState(
-    roleFields.reduce((acc, field) => {
-      acc[field.id] = {
-        value: false,
-        comment: "",
-        date: new Date().toISOString(),
-        name: "",
-      }
-      return acc
-    }, {}),
-  )
-
+  const [checkinData, setCheckinData] = useState({})
   const [checkinId, setCheckinId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("okforlunch")
   const [massProductionId, setMassProductionId] = useState(null)
+
+  // Check if user can edit OK for Lunch details
+  const canEditOkForLunch = () => {
+    return isAdmin() || (user?.roles && user.roles.length > 0)
+  }
 
   // Extract massProductionId from URL or localStorage
   useEffect(() => {
@@ -126,32 +103,7 @@ function EditOkForLunch() {
               const checkinResponse = await getCheckinById(checkinId)
               const checkinData = checkinResponse.data || checkinResponse
               console.log("Fetched checkin data:", checkinData)
-
-              // Initialize checkin data with default structure
-              const initializedCheckinData = {}
-
-              // Map checkin data to state, ensuring all fields have the correct structure
-              roleFields.forEach((field) => {
-                if (checkinData[field.id]) {
-                  initializedCheckinData[field.id] = {
-                    value: checkinData[field.id].value || false,
-                    comment: checkinData[field.id].comment || "",
-                    date: checkinData[field.id].date || new Date().toISOString(),
-                    name: checkinData[field.id].name || "",
-                  }
-                } else {
-                  // If field doesn't exist in the data, create it with default values
-                  initializedCheckinData[field.id] = {
-                    value: false,
-                    comment: "",
-                    date: new Date().toISOString(),
-                    name: "",
-                  }
-                }
-              })
-
-              console.log("Initialized checkin data:", initializedCheckinData)
-              setCheckinData(initializedCheckinData)
+              setCheckinData(checkinData)
             } catch (error) {
               console.error("Error fetching checkin data:", error)
               toast({
@@ -178,55 +130,32 @@ function EditOkForLunch() {
   }, [id, toast])
 
   const handleOkForLunchChange = (key, value) => {
-    setOkForLunchData((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const handleCheckboxChange = (fieldId) => {
-    setCheckinData({
-      ...checkinData,
-      [fieldId]: {
-        ...checkinData[fieldId],
-        value: !checkinData[fieldId].value,
-        // Update date to current time when checked
-        date: !checkinData[fieldId].value ? new Date().toISOString() : checkinData[fieldId].date,
-      },
-    })
-  }
-
-  const handleCommentChange = (fieldId, value) => {
-    setCheckinData({
-      ...checkinData,
-      [fieldId]: {
-        ...checkinData[fieldId],
-        comment: value,
-      },
-    })
-  }
-
-  const handleNameChange = (fieldId, value) => {
-    setCheckinData({
-      ...checkinData,
-      [fieldId]: {
-        ...checkinData[fieldId],
-        name: value,
-      },
-    })
-  }
-
-  // Format date for display
-  const formatDate = (dateString) => {
-    try {
-      if (!dateString) return "Not submitted"
-      const date = parseISO(dateString)
-      return format(date, "MMM d, yyyy 'at' h:mm a")
-    } catch (error) {
-      console.error("Error formatting date:", error)
-      return "Invalid date"
+    if (!canEditOkForLunch()) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to edit OK for Lunch details.",
+        variant: "destructive",
+      })
+      return
     }
+    setOkForLunchData((prev) => ({ ...prev, [key]: value }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Check if user has permission to submit changes
+    const hasAnyEditPermission = canEditOkForLunch() || isAdmin()
+
+    if (!hasAnyEditPermission) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to submit changes.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setSubmitting(true)
 
     try {
@@ -242,30 +171,14 @@ function EditOkForLunch() {
         formData.append("upload", file)
       }
 
-      // Prepare checkin data - ensure all fields from the schema are included
-      const checkinDataObj = {}
-
-      // Explicitly include all fields from the schema
-      roleFields.forEach((field) => {
-        checkinDataObj[field.id] = {
-          value: checkinData[field.id]?.value || false,
-          comment: checkinData[field.id]?.comment || "",
-          date: checkinData[field.id]?.date || new Date().toISOString(),
-          name: checkinData[field.id]?.name || "",
-        }
-      })
-
       if (checkinId) {
         // Update existing checkin
         console.log("Updating existing checkin:", checkinId)
-        await updateCheckin(checkinId, checkinDataObj)
-      } else {
-        // Create new checkin - handled by backend when we pass the data
-        console.log("Will create new checkin")
+        await updateCheckin(checkinId, checkinData)
       }
 
       // Add checkin data to form
-      formData.append("checkin", JSON.stringify(checkinDataObj))
+      formData.append("checkin", JSON.stringify(checkinData))
 
       // If we have a massProductionId, include it
       if (massProductionId) {
@@ -274,7 +187,7 @@ function EditOkForLunch() {
 
       console.log("Sending data to update OK for lunch with checkin:", {
         okForLunchData,
-        checkinData: checkinDataObj,
+        checkinData,
       })
 
       // Update the OK for lunch
@@ -349,7 +262,11 @@ function EditOkForLunch() {
               <Card>
                 <CardHeader>
                   <CardTitle>OK for Lunch Details</CardTitle>
-                  <CardDescription>Edit the details for the OK for Lunch approval</CardDescription>
+                  <CardDescription>
+                    {canEditOkForLunch()
+                      ? "Edit the details for the OK for Lunch approval"
+                      : "View the details for the OK for Lunch approval (read-only)"}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex items-center space-x-2">
@@ -357,6 +274,8 @@ function EditOkForLunch() {
                       id="check"
                       checked={okForLunchData.check}
                       onCheckedChange={(value) => handleOkForLunchChange("check", value === true)}
+                      disabled={!canEditOkForLunch()}
+                      className={!canEditOkForLunch() ? "opacity-60" : ""}
                     />
                     <Label htmlFor="check" className="text-sm font-medium">
                       Approve Lunch
@@ -369,7 +288,8 @@ function EditOkForLunch() {
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className={`w-full justify-start text-left font-normal ${!okForLunchData.date && "text-muted-foreground"}`}
+                          className={`w-full justify-start text-left font-normal ${!okForLunchData.date && "text-muted-foreground"} ${!canEditOkForLunch() ? "opacity-60" : ""}`}
+                          disabled={!canEditOkForLunch()}
                         >
                           <CalendarIcon className="w-4 h-4 mr-2" />
                           {okForLunchData.date ? format(okForLunchData.date, "PPP") : "Pick a date"}
@@ -390,7 +310,13 @@ function EditOkForLunch() {
                     <Label htmlFor="file">Upload File (optional)</Label>
                     <div className="relative">
                       <Upload className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
-                      <Input id="file" type="file" onChange={(e) => setFile(e.target.files[0])} className="pl-10" />
+                      <Input
+                        id="file"
+                        type="file"
+                        onChange={(e) => setFile(e.target.files[0])}
+                        className="pl-10"
+                        disabled={!canEditOkForLunch()}
+                      />
                     </div>
                     {existingFile && !file && (
                       <p className="text-sm text-muted-foreground">Current file: {existingFile}</p>
@@ -413,76 +339,19 @@ function EditOkForLunch() {
                 <CardHeader>
                   <CardTitle>Check-in Details</CardTitle>
                   <CardDescription>
-                    Edit the details for the check-in. Check the box for completed items, add the name of the person
-                    checking in, and provide any comments.
+                    Each role can only edit their own section. Check the box for completed items, add your name, and
+                    provide comments.
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <motion.div
-                    className="grid gap-6 md:grid-cols-2"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    {roleFields.map((field, index) => (
-                      <motion.div
-                        key={field.id}
-                        className="p-4 border rounded-lg"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 * index }}
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-start space-x-3">
-                            <Checkbox
-                              id={`${field.id}-checkbox`}
-                              checked={checkinData[field.id]?.value || false}
-                              onCheckedChange={() => handleCheckboxChange(field.id)}
-                            />
-                            <label
-                              htmlFor={`${field.id}-checkbox`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            >
-                              {field.label}
-                            </label>
-                          </div>
 
-                          {/* Display submission status with date */}
-                          <div
-                            className={`text-xs flex items-center ${checkinData[field.id]?.value ? "text-green-600" : "text-gray-400"}`}
-                          >
-                            <Clock size={12} className="mr-1" />
-                            {checkinData[field.id]?.value ? formatDate(checkinData[field.id]?.date) : "Not submitted"}
-                          </div>
-                        </div>
+                {/* Use the RoleBasedCheckin component */}
+                <RoleBasedCheckin
+                  checkinData={checkinData}
+                  setCheckinData={setCheckinData}
+                  readOnly={false}
+                  showTitle={false}
+                />
 
-                        <div className="mb-3">
-                          <Label htmlFor={`${field.id}-name`} className="block mb-1 text-xs text-gray-500">
-                            Name
-                          </Label>
-                          <Input
-                            id={`${field.id}-name`}
-                            placeholder="Enter name"
-                            value={checkinData[field.id]?.name || ""}
-                            onChange={(e) => handleNameChange(field.id, e.target.value)}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-
-                        <Label htmlFor={`${field.id}-comment`} className="block mb-1 text-xs text-gray-500">
-                          Comments
-                        </Label>
-                        <Textarea
-                          id={`${field.id}-comment`}
-                          placeholder="Add comments here..."
-                          value={checkinData[field.id]?.comment || ""}
-                          onChange={(e) => handleCommentChange(field.id, e.target.value)}
-                          className="h-20 text-sm"
-                        />
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                </CardContent>
                 <CardFooter className="flex justify-between">
                   <Button type="button" variant="outline" onClick={() => setActiveTab("okforlunch")}>
                     Back to OK for Lunch

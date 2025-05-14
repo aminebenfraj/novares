@@ -13,30 +13,12 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, ArrowLeft, Save, CheckCircle, XCircle, Clock, Users } from "lucide-react"
+import { useAuth } from "@/context/AuthContext"
+import { Loader2, ArrowLeft, Save, CheckCircle, XCircle, Users } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import MainLayout from "@/components/MainLayout"
-import { format, parseISO } from "date-fns"
-
-// Updated list of checkin fields to match the CheckInModel schema with labels
-const roleFields = [
-  { id: "Project_Manager", label: "Project Manager" },
-  { id: "Business_Manager", label: "Business Manager" },
-  { id: "Financial_Leader", label: "Financial Leader" },
-  { id: "Manufacturing_Eng_Manager", label: "Manufacturing Eng. Manager" },
-  { id: "Manufacturing_Eng_Leader", label: "Manufacturing Eng. Leader" },
-  { id: "Methodes_UAP1_3", label: "Methodes UAP1&3" },
-  { id: "Methodes_UAP2", label: "Methodes UAP2" },
-  { id: "Maintenance_Manager", label: "Maintenance Manager" },
-  { id: "Maintenance_Leader_UAP2", label: "Maintenance Leader UAP2" },
-  { id: "Prod_Plant_Manager_UAP1", label: "Prod. Plant Manager UAP1" },
-  { id: "Prod_Plant_Manager_UAP2", label: "Prod. Plant Manager UAP2" },
-  { id: "Quality_Manager", label: "Quality Manager" },
-  { id: "Quality_Leader_UAP1", label: "Quality Leader UAP1" },
-  { id: "Quality_Leader_UAP2", label: "Quality Leader UAP2" },
-  { id: "Quality_Leader_UAP3", label: "Quality Leader UAP3" },
-]
+import RoleBasedCheckin from "../../components/role-based-checkin"
 
 // List of feasibility fields from the model
 const FEASIBILITY_FIELDS = [
@@ -210,19 +192,10 @@ const EditFeasibility = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user, isAdmin } = useAuth()
 
   const [feasibilityData, setFeasibilityData] = useState({})
-  const [checkinData, setCheckinData] = useState(
-    roleFields.reduce((acc, field) => {
-      acc[field.id] = {
-        value: false,
-        comment: "",
-        date: new Date().toISOString(),
-        name: "",
-      }
-      return acc
-    }, {}),
-  )
+  const [checkinData, setCheckinData] = useState({})
   const [checkinId, setCheckinId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -233,16 +206,9 @@ const EditFeasibility = () => {
   const [completedCount, setCompletedCount] = useState(0)
   const [totalFields] = useState(FEASIBILITY_FIELDS.length)
 
-  // Format date for display
-  const formatDate = (dateString) => {
-    try {
-      if (!dateString) return "Not submitted"
-      const date = parseISO(dateString)
-      return format(date, "MMM d, yyyy 'at' h:mm a")
-    } catch (error) {
-      console.error("Error formatting date:", error)
-      return "Invalid date"
-    }
+  // Check if user can edit feasibility details
+  const canEditFeasibility = () => {
+    return isAdmin() || (user?.roles && user.roles.length > 0)
   }
 
   // Extract massProductionId from URL or localStorage
@@ -320,32 +286,7 @@ const EditFeasibility = () => {
               const checkinResponse = await getCheckinById(checkinId)
               const checkinData = checkinResponse.data || checkinResponse
               console.log("Fetched checkin data:", checkinData)
-
-              // Initialize checkin data with default structure
-              const initializedCheckinData = {}
-
-              // Map checkin data to state, ensuring all fields have the correct structure
-              roleFields.forEach((field) => {
-                if (checkinData[field.id]) {
-                  initializedCheckinData[field.id] = {
-                    value: checkinData[field.id].value || false,
-                    comment: checkinData[field.id].comment || "",
-                    date: checkinData[field.id].date || new Date().toISOString(),
-                    name: checkinData[field.id].name || "",
-                  }
-                } else {
-                  // If field doesn't exist in the data, create it with default values
-                  initializedCheckinData[field.id] = {
-                    value: false,
-                    comment: "",
-                    date: new Date().toISOString(),
-                    name: "",
-                  }
-                }
-              })
-
-              console.log("Initialized checkin data:", initializedCheckinData)
-              setCheckinData(initializedCheckinData)
+              setCheckinData(checkinData)
             } catch (error) {
               console.error("Error fetching checkin data:", error)
               toast({
@@ -377,6 +318,15 @@ const EditFeasibility = () => {
 
   // Handle Feasibility Field Changes
   const handleFeasibilityChange = (key, field, value) => {
+    if (!canEditFeasibility()) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to edit feasibility details.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setFeasibilityData((prev) => ({
       ...prev,
       [key]: { ...prev[key], [field]: value },
@@ -385,6 +335,15 @@ const EditFeasibility = () => {
 
   // Handle Feasibility Detail Changes
   const handleDetailChange = (key, detailField, value) => {
+    if (!canEditFeasibility()) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to edit feasibility details.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setFeasibilityData((prev) => ({
       ...prev,
       [key]: {
@@ -395,39 +354,6 @@ const EditFeasibility = () => {
         },
       },
     }))
-  }
-
-  // Handle Checkin Field Changes
-  const handleCheckboxChange = (fieldId) => {
-    setCheckinData({
-      ...checkinData,
-      [fieldId]: {
-        ...checkinData[fieldId],
-        value: !checkinData[fieldId].value,
-        // Update date to current time when checked
-        date: !checkinData[fieldId].value ? new Date().toISOString() : checkinData[fieldId].date,
-      },
-    })
-  }
-
-  const handleCommentChange = (fieldId, value) => {
-    setCheckinData({
-      ...checkinData,
-      [fieldId]: {
-        ...checkinData[fieldId],
-        comment: value,
-      },
-    })
-  }
-
-  const handleNameChange = (fieldId, value) => {
-    setCheckinData({
-      ...checkinData,
-      [fieldId]: {
-        ...checkinData[fieldId],
-        name: value,
-      },
-    })
   }
 
   // Back button handler
@@ -444,6 +370,19 @@ const EditFeasibility = () => {
   // Handle Form Submission
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Check if user has permission to submit changes
+    const hasAnyEditPermission = canEditFeasibility() || isAdmin()
+
+    if (!hasAnyEditPermission) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to submit changes.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setSubmitting(true)
 
     try {
@@ -462,30 +401,16 @@ const EditFeasibility = () => {
         }
       })
 
-      // Prepare checkin data
-      const checkinDataObj = {}
-      roleFields.forEach((field) => {
-        checkinDataObj[field.id] = {
-          value: checkinData[field.id]?.value || false,
-          comment: checkinData[field.id]?.comment || "",
-          date: checkinData[field.id]?.date || new Date().toISOString(),
-          name: checkinData[field.id]?.name || "",
-        }
-      })
-
       if (checkinId) {
         // Update existing checkin
         console.log("Updating existing checkin:", checkinId)
-        await updateCheckin(checkinId, checkinDataObj)
-      } else {
-        // Create new checkin - handled by backend when we pass the data
-        console.log("Will create new checkin")
+        await updateCheckin(checkinId, checkinData)
       }
 
       // Prepare the data for submission
       const submitData = {
         ...formattedFeasibilityData,
-        checkin: checkinDataObj,
+        checkin: checkinData,
       }
 
       // If we have a massProductionId, include it
@@ -658,7 +583,11 @@ const EditFeasibility = () => {
                   <Card className="md:col-span-3">
                     <CardHeader>
                       <CardTitle>{fieldConfig[activeField].label}</CardTitle>
-                      <CardDescription>{fieldConfig[activeField].description}</CardDescription>
+                      <CardDescription>
+                        {canEditFeasibility()
+                          ? fieldConfig[activeField].description
+                          : "View-only mode. You don't have permission to edit feasibility details."}
+                      </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div className="flex items-center space-x-2">
@@ -666,6 +595,8 @@ const EditFeasibility = () => {
                           id={`${activeField}-value`}
                           checked={feasibilityData[activeField]?.value || false}
                           onCheckedChange={(checked) => handleFeasibilityChange(activeField, "value", checked === true)}
+                          disabled={!canEditFeasibility()}
+                          className={!canEditFeasibility() ? "opacity-60" : ""}
                         />
                         <Label htmlFor={`${activeField}-value`}>Mark as completed</Label>
                       </div>
@@ -681,6 +612,8 @@ const EditFeasibility = () => {
                             onChange={(e) => handleDetailChange(activeField, "description", e.target.value)}
                             placeholder="Enter description"
                             rows={3}
+                            disabled={!canEditFeasibility()}
+                            className={!canEditFeasibility() ? "opacity-60" : ""}
                           />
                         </div>
 
@@ -693,6 +626,8 @@ const EditFeasibility = () => {
                               value={feasibilityData[activeField]?.details?.cost || ""}
                               onChange={(e) => handleDetailChange(activeField, "cost", Number(e.target.value))}
                               placeholder="0.00"
+                              disabled={!canEditFeasibility()}
+                              className={!canEditFeasibility() ? "opacity-60" : ""}
                             />
                           </div>
                           <div className="space-y-2">
@@ -703,6 +638,8 @@ const EditFeasibility = () => {
                               value={feasibilityData[activeField]?.details?.sales_price || ""}
                               onChange={(e) => handleDetailChange(activeField, "sales_price", Number(e.target.value))}
                               placeholder="0.00"
+                              disabled={!canEditFeasibility()}
+                              className={!canEditFeasibility() ? "opacity-60" : ""}
                             />
                           </div>
                         </div>
@@ -715,6 +652,8 @@ const EditFeasibility = () => {
                             onChange={(e) => handleDetailChange(activeField, "comments", e.target.value)}
                             placeholder="Add any additional comments here"
                             rows={4}
+                            disabled={!canEditFeasibility()}
+                            className={!canEditFeasibility() ? "opacity-60" : ""}
                           />
                         </div>
                       </div>
@@ -741,82 +680,19 @@ const EditFeasibility = () => {
                   <CardHeader>
                     <CardTitle>Check-in Details</CardTitle>
                     <CardDescription>
-                      Edit the details for the check-in. Check the box for completed items, add the name of the person
-                      checking in, and provide any comments.
+                      Each role can only edit their own section. Check the box for completed items, add your name, and
+                      provide comments.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
-                      className="space-y-6"
-                    >
-                      <div className="grid gap-6 md:grid-cols-2">
-                        {roleFields.map((field, index) => (
-                          <motion.div
-                            key={field.id}
-                            className="p-4 border rounded-lg"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.05 * index }}
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-start space-x-3">
-                                <Checkbox
-                                  id={`${field.id}-checkbox`}
-                                  checked={checkinData[field.id]?.value || false}
-                                  onCheckedChange={() => handleCheckboxChange(field.id)}
-                                />
-                                <label
-                                  htmlFor={`${field.id}-checkbox`}
-                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                >
-                                  {field.label}
-                                </label>
-                              </div>
 
-                              {/* Display submission status with date */}
-                              <div
-                                className={`text-xs flex items-center ${
-                                  checkinData[field.id]?.value ? "text-green-600" : "text-gray-400"
-                                }`}
-                              >
-                                <Clock size={12} className="mr-1" />
-                                {checkinData[field.id]?.value
-                                  ? formatDate(checkinData[field.id]?.date)
-                                  : "Not submitted"}
-                              </div>
-                            </div>
+                  {/* Use the RoleBasedCheckin component */}
+                  <RoleBasedCheckin
+                    checkinData={checkinData}
+                    setCheckinData={setCheckinData}
+                    readOnly={false}
+                    showTitle={false}
+                  />
 
-                            <div className="mb-3">
-                              <Label htmlFor={`${field.id}-name`} className="block mb-1 text-xs text-gray-500">
-                                Name
-                              </Label>
-                              <Input
-                                id={`${field.id}-name`}
-                                placeholder="Enter name"
-                                value={checkinData[field.id]?.name || ""}
-                                onChange={(e) => handleNameChange(field.id, e.target.value)}
-                                className="h-8 text-sm"
-                              />
-                            </div>
-
-                            <Label htmlFor={`${field.id}-comment`} className="block mb-1 text-xs text-gray-500">
-                              Comments
-                            </Label>
-                            <Textarea
-                              id={`${field.id}-comment`}
-                              placeholder="Add comments here..."
-                              value={checkinData[field.id]?.comment || ""}
-                              onChange={(e) => handleCommentChange(field.id, e.target.value)}
-                              className="h-20 text-sm"
-                            />
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  </CardContent>
                   <CardFooter className="flex justify-between">
                     <Button variant="outline" onClick={() => setActiveTab("feasibility")}>
                       Back to Feasibility
