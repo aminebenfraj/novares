@@ -1,5 +1,5 @@
 "use client"
-  
+
 import MainLayout from "@/components/MainLayout"
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
@@ -20,7 +20,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
@@ -843,7 +842,9 @@ const ReadinessDetails = () => {
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <CardTitle className="text-xl font-semibold text-slate-800">{readiness.project_name}</CardTitle>
+                        <CardTitle className="text-xl font-semibold text-slate-800">
+                          Project: {readiness.project_number}
+                        </CardTitle>
                         <Badge variant={statusBadge.variant} className="flex items-center">
                           {statusBadge.icon}
                           {readiness.status}
@@ -863,21 +864,8 @@ const ReadinessDetails = () => {
                 <CardContent className="p-6 bg-white">
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     {/* Assigned Info */}
+                    {/* Project Info */}
                     <div className="space-y-4">
-                      <div>
-                        <h3 className="mb-2 text-sm font-medium text-muted-foreground">Assigned To</h3>
-                        <div className="flex items-center p-3 border rounded-md bg-slate-50 border-slate-200">
-                          <Avatar className="w-10 h-10 mr-3">
-                            <AvatarImage src="/placeholder-user.jpg" alt="Assigned User" />
-                            <AvatarFallback>{readiness.assignedEmail?.charAt(0) || "U"}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{readiness.assignedEmail || "Not assigned"}</p>
-                            <p className="text-xs text-muted-foreground">{readiness.assignedRole || "No role"}</p>
-                          </div>
-                        </div>
-                      </div>
-
                       <div>
                         <h3 className="mb-2 text-sm font-medium text-muted-foreground">Project Details</h3>
                         <div className="p-3 border rounded-md bg-slate-50 border-slate-200">
@@ -885,9 +873,22 @@ const ReadinessDetails = () => {
                             <FileText className="w-4 h-4 mr-2 text-slate-500" />
                             <p className="font-medium">Project Information</p>
                           </div>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {readiness.description || "No description provided"}
-                          </p>
+                          <div className="mt-2 space-y-1">
+                            <p className="text-sm">
+                              <span className="font-medium">Project Number:</span> {readiness.project_number || "N/A"}
+                            </p>
+                            <p className="text-sm">
+                              <span className="font-medium">Part Number:</span> {readiness.part_number || "N/A"}
+                            </p>
+                            <p className="text-sm">
+                              <span className="font-medium">Part Designation:</span>{" "}
+                              {readiness.part_designation || "N/A"}
+                            </p>
+                            <p className="text-sm">
+                              <span className="font-medium">Description:</span>{" "}
+                              {readiness.description || "No description provided"}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1290,4 +1291,3 @@ const ReadinessDetails = () => {
 }
 
 export default ReadinessDetails
-

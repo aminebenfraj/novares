@@ -45,11 +45,11 @@ function ReadinessEdit() {
   // Form state
   const [formData, setFormData] = useState({
     id: "",
-    project_name: "",
+    project_number: "",
+    part_designation: "",
+    part_number: "",
     description: "",
     status: "on-going",
-    assignedEmail: "",
-    assignedRole: "",
   })
 
   // Fetch readiness data
@@ -65,11 +65,11 @@ function ReadinessEdit() {
         // Set form data
         setFormData({
           id: data.id || "",
-          project_name: data.project_name || "",
+          project_number: data.project_number || "",
+          part_designation: data.part_designation || "",
+          part_number: data.part_number || "",
           description: data.description || "",
           status: data.status || "on-going",
-          assignedEmail: data.assignedEmail || "",
-          assignedRole: data.assignedRole || "",
         })
 
         // Set additional notes if available
@@ -125,7 +125,7 @@ function ReadinessEdit() {
 
     try {
       // Validate required fields
-      if (!formData.project_name || !formData.assignedEmail) {
+      if (!formData.project_number || !formData.part_number) {
         setError("Please fill in all required fields.")
         toast({
           title: "Warning",
@@ -192,254 +192,259 @@ function ReadinessEdit() {
 
   return (
     <MainLayout>
-    <motion.div className="container py-6 mx-auto" initial="hidden" animate="visible" variants={fadeIn}>
-      <div className="flex items-center mb-6">
-        <Button variant="ghost" onClick={() => navigate(`/readiness/detail/${id}`)} className="mr-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-2xl font-bold">Edit Readiness Entry</h1>
-      </div>
-
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="w-4 h-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {successMessage && (
-        <Alert className="mb-6 text-green-800 border-green-200 bg-green-50">
-          <CheckCircle className="w-4 h-4 text-green-600" />
-          <AlertTitle>Success</AlertTitle>
-          <AlertDescription>{successMessage}</AlertDescription>
-        </Alert>
-      )}
-
-      {saving && (
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Updating readiness entry...</span>
-                <span className="text-sm font-medium">{progress}%</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="flex flex-wrap mb-6">
-            <TabsTrigger value="basic" className="flex-grow">
-              Basic Information
-            </TabsTrigger>
-            <TabsTrigger value="details" className="flex-grow">
-              Additional Details
-            </TabsTrigger>
-            <TabsTrigger value="submit" className="flex-grow">
-              Review & Submit
-            </TabsTrigger>
-          </TabsList>
-
-          <motion.div key={activeTab} initial="hidden" animate="visible" variants={slideUp} exit={{ opacity: 0 }}>
-            <TabsContent value="basic">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Basic Information</CardTitle>
-                  <CardDescription>Edit the basic information for this readiness entry.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="id">ID</Label>
-                      <Input
-                        id="id"
-                        name="id"
-                        value={formData.id}
-                        onChange={handleInputChange}
-                        disabled
-                        className="bg-gray-100"
-                      />
-                      <p className="text-xs text-muted-foreground">Auto-generated ID</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Status</Label>
-                      <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="on-going">On-going</SelectItem>
-                          <SelectItem value="stand-by">Stand-by</SelectItem>
-                          <SelectItem value="closed">Closed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="project_name" className="flex items-center">
-                      Project Name <span className="ml-1 text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="project_name"
-                      name="project_name"
-                      value={formData.project_name}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="assignedEmail" className="flex items-center">
-                      Assigned Email <span className="ml-1 text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="assignedEmail"
-                      name="assignedEmail"
-                      type="email"
-                      value={formData.assignedEmail}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="assignedRole">Assigned Role</Label>
-                    <Input
-                      id="assignedRole"
-                      name="assignedRole"
-                      value={formData.assignedRole}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      rows={4}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="details">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Additional Details</CardTitle>
-                  <CardDescription>Add any additional information for this readiness entry.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="additional-notes">Additional Notes</Label>
-                    <Textarea
-                      id="additional-notes"
-                      value={additionalNotes}
-                      onChange={(e) => setAdditionalNotes(e.target.value)}
-                      placeholder="Enter any additional notes or comments here..."
-                      rows={6}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="submit">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Review & Submit</CardTitle>
-                  <CardDescription>Review your readiness entry before submission.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="p-4 border rounded-lg bg-gray-50">
-                    <h3 className="mb-2 text-lg font-medium">Basic Information</h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">ID</p>
-                        <p>{formData.id}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Status</p>
-                        <p>{formData.status}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Project Name</p>
-                        <p>{formData.project_name || "Not specified"}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Assigned To</p>
-                        <p>{formData.assignedEmail || "Not specified"}</p>
-                      </div>
-                      <div className="md:col-span-2">
-                        <p className="text-sm font-medium text-gray-500">Description</p>
-                        <p>{formData.description || "Not specified"}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {additionalNotes && (
-                    <div className="p-4 border rounded-lg bg-gray-50">
-                      <h3 className="mb-2 text-lg font-medium">Additional Notes</h3>
-                      <p className="whitespace-pre-wrap">{additionalNotes}</p>
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Button type="button" variant="outline" onClick={() => setActiveTab("basic")}>
-                    Back to Edit
-                  </Button>
-                  <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700">
-                    {saving ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Changes
-                      </>
-                    )}
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-          </motion.div>
-        </Tabs>
-
-        <div className="flex items-center justify-between mt-6">
-          <div className="flex items-center">
-            <span className="mr-2 text-sm text-muted-foreground">Form completion:</span>
-            <Progress value={calculateProgress()} className="w-32 h-2" />
-            <span className="ml-2 text-sm text-muted-foreground">{calculateProgress()}%</span>
-          </div>
-          <div className="flex space-x-2">
-            <Button type="button" variant="outline" onClick={() => navigate(`/readiness/detail/${id}`)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          </div>
+      <motion.div className="container py-6 mx-auto" initial="hidden" animate="visible" variants={fadeIn}>
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" onClick={() => navigate(`/readiness/detail/${id}`)} className="mr-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-2xl font-bold">Edit Readiness Entry</h1>
         </div>
-      </form>
-    </motion.div>
+
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="w-4 h-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {successMessage && (
+          <Alert className="mb-6 text-green-800 border-green-200 bg-green-50">
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription>{successMessage}</AlertDescription>
+          </Alert>
+        )}
+
+        {saving && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Updating readiness entry...</span>
+                  <span className="text-sm font-medium">{progress}%</span>
+                </div>
+                <Progress value={progress} className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="flex flex-wrap mb-6">
+              <TabsTrigger value="basic" className="flex-grow">
+                Basic Information
+              </TabsTrigger>
+              <TabsTrigger value="details" className="flex-grow">
+                Additional Details
+              </TabsTrigger>
+              <TabsTrigger value="submit" className="flex-grow">
+                Review & Submit
+              </TabsTrigger>
+            </TabsList>
+
+            <motion.div key={activeTab} initial="hidden" animate="visible" variants={slideUp} exit={{ opacity: 0 }}>
+              <TabsContent value="basic">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Basic Information</CardTitle>
+                    <CardDescription>Edit the basic information for this readiness entry.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="id">ID</Label>
+                        <Input
+                          id="id"
+                          name="id"
+                          value={formData.id}
+                          onChange={handleInputChange}
+                          disabled
+                          className="bg-gray-100"
+                        />
+                        <p className="text-xs text-muted-foreground">Auto-generated ID</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="status">Status</Label>
+                        <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="on-going">On-going</SelectItem>
+                            <SelectItem value="stand-by">Stand-by</SelectItem>
+                            <SelectItem value="closed">Closed</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="project_number" className="flex items-center">
+                        Project Number <span className="ml-1 text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="project_number"
+                        name="project_number"
+                        value={formData.project_number}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="part_number" className="flex items-center">
+                          Part Number <span className="ml-1 text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="part_number"
+                          name="part_number"
+                          value={formData.part_number}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="part_designation">Part Designation</Label>
+                        <Input
+                          id="part_designation"
+                          name="part_designation"
+                          value={formData.part_designation}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows={4}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="details">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Additional Details</CardTitle>
+                    <CardDescription>Add any additional information for this readiness entry.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="additional-notes">Additional Notes</Label>
+                      <Textarea
+                        id="additional-notes"
+                        value={additionalNotes}
+                        onChange={(e) => setAdditionalNotes(e.target.value)}
+                        placeholder="Enter any additional notes or comments here..."
+                        rows={6}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="submit">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Review & Submit</CardTitle>
+                    <CardDescription>Review your readiness entry before submission.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="p-4 border rounded-lg bg-gray-50">
+                      <h3 className="mb-2 text-lg font-medium">Basic Information</h3>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">ID</p>
+                          <p>{formData.id}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Status</p>
+                          <p>{formData.status}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Project Number</p>
+                          <p>{formData.project_number || "Not specified"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Part Number</p>
+                          <p>{formData.part_number || "Not specified"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Part Designation</p>
+                          <p>{formData.part_designation || "Not specified"}</p>
+                        </div>
+                        <div className="md:col-span-2">
+                          <p className="text-sm font-medium text-gray-500">Description</p>
+                          <p>{formData.description || "Not specified"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {additionalNotes && (
+                      <div className="p-4 border rounded-lg bg-gray-50">
+                        <h3 className="mb-2 text-lg font-medium">Additional Notes</h3>
+                        <p className="whitespace-pre-wrap">{additionalNotes}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <Button type="button" variant="outline" onClick={() => setActiveTab("basic")}>
+                      Back to Edit
+                    </Button>
+                    <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700">
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+            </motion.div>
+          </Tabs>
+
+          <div className="flex items-center justify-between mt-6">
+            <div className="flex items-center">
+              <span className="mr-2 text-sm text-muted-foreground">Form completion:</span>
+              <Progress value={calculateProgress()} className="w-32 h-2" />
+              <span className="ml-2 text-sm text-muted-foreground">{calculateProgress()}%</span>
+            </div>
+            <div className="flex space-x-2">
+              <Button type="button" variant="outline" onClick={() => navigate(`/readiness/detail/${id}`)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </form>
+      </motion.div>
     </MainLayout>
   )
 }

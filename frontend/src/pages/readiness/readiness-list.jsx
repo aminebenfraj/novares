@@ -122,9 +122,10 @@ const ReadinessList = () => {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(
         (entry) =>
-          entry.project_name?.toLowerCase().includes(term) ||
-          entry.id?.toLowerCase().includes(term) ||
-          (entry.assignedEmail && entry.assignedEmail.toLowerCase().includes(term)),
+          entry.project_number?.toLowerCase().includes(term) ||
+          entry.part_number?.toLowerCase().includes(term) ||
+          entry.part_designation?.toLowerCase().includes(term) ||
+          entry.id?.toLowerCase().includes(term),
       )
     }
 
@@ -236,7 +237,7 @@ const ReadinessList = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by project name, ID or email..."
+                  placeholder="Search by project number, part number, ID..."
                   className="pl-8"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -304,9 +305,9 @@ const ReadinessList = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>ID</TableHead>
-                      <TableHead>Project Name</TableHead>
+                      <TableHead>Project Number</TableHead>
+                      <TableHead>Part Number</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Assigned To</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Updated</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -316,9 +317,9 @@ const ReadinessList = () => {
                     {filteredEntries.map((entry) => (
                       <TableRow key={entry._id}>
                         <TableCell className="font-medium">{entry.id}</TableCell>
-                        <TableCell>{entry.project_name}</TableCell>
+                        <TableCell>{entry.project_number}</TableCell>
+                        <TableCell>{entry.part_number}</TableCell>
                         <TableCell>{getStatusBadge(entry.status)}</TableCell>
-                        <TableCell>{entry.assignedEmail || "N/A"}</TableCell>
                         <TableCell>{formatDate(entry.createdAt)}</TableCell>
                         <TableCell>{formatDate(entry.updatedAt)}</TableCell>
                         <TableCell className="text-right">
@@ -381,4 +382,3 @@ const ReadinessList = () => {
 }
 
 export default ReadinessList
-

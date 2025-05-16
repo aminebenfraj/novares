@@ -4,8 +4,9 @@ const { Schema } = mongoose;
 const readinessSchema = new Schema(
   {
     id: { type: String, required: true, index: true, trim: true, unique: true },
-    assignedEmail: { type: String, required: true, trim: true },
-    project_name: { type: String, required: true, trim: true },
+    project_number: { type: String, required: true, trim: true },
+    part_designation: { type: String, trim: true },
+    part_number: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
     status: { type: String, enum: ["cancelled", "closed", "on-going", "stand-by"], required: true },
     Documentation: { type: Schema.Types.ObjectId, ref: "Documentation" },

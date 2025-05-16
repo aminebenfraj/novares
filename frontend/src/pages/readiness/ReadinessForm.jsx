@@ -150,11 +150,11 @@ function ReadinessForm() {
   // Form state
   const [formData, setFormData] = useState({
     id: `RDN-${Date.now()}-${Math.floor(Math.random() * 100)}`,
-    project_name: "",
+    project_number: "",
+    part_designation: "",
+    part_number: "",
     description: "",
     status: "on-going",
-    assignedEmail: "",
-    assignedRole: "",
   })
 
   // Module data states
@@ -309,7 +309,17 @@ function ReadinessForm() {
     setSuccessMessage(null)
 
     try {
-      // All fields are optional, no validation needed
+      // Validate required fields
+      if (!formData.project_number || !formData.part_number) {
+        setError("Please fill in all required fields.")
+        toast({
+          title: "Warning",
+          description: "Please fill in all required fields.",
+          variant: "destructive",
+        })
+        setLoading(false)
+        return
+      }
 
       // Create readiness data object
       const readinessData = { ...formData }
@@ -666,13 +676,40 @@ function ReadinessForm() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="project_name">Project Name</Label>
+                      <Label htmlFor="project_number" className="flex items-center">
+                        Project Number <span className="ml-1 text-red-500">*</span>
+                      </Label>
                       <Input
-                        id="project_name"
-                        name="project_name"
-                        value={formData.project_name}
+                        id="project_number"
+                        name="project_number"
+                        value={formData.project_number}
                         onChange={handleInputChange}
+                        required
                       />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="part_number" className="flex items-center">
+                          Part Number <span className="ml-1 text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="part_number"
+                          name="part_number"
+                          value={formData.part_number}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="part_designation">Part Designation</Label>
+                        <Input
+                          id="part_designation"
+                          name="part_designation"
+                          value={formData.part_designation}
+                          onChange={handleInputChange}
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
@@ -682,31 +719,8 @@ function ReadinessForm() {
                         name="description"
                         value={formData.description}
                         onChange={handleInputChange}
-                        rows={3}
+                        rows={4}
                       />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="assignedEmail">Assigned Email</Label>
-                        <Input
-                          id="assignedEmail"
-                          name="assignedEmail"
-                          type="email"
-                          value={formData.assignedEmail}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="assignedRole">Assigned Role</Label>
-                        <Input
-                          id="assignedRole"
-                          name="assignedRole"
-                          value={formData.assignedRole}
-                          onChange={handleInputChange}
-                        />
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -907,12 +921,20 @@ function ReadinessForm() {
                           <p>{formData.status}</p>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-500">Project Name</p>
-                          <p>{formData.project_name || "Not specified"}</p>
+                          <p className="text-sm font-medium text-gray-500">Project Number</p>
+                          <p>{formData.project_number || "Not specified"}</p>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-500">Assigned To</p>
-                          <p>{formData.assignedEmail || "Not specified"}</p>
+                          <p className="text-sm font-medium text-gray-500">Part Number</p>
+                          <p>{formData.part_number || "Not specified"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Part Designation</p>
+                          <p>{formData.part_designation || "Not specified"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Description</p>
+                          <p>{formData.description || "Not specified"}</p>
                         </div>
                       </div>
                     </div>
