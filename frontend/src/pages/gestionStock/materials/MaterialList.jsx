@@ -2,13 +2,23 @@
 
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Search,
   Plus,
@@ -18,12 +28,15 @@ import {
   Download,
   Filter,
   ArrowUpDown,
-  RefreshCw,
   ChevronLeft,
   ChevronRight,
   X,
   SlidersHorizontal,
   History,
+  Loader2,
+  FileText,
+  AlertCircle,
+  MoreHorizontal,
 } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -37,12 +50,23 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 import { getAllMaterials, deleteMaterial, getFilterOptions } from "../../../apis/gestionStockApi/materialApi"
 import MainLayout from "@/components/MainLayout"
+
+// Animation variants
+const fadeIn = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.5 } },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.3 } },
+  exit: { opacity: 0, transition: { duration: 0.2 } },
+}
 
 const MaterialList = () => {
   const { toast } = useToast()
@@ -53,6 +77,8 @@ const MaterialList = () => {
   const [activeTab, setActiveTab] = useState("all")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isHistoryMatch, setIsHistoryMatch] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [materialToDelete, setMaterialToDelete] = useState(null)
 
   // Filter options
   const [filterOptions, setFilterOptions] = useState({
@@ -132,6 +158,7 @@ const MaterialList = () => {
   const fetchMaterials = async () => {
     try {
       setIsLoading(true)
+      setError(null)
 
       // Map active tab to stockStatus filter
       let stockStatusFilter = ""
@@ -172,8 +199,6 @@ const MaterialList = () => {
       } else {
         setError("Invalid data received from server.")
       }
-
-      setIsLoading(false)
     } catch (error) {
       console.error("Error fetching materials:", error)
       setError("Failed to load materials. Please try again later.")
@@ -182,6 +207,7 @@ const MaterialList = () => {
         title: "Error",
         description: "Failed to load materials. Please try again later.",
       })
+    } finally {
       setIsLoading(false)
     }
   }
@@ -201,23 +227,31 @@ const MaterialList = () => {
     setPagination((prev) => ({ ...prev, page: newPage }))
   }
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this material?")) {
-      try {
-        await deleteMaterial(id)
-        toast({
-          title: "Success",
-          description: "Material deleted successfully",
-        })
-        fetchMaterials()
-      } catch (error) {
-        console.error("Failed to delete material:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to delete material. Please try again.",
-        })
-      }
+  const confirmDelete = (material) => {
+    setMaterialToDelete(material)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!materialToDelete) return
+
+    try {
+      await deleteMaterial(materialToDelete._id)
+      setMaterials(materials.filter((material) => material._id !== materialToDelete._id))
+      toast({
+        title: "Success",
+        description: "Material deleted successfully",
+      })
+    } catch (error) {
+      console.error("Failed to delete material:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete material. Please try again.",
+      })
+    } finally {
+      setDeleteDialogOpen(false)
+      setMaterialToDelete(null)
     }
   }
 
@@ -308,59 +342,54 @@ const MaterialList = () => {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-gray-100 dark:bg-zinc-900">
-        <div className="container px-4 py-8 mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between"
-          >
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Materials</h1>
-              <p className="text-muted-foreground">Manage your inventory materials</p>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Link to="/materials/create">
-                <Button className="bg-primary hover:bg-primary/90">
-                  <Plus className="w-4 h-4 mr-2" /> Add New Material
-                </Button>
-              </Link>
-              <Button variant="outline" onClick={exportToCSV}>
-                <Download className="w-4 h-4 mr-2" /> Export to CSV
+      <motion.div className="container py-6 mx-auto" initial="hidden" animate="visible" variants={fadeIn}>
+        <div className="flex flex-col mb-6 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Materials</h1>
+            <p className="text-muted-foreground">Manage your inventory materials</p>
+          </div>
+          <div className="flex flex-col gap-2 mt-4 sm:flex-row md:mt-0">
+            <Link to="/materials/create">
+              <Button>
+                <Plus className="w-4 h-4 mr-2" /> Add New Material
               </Button>
-            </div>
-          </motion.div>
+            </Link>
+            <Button variant="outline" onClick={exportToCSV}>
+              <Download className="w-4 h-4 mr-2" /> Export to CSV
+            </Button>
+          </div>
+        </div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1, duration: 0.3 }}
-            className="grid gap-6 mb-6 md:grid-cols-3"
-          >
-            <div className="relative col-span-3 md:col-span-2">
-              <div className="relative">
-                <Search
-                  className="absolute transform -translate-y-1/2 text-muted-foreground left-3 top-1/2"
-                  size={20}
-                />
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="w-4 h-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle>Filters</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4 md:flex-row">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  type="text"
                   placeholder="Search by reference, manufacturer, or description..."
-                  className="w-full py-2 pl-10 pr-4"
+                  className="pl-8"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 {isHistoryMatch && (
-                  <Badge variant="secondary" className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <Badge variant="secondary" className="absolute transform -translate-y-1/2 right-3 top-1/2">
                     <History className="w-3 h-3 mr-1" />
                     Reference History Match
                   </Badge>
                 )}
               </div>
-            </div>
-            <div className="col-span-3 md:col-span-1">
-              <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab} value={activeTab}>
+              <Tabs defaultValue="all" className="w-full md:w-auto" onValueChange={setActiveTab} value={activeTab}>
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="all">All</TabsTrigger>
                   <TabsTrigger value="in_stock">In Stock</TabsTrigger>
@@ -368,393 +397,302 @@ const MaterialList = () => {
                   <TabsTrigger value="out_of_stock">Out of Stock</TabsTrigger>
                 </TabsList>
               </Tabs>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.3 }}
-          >
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Materials</CardTitle>
-                    <CardDescription>
-                      {pagination.total} {pagination.total === 1 ? "item" : "items"} found
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Filter className="w-4 h-4 mr-2" />
-                          Filters
-                          {Object.values(filters).some((v) => v !== "" && v !== null) && (
-                            <Badge variant="secondary" className="ml-1">
-                              {Object.values(filters).filter((v) => v !== "" && v !== null).length}
-                            </Badge>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="p-0 w-80" align="end">
-                        <div className="p-4 border-b">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium">Filters</h4>
-                            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 px-2">
-                              <X className="w-4 h-4 mr-2" />
-                              Clear all
-                            </Button>
-                          </div>
-                        </div>
-                        <ScrollArea className="h-[400px]">
-                          <div className="p-4 space-y-4">
-                            {/* Manufacturer filter */}
-                            <div className="space-y-2">
-                              <Label htmlFor="manufacturer">Manufacturer</Label>
-                              <Select
-                                value={filters.manufacturer}
-                                onValueChange={(value) => handleFilterChange("manufacturer", value)}
-                              >
-                                <SelectTrigger id="manufacturer">
-                                  <SelectValue placeholder="Select manufacturer" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">All Manufacturers</SelectItem>
-                                  {filterOptions.manufacturers.map((manufacturer, index) => (
-                                    <SelectItem key={index} value={manufacturer.name}>
-                                      {manufacturer.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {/* Supplier filter */}
-                            <div className="space-y-2">
-                              <Label htmlFor="supplier">Supplier</Label>
-                              <Select
-                                value={filters.supplier}
-                                onValueChange={(value) => handleFilterChange("supplier", value)}
-                              >
-                                <SelectTrigger id="supplier">
-                                  <SelectValue placeholder="Select supplier" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">All Suppliers</SelectItem>
-                                  {filterOptions.suppliers.map((supplier) => (
-                                    <SelectItem key={supplier._id} value={supplier._id}>
-                                      {supplier.companyName}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {/* Category filter */}
-                            <div className="space-y-2">
-                              <Label htmlFor="category">Category</Label>
-                              <Select
-                                value={filters.category}
-                                onValueChange={(value) => handleFilterChange("category", value)}
-                              >
-                                <SelectTrigger id="category">
-                                  <SelectValue placeholder="Select category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">All Categories</SelectItem>
-                                  {filterOptions.categories.map((category) => (
-                                    <SelectItem key={category._id} value={category._id}>
-                                      {category.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {/* Location filter */}
-                            <div className="space-y-2">
-                              <Label htmlFor="location">Location</Label>
-                              <Select
-                                value={filters.location}
-                                onValueChange={(value) => handleFilterChange("location", value)}
-                              >
-                                <SelectTrigger id="location">
-                                  <SelectValue placeholder="Select location" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">All Locations</SelectItem>
-                                  {filterOptions.locations.map((location) => (
-                                    <SelectItem key={location._id} value={location._id}>
-                                      {location.location}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <Separator />
-
-                            {/* Status filters */}
-                            <div className="space-y-2">
-                              <Label>Item Status</Label>
-                              <div className="grid grid-cols-2 gap-2 pt-2">
-                                <div className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id="critical"
-                                    checked={filters.critical === "true"}
-                                    onCheckedChange={(checked) => handleFilterChange("critical", checked ? "true" : "")}
-                                  />
-                                  <Label htmlFor="critical" className="font-normal">
-                                    Critical
-                                  </Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id="consumable"
-                                    checked={filters.consumable === "true"}
-                                    onCheckedChange={(checked) =>
-                                      handleFilterChange("consumable", checked ? "true" : "")
-                                    }
-                                  />
-                                  <Label htmlFor="consumable" className="font-normal">
-                                    Consumable
-                                  </Label>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Price range filter */}
-                            <div className="space-y-2">
-                              <Label>Price Range</Label>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="space-y-1">
-                                  <Label htmlFor="minPrice" className="text-xs">
-                                    Min Price
-                                  </Label>
-                                  <Input
-                                    id="minPrice"
-                                    type="number"
-                                    placeholder="Min"
-                                    value={filters.minPrice}
-                                    onChange={(e) => handleFilterChange("minPrice", e.target.value)}
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label htmlFor="maxPrice" className="text-xs">
-                                    Max Price
-                                  </Label>
-                                  <Input
-                                    id="maxPrice"
-                                    type="number"
-                                    placeholder="Max"
-                                    value={filters.maxPrice}
-                                    onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </ScrollArea>
-                        <div className="flex items-center justify-between p-4 border-t">
-                          <Button variant="ghost" onClick={() => setIsFilterOpen(false)}>
-                            Cancel
-                          </Button>
-                          <Button
-                            onClick={() => {
-                              fetchMaterials()
-                              setIsFilterOpen(false)
-                            }}
-                          >
-                            Apply Filters
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <SlidersHorizontal className="w-4 h-4 mr-2" /> Sort
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleSortChange("reference")}>
-                          Reference {sort.field === "reference" && (sort.order === 1 ? "↑" : "↓")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleSortChange("manufacturer")}>
-                          Manufacturer {sort.field === "manufacturer" && (sort.order === 1 ? "↑" : "↓")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleSortChange("currentStock")}>
-                          Stock {sort.field === "currentStock" && (sort.order === 1 ? "↑" : "↓")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleSortChange("price")}>
-                          Price {sort.field === "price" && (sort.order === 1 ? "↑" : "↓")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleSortChange("updatedAt")}>
-                          Last Updated {sort.field === "updatedAt" && (sort.order === 1 ? "↑" : "↓")}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 text-primary animate-spin" />
-                  </div>
-                ) : (
-                  <>
-                    <ScrollArea className="h-[calc(100vh-350px)]">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[100px]">
-                              <Button
-                                variant="ghost"
-                                className="p-0 hover:bg-transparent"
-                                onClick={() => handleSortChange("reference")}
-                              >
-                                Reference
-                                <ArrowUpDown className="w-4 h-4 ml-1" />
-                              </Button>
-                            </TableHead>
-                            <TableHead>
-                              <Button
-                                variant="ghost"
-                                className="p-0 hover:bg-transparent"
-                                onClick={() => handleSortChange("manufacturer")}
-                              >
-                                Manufacturer
-                                <ArrowUpDown className="w-4 h-4 ml-1" />
-                              </Button>
-                            </TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead>
-                              <Button
-                                variant="ghost"
-                                className="p-0 hover:bg-transparent"
-                                onClick={() => handleSortChange("currentStock")}
-                              >
-                                Stock
-                                <ArrowUpDown className="w-4 h-4 ml-1" />
-                              </Button>
-                            </TableHead>
-                            <TableHead>
-                              <Button
-                                variant="ghost"
-                                className="p-0 hover:bg-transparent"
-                                onClick={() => handleSortChange("price")}
-                              >
-                                Price
-                                <ArrowUpDown className="w-4 h-4 ml-1" />
-                              </Button>
-                            </TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {materials.length > 0 ? (
-                            materials.map((material, index) => (
-                              <motion.tr
-                                key={material._id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.03, duration: 0.2 }}
-                                className="group"
-                              >
-                                <TableCell className="font-medium">
-                                  {material.reference}
-                                  {material.referenceHistory && material.referenceHistory.length > 0 && (
-                                    <Badge variant="outline" className="ml-2">
-                                      <History className="w-3 h-3 mr-1" />
-                                      {material.referenceHistory.length}
-                                    </Badge>
-                                  )}
-                                </TableCell>
-                                <TableCell>{material.manufacturer}</TableCell>
-                                <TableCell className="max-w-[200px] truncate">{material.description}</TableCell>
-                                <TableCell>{material.currentStock}</TableCell>
-                                <TableCell>${material.price.toFixed(2)}</TableCell>
-                                <TableCell>
-                                  <Badge variant={getStockStatusVariant(material)}>{getStockStatus(material)}</Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    <Link to={`/materials/details/${material._id}`}>
-                                      <Button size="sm" variant="ghost" className="w-8 h-8 p-0">
-                                        <Eye className="w-4 h-4" />
-                                      </Button>
-                                    </Link>
-                                    <Link to={`/materials/edit/${material._id}`}>
-                                      <Button size="sm" variant="ghost" className="w-8 h-8 p-0">
-                                        <Edit className="w-4 h-4" />
-                                      </Button>
-                                    </Link>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="w-8 h-8 p-0 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900"
-                                      onClick={() => handleDelete(material._id)}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </motion.tr>
-                            ))
-                          ) : (
-                            <TableRow>
-                              <TableCell colSpan={7} className="h-24 text-center">
-                                No materials found.
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </ScrollArea>
-
-                    <div className="flex items-center justify-between px-2 py-4 border-t">
-                      <div className="text-sm text-muted-foreground">
-                        Showing {materials.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0} to{" "}
-                        {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePageChange(pagination.page - 1)}
-                          disabled={pagination.page === 1}
-                        >
-                          <ChevronLeft className="w-4 h-4 mr-2" />
-                          Previous
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePageChange(pagination.page + 1)}
-                          disabled={pagination.page >= pagination.totalPages}
-                        >
-                          Next
-                          <ChevronRight className="w-4 h-4 ml-2" />
-                        </Button>
-                      </div>
+              <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-10">
+                    <Filter className="w-4 h-4 mr-2" />
+                    Advanced Filters
+                    {Object.values(filters).some((v) => v !== "" && v !== null) && (
+                      <Badge variant="secondary" className="ml-1">
+                        {Object.values(filters).filter((v) => v !== "" && v !== null).length}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 w-80" align="end">
+                  <div className="p-4 border-b">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">Filters</h4>
+                      <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 px-2">
+                        <X className="w-4 h-4 mr-2" />
+                        Clear all
+                      </Button>
                     </div>
-                  </>
+                  </div>
+                  <ScrollArea className="h-[400px]">
+                    <div className="p-4 space-y-4">
+                      {/* Filter options here */}
+                      {/* Manufacturer filter */}
+                      <div className="space-y-2">
+                        <Label htmlFor="manufacturer">Manufacturer</Label>
+                        <Select
+                          value={filters.manufacturer}
+                          onValueChange={(value) => handleFilterChange("manufacturer", value)}
+                        >
+                          <SelectTrigger id="manufacturer">
+                            <SelectValue placeholder="Select manufacturer" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Manufacturers</SelectItem>
+                            {filterOptions.manufacturers.map((manufacturer, index) => (
+                              <SelectItem key={index} value={manufacturer.name}>
+                                {manufacturer.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* More filters here */}
+                    </div>
+                  </ScrollArea>
+                  <div className="flex items-center justify-between p-4 border-t">
+                    <Button variant="ghost" onClick={() => setIsFilterOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        fetchMaterials()
+                        setIsFilterOpen(false)
+                      }}
+                    >
+                      Apply Filters
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Materials</CardTitle>
+                <CardDescription>
+                  {pagination.total} {pagination.total === 1 ? "item" : "items"} found
+                </CardDescription>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <SlidersHorizontal className="w-4 h-4 mr-2" /> Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleSortChange("reference")}>
+                    Reference {sort.field === "reference" && (sort.order === 1 ? "↑" : "↓")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSortChange("manufacturer")}>
+                    Manufacturer {sort.field === "manufacturer" && (sort.order === 1 ? "↑" : "↓")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSortChange("currentStock")}>
+                    Stock {sort.field === "currentStock" && (sort.order === 1 ? "↑" : "↓")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSortChange("price")}>
+                    Price {sort.field === "price" && (sort.order === 1 ? "↑" : "↓")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSortChange("updatedAt")}>
+                    Last Updated {sort.field === "updatedAt" && (sort.order === 1 ? "↑" : "↓")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <span className="ml-2 text-lg">Loading materials...</span>
+              </div>
+            ) : materials.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <FileText className="w-12 h-12 mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium">No materials found</h3>
+                <p className="mt-1 mb-4 text-muted-foreground">
+                  {searchTerm || Object.values(filters).some((v) => v !== "" && v !== null)
+                    ? "Try adjusting your filters"
+                    : "Create your first material to get started"}
+                </p>
+                {!searchTerm && !Object.values(filters).some((v) => v !== "" && v !== null) && (
+                  <Link to="/materials/create">
+                    <Button>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add New Material
+                    </Button>
+                  </Link>
                 )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-      </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[100px]">
+                        <Button
+                          variant="ghost"
+                          className="p-0 hover:bg-transparent"
+                          onClick={() => handleSortChange("reference")}
+                        >
+                          Reference
+                          <ArrowUpDown className="w-4 h-4 ml-1" />
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          className="p-0 hover:bg-transparent"
+                          onClick={() => handleSortChange("manufacturer")}
+                        >
+                          Manufacturer
+                          <ArrowUpDown className="w-4 h-4 ml-1" />
+                        </Button>
+                      </TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          className="p-0 hover:bg-transparent"
+                          onClick={() => handleSortChange("currentStock")}
+                        >
+                          Stock
+                          <ArrowUpDown className="w-4 h-4 ml-1" />
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          className="p-0 hover:bg-transparent"
+                          onClick={() => handleSortChange("price")}
+                        >
+                          Price
+                          <ArrowUpDown className="w-4 h-4 ml-1" />
+                        </Button>
+                      </TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <AnimatePresence initial={false} mode="popLayout">
+                      {materials.map((material, index) => (
+                        <motion.tr
+                          key={material._id}
+                          variants={itemVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                          transition={{ delay: index * 0.03, duration: 0.2 }}
+                          className="group"
+                        >
+                          <TableCell className="font-medium">
+                            {material.reference}
+                            {material.referenceHistory && material.referenceHistory.length > 0 && (
+                              <Badge variant="outline" className="ml-2">
+                                <History className="w-3 h-3 mr-1" />
+                                {material.referenceHistory.length}
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>{material.manufacturer}</TableCell>
+                          <TableCell className="max-w-[200px] truncate">{material.description}</TableCell>
+                          <TableCell>{material.currentStock}</TableCell>
+                          <TableCell>${material.price.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Badge variant={getStockStatusVariant(material)}>{getStockStatus(material)}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                  <span className="sr-only">Actions</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => (window.location.href = `/materials/details/${material._id}`)}
+                                >
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => (window.location.href = `/materials/edit/${material._id}`)}
+                                >
+                                  <Edit className="w-4 h-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => confirmDelete(material)}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </motion.tr>
+                      ))}
+                    </AnimatePresence>
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between px-2 py-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Showing {materials.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0} to{" "}
+                {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                  disabled={pagination.page === 1}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                  disabled={pagination.page >= pagination.totalPages}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the material
+                <span className="font-semibold"> {materialToDelete?.reference}</span>. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </motion.div>
     </MainLayout>
   )
 }
 
 export default MaterialList
-

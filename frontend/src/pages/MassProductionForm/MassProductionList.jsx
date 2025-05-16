@@ -17,14 +17,6 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -48,13 +40,14 @@ import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 // Icons
 import {
   Plus,
   Search,
   Filter,
-  MoreVertical,
+  MoreHorizontal,
   Eye,
   Edit,
   Trash2,
@@ -69,26 +62,31 @@ import {
   Download,
   LayoutDashboard,
   SlidersHorizontal,
+  AlertCircle,
 } from "lucide-react"
 
-// Optimized animation variants
+// Import the AlertDialog components
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
+// Animation variants
+const fadeIn = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.5 } },
+}
+
 const itemVariants = {
-  hidden: { opacity: 0, y: 5 }, // Reduced y distance
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: "tween", // Changed from spring to tween
-      duration: 0.2, // Shorter duration
-    },
-  },
-  exit: {
-    opacity: 0,
-    y: -5, // Reduced exit distance
-    transition: {
-      duration: 0.1, // Faster exit
-    },
-  },
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.3 } },
+  exit: { opacity: 0, transition: { duration: 0.2 } },
 }
 
 const MassProductionList = () => {
@@ -114,6 +112,7 @@ const MassProductionList = () => {
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false)
   const [dateFilter, setDateFilter] = useState({ from: "", to: "" })
   const [progressFilter, setProgressFilter] = useState("all")
+  const [error, setError] = useState(null)
   const itemsPerPage = 10
 
   // Stats for dashboard
@@ -132,6 +131,7 @@ const MassProductionList = () => {
     const fetchData = async () => {
       try {
         setLoading(true)
+        setError(null)
         const [massProductionsData, customersData, productDesignationsData] = await Promise.all([
           getAllMassProductions(),
           getAllCustomers(),
@@ -151,6 +151,7 @@ const MassProductionList = () => {
           setTotalPages(Math.ceil(enhancedData.length / itemsPerPage))
         } else {
           console.error("Invalid mass productions data format:", massProductionsData)
+          setError("Invalid data format received from server")
           setMassProductions([])
           setFilteredProductions([])
         }
@@ -172,6 +173,7 @@ const MassProductionList = () => {
         }
       } catch (error) {
         console.error("Error fetching data:", error)
+        setError("Failed to load data. Please try again.")
         toast({
           title: "Error",
           description: "Failed to load data. Please refresh the page.",
@@ -401,28 +403,25 @@ const MassProductionList = () => {
   const handleDelete = async () => {
     if (!itemToDelete) return
 
-    setDeleteLoading(true)
     try {
+      setDeleteLoading(true)
       await deleteMassProduction(itemToDelete._id)
-
-      // Update local state
-      setMassProductions((prevState) => prevState.filter((item) => item._id !== itemToDelete._id))
-
+      setMassProductions(massProductions.filter((item) => item._id !== itemToDelete._id))
       toast({
         title: "Success",
-        description: "Mass production record deleted successfully.",
+        description: "Mass production record deleted successfully",
       })
     } catch (error) {
-      console.error("Error deleting record:", error)
+      console.error("Error deleting mass production record:", error)
       toast({
         title: "Error",
-        description: "Failed to delete record. Please try again.",
+        description: "Failed to delete mass production record",
         variant: "destructive",
       })
     } finally {
-      setDeleteLoading(false)
       setDeleteDialogOpen(false)
       setItemToDelete(null)
+      setDeleteLoading(false)
     }
   }
 
@@ -646,7 +645,7 @@ const MassProductionList = () => {
           key={`card-skeleton-${index}`}
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2, delay: index * 0.03 }} // Reduced delay
+          transition={{ duration: 0.2, delay: index * 0.03 }}
         >
           <Card className="h-[220px]">
             <CardHeader className="pb-2">
@@ -961,7 +960,7 @@ const MassProductionList = () => {
                     initial="hidden"
                     animate="visible"
                     exit="exit"
-                    transition={{ duration: 0.2, delay: index * 0.03 }} // Reduced delay
+                    transition={{ duration: 0.2, delay: index * 0.03 }}
                     className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
                   >
                     <TableCell>
@@ -1020,7 +1019,7 @@ const MassProductionList = () => {
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="w-8 h-8 p-0">
                             <span className="sr-only">Open menu</span>
-                            <MoreVertical className="w-4 h-4" />
+                            <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -1083,8 +1082,8 @@ const MassProductionList = () => {
               initial="hidden"
               animate="visible"
               exit="exit"
-              transition={{ duration: 0.2, delay: index * 0.03 }} // Reduced delay
-              whileHover={{ y: -3, transition: { duration: 0.1 } }} // Faster hover
+              transition={{ duration: 0.2, delay: index * 0.03 }}
+              whileHover={{ y: -3, transition: { duration: 0.1 } }}
               className="h-full"
             >
               <Card
@@ -1187,155 +1186,158 @@ const MassProductionList = () => {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-background">
-        <div className="container py-8 mx-auto">
-          <div className="flex flex-col gap-6">
-            {/* Header */}
-            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Mass Production</h1>
-                <p className="text-muted-foreground">Manage and track all mass production records.</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button onClick={handleRefresh} variant="outline" size="icon" className="h-9 w-9">
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
-                <Button onClick={() => navigate("/masspd/create")} className="gap-1">
-                  <Plus className="w-4 h-4" />
-                  New Record
-                </Button>
-              </div>
+      <motion.div className="container py-6 mx-auto" initial="hidden" animate="visible" variants={fadeIn}>
+        <div className="flex flex-col gap-6">
+          {/* Header */}
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <h1 className="text-2xl font-bold">Mass Production</h1>
+              <p className="text-muted-foreground">Manage and track all mass production records.</p>
             </div>
-
-            {/* Stats Dashboard */}
-            {renderStatsDashboard()}
-
-            {/* Advanced Filters Toggle */}
-            <div className="flex justify-end">
-              <Button variant="outline" onClick={() => setAdvancedFiltersOpen(!advancedFiltersOpen)} className="gap-2">
-                <SlidersHorizontal className="w-4 h-4" />
-                {advancedFiltersOpen ? "Hide Advanced Filters" : "Show Advanced Filters"}
+            <div className="flex items-center gap-2">
+              <Button onClick={handleRefresh} variant="outline" size="icon" className="h-9 w-9">
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+              <Button onClick={() => navigate("/masspd/create")} className="gap-1">
+                <Plus className="w-4 h-4" />
+                New Record
               </Button>
             </div>
+          </div>
 
-            {/* Advanced Filters */}
-            {advancedFiltersOpen && renderAdvancedFilters()}
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="w-4 h-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            {/* Filters and Search */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-              <div className="relative md:col-span-2">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by ID, project number or description..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+          {/* Stats Dashboard */}
+          {renderStatsDashboard()}
+
+          {/* Advanced Filters Toggle */}
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setAdvancedFiltersOpen(!advancedFiltersOpen)} className="gap-2">
+              <SlidersHorizontal className="w-4 h-4" />
+              {advancedFiltersOpen ? "Hide Advanced Filters" : "Show Advanced Filters"}
+            </Button>
+          </div>
+
+          {/* Advanced Filters */}
+          {advancedFiltersOpen && renderAdvancedFilters()}
+
+          {/* Filters and Search */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div className="relative md:col-span-2">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by ID, project number or description..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4" />
+                    <SelectValue placeholder="Filter by status" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="on-going">On-going</SelectItem>
+                  <SelectItem value="stand-by">Stand-by</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Select value={customerFilter} onValueChange={setCustomerFilter}>
+                <SelectTrigger>
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4" />
+                    <SelectValue placeholder="Filter by customer" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Customers</SelectItem>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer._id} value={customer._id}>
+                      {customer.username}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Bulk Actions */}
+          {selectedItems.length > 0 && (
+            <div className="flex items-center justify-between p-2 rounded-md bg-muted">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">{selectedItems.length} items selected</span>
               </div>
-              <div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
-                    <div className="flex items-center gap-2">
-                      <Filter className="w-4 h-4" />
-                      <SelectValue placeholder="Filter by status" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="on-going">On-going</SelectItem>
-                    <SelectItem value="stand-by">Stand-by</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Select value={customerFilter} onValueChange={setCustomerFilter}>
-                  <SelectTrigger>
-                    <div className="flex items-center gap-2">
-                      <Filter className="w-4 h-4" />
-                      <SelectValue placeholder="Filter by customer" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Customers</SelectItem>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer._id} value={customer._id}>
-                        {customer.username}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={exportToCSV}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export CSV
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => setBulkActionDialogOpen(true)}>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Selected
+                </Button>
               </div>
             </div>
+          )}
 
-            {/* Bulk Actions */}
-            {selectedItems.length > 0 && (
-              <div className="flex items-center justify-between p-2 rounded-md bg-muted">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{selectedItems.length} items selected</span>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={exportToCSV}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Export CSV
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => setBulkActionDialogOpen(true)}>
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Selected
-                  </Button>
-                </div>
+          {/* Stats */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>
+              Showing {filteredProductions.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}-
+              {Math.min(currentPage * itemsPerPage, filteredProductions.length)} of {filteredProductions.length} records
+            </span>
+            {loading && (
+              <div className="flex items-center gap-1 text-primary">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Loading</span>
               </div>
             )}
-
-            {/* Stats */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>
-                Showing {filteredProductions.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}-
-                {Math.min(currentPage * itemsPerPage, filteredProductions.length)} of {filteredProductions.length}{" "}
-                records
-              </span>
-              {loading && (
-                <div className="flex items-center gap-1 text-primary">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span>Loading</span>
-                </div>
-              )}
-            </div>
-
-            {/* Content */}
-            <div>
-              <Tabs value={viewMode} onValueChange={setViewMode}>
-                <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="table">Table View</TabsTrigger>
-                  <TabsTrigger value="cards">Card View</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="table">{renderTableView()}</TabsContent>
-                <TabsContent value="cards">{renderCardView()}</TabsContent>
-              </Tabs>
-            </div>
-
-            {/* Pagination */}
-            <div className="flex justify-center mt-4">{renderPagination()}</div>
           </div>
+
+          {/* Content */}
+          <div>
+            <Tabs value={viewMode} onValueChange={setViewMode}>
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="table">Table View</TabsTrigger>
+                <TabsTrigger value="cards">Card View</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="table">{renderTableView()}</TabsContent>
+              <TabsContent value="cards">{renderCardView()}</TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex justify-center mt-4">{renderPagination()}</div>
         </div>
 
         {/* Delete Confirmation Dialog */}
-        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Deletion</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete the mass production record for project{" "}
-                <span className="font-medium">{itemToDelete?.project_n}</span>? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleteLoading}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={handleDelete} disabled={deleteLoading}>
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the mass production record
+                <span className="font-semibold"> {itemToDelete?.project_n}</span>. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
                 {deleteLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1344,25 +1346,23 @@ const MassProductionList = () => {
                 ) : (
                   "Delete"
                 )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Bulk Action Dialog */}
-        <Dialog open={bulkActionDialogOpen} onOpenChange={setBulkActionDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Bulk Deletion</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete {selectedItems.length} selected records? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setBulkActionDialogOpen(false)} disabled={deleteLoading}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={handleBulkDelete} disabled={deleteLoading}>
+        <AlertDialog open={bulkActionDialogOpen} onOpenChange={setBulkActionDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete {selectedItems.length} selected records. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700">
                 {deleteLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1371,11 +1371,11 @@ const MassProductionList = () => {
                 ) : (
                   "Delete All Selected"
                 )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </motion.div>
     </MainLayout>
   )
 }

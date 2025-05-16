@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { getAllReadiness, deleteReadiness } from "../../apis/readiness/readinessApi"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,6 +32,12 @@ const fadeIn = {
   visible: { opacity: 1, transition: { duration: 0.5 } },
 }
 
+const itemVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.3 } },
+  exit: { opacity: 0, transition: { duration: 0.2 } },
+}
+
 const ReadinessList = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -51,28 +57,22 @@ const ReadinessList = () => {
         setLoading(true)
         setError(null)
 
-        console.log("Fetching readiness entries...")
         const response = await getAllReadiness()
-        console.log("Raw API response:", response)
 
         // Check if response exists and has the expected structure
         if (!response) {
-          console.error("API returned empty response")
           setError("API returned empty response")
           return
         }
 
         // Check if response.data exists and is an array
         if (Array.isArray(response)) {
-          console.log("Setting readiness entries from array response:", response)
           setReadinessEntries(response)
           setFilteredEntries(response)
         } else if (response.data && Array.isArray(response.data)) {
-          console.log("Setting readiness entries from response.data:", response.data)
           setReadinessEntries(response.data)
           setFilteredEntries(response.data)
         } else {
-          console.error("Invalid response format:", response)
           setError("Received invalid data format from server")
           toast({
             title: "Data Error",
@@ -129,7 +129,6 @@ const ReadinessList = () => {
       )
     }
 
-    console.log("Filtered entries:", filtered)
     setFilteredEntries(filtered)
   }, [searchTerm, statusFilter, readinessEntries])
 
@@ -167,31 +166,15 @@ const ReadinessList = () => {
   const getStatusBadge = (status) => {
     switch (status) {
       case "on-going":
-        return (
-          <Badge variant="default" className="bg-blue-500">
-            On-going
-          </Badge>
-        )
+        return "default"
       case "stand-by":
-        return (
-          <Badge variant="outline" className="text-amber-500 border-amber-500">
-            Stand-by
-          </Badge>
-        )
+        return "warning"
       case "closed":
-        return (
-          <Badge variant="default" className="bg-green-500">
-            Closed
-          </Badge>
-        )
+        return "success"
       case "cancelled":
-        return (
-          <Badge variant="default" className="bg-red-500">
-            Cancelled
-          </Badge>
-        )
+        return "destructive"
       default:
-        return <Badge variant="outline">Unknown</Badge>
+        return "secondary"
     }
   }
 
@@ -281,23 +264,6 @@ const ReadinessList = () => {
                     New Readiness Entry
                   </Button>
                 )}
-
-                {/* Debug information */}
-                <div className="w-full max-w-2xl p-4 mt-8 text-left border border-dashed rounded-md">
-                  <h4 className="mb-2 font-medium">Debug Information:</h4>
-                  <p className="mb-2 text-sm">Raw entries count: {readinessEntries.length}</p>
-                  <p className="mb-2 text-sm">Filtered entries count: {filteredEntries.length}</p>
-                  <p className="mb-2 text-sm">Search term: "{searchTerm}"</p>
-                  <p className="mb-2 text-sm">Status filter: {statusFilter}</p>
-                  {readinessEntries.length > 0 && (
-                    <div className="mt-4">
-                      <p className="text-sm font-medium">First entry sample:</p>
-                      <pre className="p-2 mt-1 overflow-auto text-xs bg-gray-100 rounded max-h-40">
-                        {JSON.stringify(readinessEntries[0], null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                </div>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -314,43 +280,55 @@ const ReadinessList = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredEntries.map((entry) => (
-                      <TableRow key={entry._id}>
-                        <TableCell className="font-medium">{entry.id}</TableCell>
-                        <TableCell>{entry.project_number}</TableCell>
-                        <TableCell>{entry.part_number}</TableCell>
-                        <TableCell>{getStatusBadge(entry.status)}</TableCell>
-                        <TableCell>{formatDate(entry.createdAt)}</TableCell>
-                        <TableCell>{formatDate(entry.updatedAt)}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="w-4 h-4" />
-                                <span className="sr-only">Actions</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => navigate(`/readiness/detail/${entry._id}`)}>
-                                <Eye className="w-4 h-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => navigate(`/readiness/edit/${entry._id}`)}>
-                                <Edit className="w-4 h-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => confirmDelete(entry)}
-                                className="text-red-600 focus:text-red-600"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    <AnimatePresence initial={false} mode="popLayout">
+                      {filteredEntries.map((entry, index) => (
+                        <motion.tr
+                          key={entry._id}
+                          variants={itemVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                          transition={{ delay: index * 0.03 }}
+                          className="hover:bg-muted/50"
+                        >
+                          <TableCell className="font-medium">{entry.id}</TableCell>
+                          <TableCell>{entry.project_number}</TableCell>
+                          <TableCell>{entry.part_number}</TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusBadge(entry.status)}>{entry.status}</Badge>
+                          </TableCell>
+                          <TableCell>{formatDate(entry.createdAt)}</TableCell>
+                          <TableCell>{formatDate(entry.updatedAt)}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                  <span className="sr-only">Actions</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => navigate(`/readiness/detail/${entry._id}`)}>
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => navigate(`/readiness/edit/${entry._id}`)}>
+                                  <Edit className="w-4 h-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => confirmDelete(entry)}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </motion.tr>
+                      ))}
+                    </AnimatePresence>
                   </TableBody>
                 </Table>
               </div>
@@ -365,7 +343,8 @@ const ReadinessList = () => {
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
                 This will permanently delete the readiness entry
-                <span className="font-semibold"> {entryToDelete?.project_name}</span>. This action cannot be undone.
+                <span className="font-semibold"> {entryToDelete?.project_number || entryToDelete?.id}</span>. This
+                action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
