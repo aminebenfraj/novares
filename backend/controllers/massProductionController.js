@@ -159,21 +159,53 @@ exports.createMassProduction = async (req, res) => {
     const emailSubject = `Mass Production Task: ${project_n}`
 
     for (const user of usersToNotify) {
+      // Create a data object for the table
+      const emailData = {
+        project_number: project_n,
+        description: description || "No description provided",
+        status: status,
+        customer: customerExists.username,
+        initial_request: formatDate(initial_request),
+        technical_skill: technical_skill || "N/A",
+        ppap_submission_date: ppap_submission_date ? formatDate(ppap_submission_date) : "Not set",
+        days_until_ppap: days_until_ppap_submission !== null ? `${days_until_ppap_submission} days` : "N/A",
+      }
+
+      // Create the email body
       const emailBody = `
-    <h3>Dear ${user.username},</h3>
-    <p>A new mass production task has been created that requires your attention.</p>
-    <p><strong>Project:</strong> ${project_n}</p>
-    <p><strong>Description:</strong> ${description || "No description provided"}</p>
-    <p>Please log in and review the mass production details.</p>
-    <a href="http://localhost:5173/masspd/detail/${newMassProduction._id}">View Task</a>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #333; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">Mass Production Notification</h2>
+      
+      <h3>Dear ${user.username},</h3>
+      
+      <p>A new mass production task has been created that requires your attention.</p>
+      
+      <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+        <p><strong>Project:</strong> ${project_n}</p>
+        <p><strong>Role:</strong> ${user.roles.join(", ")}</p>
+      </div>
+      
+      <p>Please review the details below:</p>
+    </div>
   `
 
       try {
-        await sendEmail(user.email, emailSubject, emailBody)
+        await sendEmail(user.email, emailSubject, emailBody, emailData)
         console.log(`📧 Email sent successfully to ${user.email} (${user.roles.join(", ")})`)
       } catch (emailError) {
         console.error(`❌ Error sending email to ${user.email}:`, emailError.message)
       }
+    }
+
+    // Helper function to format dates
+    function formatDate(dateString) {
+      if (!dateString) return null
+      const date = new Date(dateString)
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
     }
 
     res.status(201).json({
@@ -290,6 +322,113 @@ exports.updateMassProduction = async (req, res) => {
 
     if (!updatedMassProduction) {
       return res.status(404).json({ error: "MassProduction not found" })
+    }
+
+    // Send notification email if status has changed
+    if (updatedData.status && updatedMassProduction.status !== req.body.status) {
+      try {
+        // Find users with Admin role to notify about status change
+        const adminsToNotify = await User.find({ roles: "Admin" })
+
+        if (adminsToNotify.length > 0) {
+          // Get customer information
+          const customerInfo = await User.findById(updatedMassProduction.customer)
+
+          // Get product designations
+          const productDesignations = await ProductDesignation.find({
+            _id: { $in: updatedMassProduction.product_designation },
+          })
+
+          const productNames = productDesignations.map((p) => p.part_name).join(", ")
+
+          // Format dates for display
+          const formatDate = (date) => {
+            if (!date) return "N/A"
+            return new Date(date).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          }
+
+          // Calculate completion percentage based on completed stages
+          const calculateCompletionPercentage = () => {
+            const stages = [
+              updatedMassProduction.feasibility,
+              updatedMassProduction.validation_for_offer,
+              updatedMassProduction.ok_for_lunch,
+              updatedMassProduction.kick_off,
+              updatedMassProduction.design,
+              updatedMassProduction.facilities,
+              updatedMassProduction.p_p_tuning,
+              updatedMassProduction.process_qualif,
+              updatedMassProduction.qualification_confirmation,
+            ]
+
+            const completedStages = stages.filter((stage) => stage).length
+            return Math.round((completedStages / stages.length) * 100)
+          }
+
+          const statusChangeData = {
+            project_number: updatedMassProduction.project_n,
+            id: updatedMassProduction.id,
+            previous_status: req.body.status,
+            new_status: updatedMassProduction.status,
+            customer: customerInfo ? customerInfo.username : "N/A",
+            product_designations: productNames || "N/A",
+            technical_skill: updatedMassProduction.technical_skill || "N/A",
+            initial_request: formatDate(updatedMassProduction.initial_request),
+            ppap_submission_date: formatDate(updatedMassProduction.ppap_submission_date),
+            days_until_ppap:
+              updatedMassProduction.days_until_ppap_submission !== null
+                ? `${updatedMassProduction.days_until_ppap_submission} days`
+                : "N/A",
+            customer_offer: updatedMassProduction.customer_offer || "N/A",
+            customer_order: updatedMassProduction.customer_order || "N/A",
+            completion_percentage: `${calculateCompletionPercentage()}%`,
+            updated_at: new Date().toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            updated_by: "System", // Ideally this would be the current user
+          }
+
+          const emailBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">Mass Production Status Change</h2>
+          
+          <h3>Dear Admin,</h3>
+          
+          <p>A mass production record has been updated with a new status.</p>
+          
+          <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+            <p><strong>Project:</strong> ${updatedMassProduction.project_n}</p>
+            <p><strong>ID:</strong> ${updatedMassProduction.id}</p>
+            <p><strong>Status Change:</strong> <span style="color: #6b7280;">${req.body.status}</span> → <span style="color: #10b981; font-weight: bold;">${updatedMassProduction.status}</span></p>
+          </div>
+          
+          <p>Below is the detailed information about this mass production record:</p>
+          
+          <a href="http://localhost:5173/masspd/detail/${updatedMassProduction._id}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; margin: 10px 0;">View Complete Details</a>
+        </div>
+      `
+
+          for (const admin of adminsToNotify) {
+            await sendEmail(
+              admin.email,
+              `Status Update: ${updatedMassProduction.project_n}`,
+              emailBody,
+              statusChangeData,
+            )
+          }
+        }
+      } catch (emailError) {
+        console.error("❌ Error sending status update email:", emailError)
+        // Don't throw error, just log it - we don't want to fail the update if email fails
+      }
     }
 
     res.json(updatedMassProduction)

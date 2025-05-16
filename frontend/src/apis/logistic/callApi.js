@@ -28,7 +28,7 @@ export const getCalls = async (filters = {}) => {
 
             const currentTime = new Date().getTime()
             const elapsedSeconds = Math.floor((currentTime - callTime) / 1000)
-            const totalSeconds = 90 * 60 // 90 minutes in seconds
+            const totalSeconds = (call.duration || 90) * 60 // Use call's duration or default to 90 minutes
             const remainingSeconds = Math.max(0, totalSeconds - elapsedSeconds)
 
             return {
@@ -70,9 +70,15 @@ export const createCall = async (data) => {
       callTime: new Date(), // Ensure we have a valid date
       date: new Date(),
       status: "Pendiente",
+      duration: data.duration || 90, // Use provided duration or default to 90
     }
 
     const response = await apiRequest("POST", BASE_URL, callData)
+
+    // Handle email notification feedback if provided in the response
+    if (response && response.emailSent) {
+      console.log("Email notification sent successfully to:", response.emailRecipients)
+    }
 
     // Ensure the response has a valid remainingTime
     if (response) {
@@ -81,7 +87,7 @@ export const createCall = async (data) => {
         const callTime = new Date(response.callTime || new Date()).getTime()
         const currentTime = new Date().getTime()
         const elapsedSeconds = Math.floor((currentTime - callTime) / 1000)
-        const totalSeconds = 90 * 60 // 90 minutes in seconds
+        const totalSeconds = (response.duration || 90) * 60 // Use call's duration or default to 90 minutes
         const remainingSeconds = Math.max(0, totalSeconds - elapsedSeconds)
 
         return {
@@ -92,7 +98,7 @@ export const createCall = async (data) => {
         console.error("Error calculating remaining time for new call:", error)
         return {
           ...response,
-          remainingTime: 90 * 60, // Default to 90 minutes
+          remainingTime: (response.duration || 90) * 60, // Use call's duration or default to 90 minutes
         }
       }
     }
@@ -140,7 +146,7 @@ export const exportCalls = async (filters = {}) => {
     }
 
     const queryString = new URLSearchParams(filters).toString()
-    window.open(`http://localhost:5000/${BASE_URL}/export?${queryString}&token=${token}`, "_blank")
+    window.open(`https://machine-alert.onrender.com/${BASE_URL}/export?${queryString}&token=${token}`, "_blank")
   } catch (error) {
     console.error("Error in exportCalls:", error)
     throw error
@@ -190,13 +196,13 @@ export const formatTimeWithHours = (seconds) => {
 }
 
 // Calculate progress percentage (for progress bars)
-export const calculateProgress = (remainingTime) => {
+export const calculateProgress = (remainingTime, totalDuration = 90) => {
   // Handle invalid input
   if (remainingTime === null || remainingTime === undefined || isNaN(remainingTime)) {
     console.warn("Invalid remainingTime in calculateProgress:", remainingTime)
     return 0
   }
 
-  const totalTime = 90 * 60 // 90 minutes in seconds
+  const totalTime = totalDuration * 60 // Convert minutes to seconds
   return Math.max(0, Math.min(100, (Number(remainingTime) / totalTime) * 100))
 }
