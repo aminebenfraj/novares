@@ -174,7 +174,8 @@ export const Navbar = ({ toggleSidebar, isSidebarOpen }) => {
     const newItem = {
       path: location.pathname,
       label: breadcrumbs[breadcrumbs.length - 1]?.label || "Page",
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toLocaleString
+(),
     }
 
     setRecentItems((prev) => {

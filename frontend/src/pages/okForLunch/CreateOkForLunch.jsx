@@ -47,7 +47,8 @@ const CreateOkForLunch = () => {
       acc[field.id] = {
         value: false,
         comment: "",
-        date: new Date().toISOString(),
+        date: new Date().toLocaleString
+(),
         name: "",
       }
       return acc
@@ -70,7 +71,8 @@ const CreateOkForLunch = () => {
         ...checkinData[fieldId],
         value: !checkinData[fieldId].value,
         // Update date to current time when checked
-        date: !checkinData[fieldId].value ? new Date().toISOString() : checkinData[fieldId].date,
+        date: !checkinData[fieldId].value ? new Date().toLocaleString
+() : checkinData[fieldId].date,
       },
     })
   }

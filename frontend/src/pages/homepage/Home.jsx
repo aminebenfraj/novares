@@ -336,7 +336,8 @@ const Dashboard = () => {
         id: material._id,
         title: `Material ${material.reference || material._id}`,
         description: `${material.description || "Material"} - Stock: ${material.currentStock}`,
-        time: new Date(material.updatedAt || material.createdAt).toISOString(),
+        time: new Date(material.updatedAt || material.createdAt).toLocaleString
+(),
         icon: Package,
         iconColor: "bg-blue-100 text-blue-700",
         date: new Date(material.updatedAt || material.createdAt),
@@ -351,7 +352,8 @@ const Dashboard = () => {
         id: order._id,
         title: `Order ${order.referencia?.reference || order._id}`,
         description: `${order.descripcionInterna || "Order"} - ${getPropertyValue(order.proveedor) || "Supplier"}`,
-        time: new Date(order.fechaSolicitud || order.createdAt || new Date()).toISOString(),
+        time: new Date(order.fechaSolicitud || order.createdAt || new Date()).toLocaleString
+(),
         icon: ShoppingCart,
         iconColor: "bg-emerald-100 text-emerald-700",
         date: new Date(order.fechaSolicitud || order.createdAt || new Date()),
@@ -366,7 +368,8 @@ const Dashboard = () => {
         id: prod._id || prod.id,
         title: `Project ${prod.project_n || prod.id || prod._id}`,
         description: `Status: ${prod.status} - ${prod.description || "Production"}`,
-        time: new Date(prod.updatedAt || prod.createdAt || new Date()).toISOString(),
+        time: new Date(prod.updatedAt || prod.createdAt || new Date()).toLocaleString
+(),
         icon: Box,
         iconColor: "bg-purple-100 text-purple-700",
         date: new Date(prod.updatedAt || prod.createdAt || new Date()),
@@ -381,7 +384,8 @@ const Dashboard = () => {
         id: entry._id,
         title: `Readiness ${entry.id || entry._id}`,
         description: `${entry.project_name || "Project"} - Status: ${entry.status || "Unknown"}`,
-        time: new Date(entry.updatedAt || entry.createdAt || new Date()).toISOString(),
+        time: new Date(entry.updatedAt || entry.createdAt || new Date()).toLocaleString
+(),
         icon: FileText,
         iconColor: "bg-amber-100 text-amber-700",
         date: new Date(entry.updatedAt || entry.createdAt || new Date()),

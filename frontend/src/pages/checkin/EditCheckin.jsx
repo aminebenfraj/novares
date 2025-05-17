@@ -38,7 +38,8 @@ function CheckinEdit() {
       acc[field.id] = {
         value: false,
         comment: "",
-        date: new Date().toISOString(),
+        date: new Date().toLocaleString
+(),
         name: "",
       }
       return acc
@@ -79,7 +80,8 @@ function CheckinEdit() {
         ...formData[fieldId],
         value: !formData[fieldId].value,
         // Update date to current time when checked and was previously unchecked
-        date: !formData[fieldId].value ? new Date().toISOString() : formData[fieldId].date,
+        date: !formData[fieldId].value ? new Date().toLocaleString
+() : formData[fieldId].date,
       },
     })
   }
@@ -109,7 +111,8 @@ function CheckinEdit() {
       ...formData,
       [fieldId]: {
         ...formData[fieldId],
-        date: date.toISOString(),
+        date: date.toLocaleString
+(),
       },
     })
   }

@@ -35,7 +35,8 @@ function CheckinCreate() {
       acc[field.id] = {
         value: false,
         comment: "",
-        date: new Date().toISOString(),
+        date: new Date().toLocaleString
+(),
         name: "",
       }
       return acc
@@ -52,7 +53,8 @@ function CheckinCreate() {
         ...formData[fieldId],
         value: !formData[fieldId].value,
         // Update date to current time when checked
-        date: !formData[fieldId].value ? new Date().toISOString() : formData[fieldId].date,
+        date: !formData[fieldId].value ? new Date().toLocaleString
+() : formData[fieldId].date,
       },
     })
   }

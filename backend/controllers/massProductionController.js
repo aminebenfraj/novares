@@ -84,7 +84,8 @@ exports.createMassProduction = async (req, res) => {
     // ✅ Automatically set closure date when status is closed or cancelled
     if (status === "closed" || status === "cancelled") {
       if (!closure) {
-        const closure = new Date().toISOString()
+        const closure = new Date().toLocaleString
+()
       }
     }
 
@@ -311,7 +312,8 @@ exports.updateMassProduction = async (req, res) => {
 
     // ✅ Automatically set closure date when status is closed or cancelled
     if (updatedData.status === "closed" || updatedData.status === "cancelled") {
-      updatedData.closure = new Date().toISOString()
+      updatedData.closure = new Date().toLocaleString
+()
     }
 
     const updatedMassProduction = await MassProduction.findByIdAndUpdate(

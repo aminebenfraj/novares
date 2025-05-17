@@ -199,7 +199,8 @@ const MassPdCreate = () => {
     description: "",
     customer: "",
     technical_skill: "sc",
-    initial_request: new Date().toISOString().split("T")[0],
+    initial_request: new Date().toLocaleString
+().split("T")[0],
     request_original: "customer",
     customer_offer: "fulfilled",
     customer_order: "fulfilled",
@@ -293,7 +294,8 @@ const MassPdCreate = () => {
   const [okForLunchData, setOkForLunchData] = useState({
     check: false,
     upload: null,
-    date: new Date().toISOString().split("T")[0],
+    date: new Date().toLocaleString
+().split("T")[0],
     comments: "",
   })
 
@@ -302,7 +304,8 @@ const MassPdCreate = () => {
     name: "",
     check: false,
     upload: null,
-    date: new Date().toISOString().split("T")[0],
+    date: new Date().toLocaleString
+().split("T")[0],
     comments: "",
   })
 
@@ -312,7 +315,8 @@ const MassPdCreate = () => {
       acc[field.id] = {
         value: false,
         comment: "",
-        date: new Date().toISOString(),
+        date: new Date().toLocaleString
+(),
         name: "",
       }
       return acc
@@ -325,7 +329,8 @@ const MassPdCreate = () => {
       acc[field.id] = {
         value: false,
         comment: "",
-        date: new Date().toISOString(),
+        date: new Date().toLocaleString
+(),
         name: "",
       }
       return acc
@@ -338,7 +343,8 @@ const MassPdCreate = () => {
       acc[field.id] = {
         value: false,
         comment: "",
-        date: new Date().toISOString(),
+        date: new Date().toLocaleString
+(),
         name: "",
       }
       return acc
@@ -630,7 +636,8 @@ const MassPdCreate = () => {
     if (formData.status === "closed" || formData.status === "cancelled") {
       setFormData((prev) => ({
         ...prev,
-        closure: new Date().toISOString().split("T")[0],
+        closure: new Date().toLocaleString
+().split("T")[0],
       }))
     }
   }, [formData.status])
@@ -935,7 +942,7 @@ const MassPdCreate = () => {
                               selected={formData.closure ? new Date(formData.closure) : undefined}
                               onSelect={(date) => {
                                 if (date) {
-                                  const formattedDate = date.toISOString().split("T")[0]
+                                  const formattedDate = date.toLocaleISOString().split("T")[0]
                                   setFormData((prev) => ({
                                     ...prev,
                                     closure: formattedDate,
@@ -1035,7 +1042,8 @@ const MassPdCreate = () => {
                               selected={formData.initial_request ? new Date(formData.initial_request) : undefined}
                               onSelect={(date) => {
                                 if (date) {
-                                  const formattedDate = date.toISOString().split("T")[0]
+                                  const formattedDate = date.toLocaleString
+().split("T")[0]
                                   setFormData((prev) => ({
                                     ...prev,
                                     initial_request: formattedDate,
@@ -1125,7 +1133,8 @@ const MassPdCreate = () => {
                             }
                             onSelect={(date) => {
                               if (date) {
-                                const formattedDate = date.toISOString().split("T")[0]
+                                const formattedDate = date.toLocaleString
+().split("T")[0]
                                 setFormData((prev) => ({
                                   ...prev,
                                   ppap_submission_date: formattedDate,
@@ -1182,7 +1191,8 @@ const MassPdCreate = () => {
                                   selected={okForLunchData.date ? new Date(okForLunchData.date) : undefined}
                                   onSelect={(date) => {
                                     if (date) {
-                                      const formattedDate = date.toISOString().split("T")[0]
+                                      const formattedDate = date.toLocaleString
+().split("T")[0]
                                       handleOkForLunchChange("date", formattedDate)
                                     }
                                   }}
@@ -1266,7 +1276,8 @@ const MassPdCreate = () => {
                                   }
                                   onSelect={(date) => {
                                     if (date) {
-                                      const formattedDate = date.toISOString().split("T")[0]
+                                      const formattedDate = date.toLocaleString
+().split("T")[0]
                                       handleValidationForOfferChange("date", formattedDate)
                                     }
                                   }}
@@ -1339,7 +1350,7 @@ const MassPdCreate = () => {
                               selected={formData.mlo ? new Date(formData.mlo) : undefined}
                               onSelect={(date) => {
                                 if (date) {
-                                  const formattedDate = date.toISOString().split("T")[0]
+                                  const formattedDate = date.toLocaleString().split("T")[0]
                                   setFormData((prev) => ({
                                     ...prev,
                                     mlo: formattedDate,
@@ -1374,7 +1385,8 @@ const MassPdCreate = () => {
                               selected={formData.tko ? new Date(formData.tko) : undefined}
                               onSelect={(date) => {
                                 if (date) {
-                                  const formattedDate = date.toISOString().split("T")[0]
+                                  const formattedDate = date.toLocaleString
+().split("T")[0]
                                   setFormData((prev) => ({
                                     ...prev,
                                     tko: formattedDate,
@@ -1409,7 +1421,8 @@ const MassPdCreate = () => {
                               selected={formData.cv ? new Date(formData.cv) : undefined}
                               onSelect={(date) => {
                                 if (date) {
-                                  const formattedDate = date.toISOString().split("T")[0]
+                                  const formattedDate = date.toLocaleString
+().split("T")[0]
                                   setFormData((prev) => ({
                                     ...prev,
                                     cv: formattedDate,
@@ -1444,7 +1457,8 @@ const MassPdCreate = () => {
                               selected={formData.pt1 ? new Date(formData.pt1) : undefined}
                               onSelect={(date) => {
                                 if (date) {
-                                  const formattedDate = date.toISOString().split("T")[0]
+                                  const formattedDate = date.toLocaleString
+().split("T")[0]
                                   setFormData((prev) => ({
                                     ...prev,
                                     pt1: formattedDate,
@@ -1479,7 +1493,8 @@ const MassPdCreate = () => {
                               selected={formData.pt2 ? new Date(formData.pt2) : undefined}
                               onSelect={(date) => {
                                 if (date) {
-                                  const formattedDate = date.toISOString().split("T")[0]
+                                  const formattedDate = date.toLocaleString
+().split("T")[0]
                                   setFormData((prev) => ({
                                     ...prev,
                                     pt2: formattedDate,
@@ -1514,7 +1529,8 @@ const MassPdCreate = () => {
                               selected={formData.sop ? new Date(formData.sop) : undefined}
                               onSelect={(date) => {
                                 if (date) {
-                                  const formattedDate = date.toISOString().split("T")[0]
+                                  const formattedDate = date.toLocaleString
+().split("T")[0]
                                   setFormData((prev) => ({
                                     ...prev,
                                     sop: formattedDate,

@@ -40,7 +40,8 @@ const EditMassProductionForm = () => {
     description: "",
     customer: "",
     technical_skill: "sc",
-    initial_request: new Date().toISOString().split("T")[0],
+    initial_request: new Date().toLocaleString
+().split("T")[0],
     request_original: "customer",
     customer_offer: "fulfilled",
     customer_order: "fulfilled",
@@ -108,18 +109,28 @@ const EditMassProductionForm = () => {
       // Format date fields properly
       const formattedData = {
         ...data,
-        initial_request: data.initial_request ? new Date(data.initial_request).toISOString().split("T")[0] : "",
+        initial_request: data.initial_request ? new Date(data.initial_request).toLocaleString
+().split("T")[0] : "",
         ppap_submission_date: data.ppap_submission_date
-          ? new Date(data.ppap_submission_date).toISOString().split("T")[0]
+          ? new Date(data.ppap_submission_date).toLocaleString
+().split("T")[0]
           : "",
-        closure: data.closure ? new Date(data.closure).toISOString().split("T")[0] : "",
-        next_review: data.next_review ? new Date(data.next_review).toISOString().split("T")[0] : "",
-        mlo: data.mlo ? new Date(data.mlo).toISOString().split("T")[0] : "",
-        tko: data.tko ? new Date(data.tko).toISOString().split("T")[0] : "",
-        cv: data.cv ? new Date(data.cv).toISOString().split("T")[0] : "",
-        pt1: data.pt1 ? new Date(data.pt1).toISOString().split("T")[0] : "",
-        pt2: data.pt2 ? new Date(data.pt2).toISOString().split("T")[0] : "",
-        sop: data.sop ? new Date(data.sop).toISOString().split("T")[0] : "",
+        closure: data.closure ? new Date(data.closure).toLocaleString
+().split("T")[0] : "",
+        next_review: data.next_review ? new Date(data.next_review).toLocaleString
+().split("T")[0] : "",
+        mlo: data.mlo ? new Date(data.mlo).toLocaleString
+().split("T")[0] : "",
+        tko: data.tko ? new Date(data.tko).toLocaleString
+().split("T")[0] : "",
+        cv: data.cv ? new Date(data.cv).toLocaleString
+().split("T")[0] : "",
+        pt1: data.pt1 ? new Date(data.pt1).toLocaleString
+().split("T")[0] : "",
+        pt2: data.pt2 ? new Date(data.pt2).toLocaleString
+().split("T")[0] : "",
+        sop: data.sop ? new Date(data.sop).toLocaleString
+().split("T")[0] : "",
         product_designation: data.product_designation ? data.product_designation.map((pd) => pd._id || pd) : [],
         customer: data.customer._id,
       }
@@ -246,7 +257,8 @@ const EditMassProductionForm = () => {
     if (formData.status === "closed" || formData.status === "cancelled") {
       setFormData((prev) => ({
         ...prev,
-        closure: new Date().toISOString().split("T")[0],
+        closure: new Date().toLocaleString
+().split("T")[0],
       }))
     }
   }, [formData.status])
@@ -350,7 +362,8 @@ const EditMassProductionForm = () => {
                               onSelect={(date) =>
                                 setFormData((prev) => ({
                                   ...prev,
-                                  closure: date ? date.toISOString().split("T")[0] : "",
+                                  closure: date ? date.toLocaleString
+().split("T")[0] : "",
                                 }))
                               }
                               initialFocus
@@ -503,7 +516,8 @@ const EditMassProductionForm = () => {
                               selected={formData.initial_request ? new Date(formData.initial_request) : undefined}
                               onSelect={(date) => {
                                 if (date) {
-                                  const formattedDate = date.toISOString().split("T")[0]
+                                  const formattedDate = date.toLocaleString
+().split("T")[0]
                                   setFormData((prev) => ({
                                     ...prev,
                                     initial_request: formattedDate,
@@ -593,7 +607,8 @@ const EditMassProductionForm = () => {
                             }
                             onSelect={(date) => {
                               if (date) {
-                                const formattedDate = date.toISOString().split("T")[0]
+                                const formattedDate = date.toLocaleString
+().split("T")[0]
                                 setFormData((prev) => ({
                                   ...prev,
                                   ppap_submission_date: formattedDate,
@@ -652,7 +667,8 @@ const EditMassProductionForm = () => {
                               onSelect={(date) =>
                                 setFormData((prev) => ({
                                   ...prev,
-                                  mlo: date ? date.toISOString().split("T")[0] : "",
+                                  mlo: date ? date.toLocaleString
+().split("T")[0] : "",
                                 }))
                               }
                               initialFocus
@@ -684,7 +700,8 @@ const EditMassProductionForm = () => {
                               onSelect={(date) =>
                                 setFormData((prev) => ({
                                   ...prev,
-                                  tko: date ? date.toISOString().split("T")[0] : "",
+                                  tko: date ? date.toLocaleString
+().split("T")[0] : "",
                                 }))
                               }
                               initialFocus
@@ -716,7 +733,8 @@ const EditMassProductionForm = () => {
                               onSelect={(date) =>
                                 setFormData((prev) => ({
                                   ...prev,
-                                  cv: date ? date.toISOString().split("T")[0] : "",
+                                  cv: date ? date.toLocaleString
+().split("T")[0] : "",
                                 }))
                               }
                               initialFocus
@@ -748,7 +766,8 @@ const EditMassProductionForm = () => {
                               onSelect={(date) =>
                                 setFormData((prev) => ({
                                   ...prev,
-                                  pt1: date ? date.toISOString().split("T")[0] : "",
+                                  pt1: date ? date.toLocaleString
+().split("T")[0] : "",
                                 }))
                               }
                               initialFocus
@@ -780,7 +799,8 @@ const EditMassProductionForm = () => {
                               onSelect={(date) =>
                                 setFormData((prev) => ({
                                   ...prev,
-                                  pt2: date ? date.toISOString().split("T")[0] : "",
+                                  pt2: date ? date.toLocaleString
+().split("T")[0] : "",
                                 }))
                               }
                               initialFocus
@@ -812,7 +832,8 @@ const EditMassProductionForm = () => {
                               onSelect={(date) =>
                                 setFormData((prev) => ({
                                   ...prev,
-                                  sop: date ? date.toISOString().split("T")[0] : "",
+                                  sop: date ? date.toLocaleString
+().split("T")[0] : "",
                                 }))
                               }
                               initialFocus

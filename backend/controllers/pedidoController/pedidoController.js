@@ -884,15 +884,19 @@ exports.exportPedidos = async (req, res) => {
         pedido.cantidad || 0,
         pedido.precioUnidad || 0,
         pedido.importePedido || 0,
-        pedido.fechaSolicitud ? new Date(pedido.fechaSolicitud).toISOString().split("T")[0] : "",
+        pedido.fechaSolicitud ? new Date(pedido.fechaSolicitud).toLocaleString
+().split("T")[0] : "",
         pedido.proveedor ? pedido.proveedor.name : "",
         (pedido.comentario || "")
           .replace(/,/g, ";")
           .replace(/\n/g, " "), // Replace commas and newlines
         pedido.pedir || "",
-        pedido.introducidaSAP ? new Date(pedido.introducidaSAP).toISOString().split("T")[0] : "",
-        pedido.aceptado ? new Date(pedido.aceptado).toISOString().split("T")[0] : "",
-        pedido.date_receiving ? new Date(pedido.date_receiving).toISOString().split("T")[0] : "",
+        pedido.introducidaSAP ? new Date(pedido.introducidaSAP).toLocaleString
+().split("T")[0] : "",
+        pedido.aceptado ? new Date(pedido.aceptado).toLocaleString
+().split("T")[0] : "",
+        pedido.date_receiving ? new Date(pedido.date_receiving).toLocaleString
+().split("T")[0] : "",
         (pedido.direccion || "").replace(/,/g, ";"), // Replace commas
         pedido.days || "",
         pedido.table_status ? pedido.table_status.name : "",
@@ -907,7 +911,8 @@ exports.exportPedidos = async (req, res) => {
 
     // Set headers for file download
     res.setHeader("Content-Type", "text/csv")
-    res.setHeader("Content-Disposition", `attachment; filename=pedidos_${new Date().toISOString().split("T")[0]}.csv`)
+    res.setHeader("Content-Disposition", `attachment; filename=pedidos_${new Date().toLocaleString
+().split("T")[0]}.csv`)
 
     // Send the CSV data
     res.send(csv)

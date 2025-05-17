@@ -85,7 +85,8 @@ const RoleBasedCheckin = ({ checkinData, setCheckinData, readOnly = false, showT
       [fieldId]: {
         ...checkinData[fieldId],
         value: !checkinData[fieldId]?.value,
-        date: !checkinData[fieldId]?.value ? new Date().toISOString() : checkinData[fieldId]?.date,
+        date: !checkinData[fieldId]?.value ? new Date().toLocaleString
+() : checkinData[fieldId]?.date,
       },
     })
   }
@@ -121,7 +122,8 @@ const RoleBasedCheckin = ({ checkinData, setCheckinData, readOnly = false, showT
       ...checkinData,
       [fieldId]: {
         ...checkinData[fieldId],
-        date: date.toISOString(),
+        date: date.toLocaleString
+(),
       },
     })
   }

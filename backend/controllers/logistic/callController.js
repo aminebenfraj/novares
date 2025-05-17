@@ -70,7 +70,8 @@ exports.exportCallsToExcel = async (req, res) => {
 
     // Set response headers
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    res.setHeader("Content-Disposition", `attachment; filename=llamadas_${new Date().toISOString().split("T")[0]}.xlsx`)
+    res.setHeader("Content-Disposition", `attachment; filename=llamadas_${new Date().toLocaleString
+().split("T")[0]}.xlsx`)
 
     // Write to response
     await workbook.xlsx.write(res)

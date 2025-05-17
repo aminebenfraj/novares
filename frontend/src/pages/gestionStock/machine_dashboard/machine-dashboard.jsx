@@ -811,7 +811,8 @@ const MachineDashboard = () => {
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.setAttribute("href", url)
-      link.setAttribute("download", `machines-${new Date().toISOString().slice(0, 10)}.csv`)
+      link.setAttribute("download", `machines-${new Date().toLocaleString
+().slice(0, 10)}.csv`)
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -857,7 +858,8 @@ const MachineDashboard = () => {
       link.setAttribute("href", url)
       link.setAttribute(
         "download",
-        `machine-materials-${selectedMachine?.name}-${new Date().toISOString().slice(0, 10)}.csv`,
+        `machine-materials-${selectedMachine?.name}-${new Date().toLocaleString
+().slice(0, 10)}.csv`,
       )
       document.body.appendChild(link)
       link.click()
