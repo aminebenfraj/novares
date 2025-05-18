@@ -122,11 +122,6 @@ const createInitialState = (fields) => {
     initialState[field] = {
       value: false,
       details: {
-        tko: false,
-        ot: false,
-        ot_op: false,
-        is: false,
-        sop: false,
         ok_nok: "",
         who: "",
         when: "",
@@ -284,11 +279,6 @@ function ReadinessForm() {
       formattedData[field] = {
         value: data[field]?.value || false,
         details: {
-          tko: data[field]?.details?.tko || false,
-          ot: data[field]?.details?.ot || false,
-          ot_op: data[field]?.details?.ot_op || false,
-          is: data[field]?.details?.is || false,
-          sop: data[field]?.details?.sop || false,
           ok_nok: data[field]?.details?.ok_nok || "",
           who: data[field]?.details?.who || "",
           when: data[field]?.details?.when || "",
@@ -463,74 +453,6 @@ function ReadinessForm() {
                       <XCircle className="w-4 h-4 text-gray-400" />
                     )}
                     <span className="text-sm">{sectionData[field]?.value ? "Completed" : "Pending"}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Validation Types</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${section}-${field}-tko`}
-                        checked={sectionData[field]?.details?.tko || false}
-                        onCheckedChange={(checked) => handleFieldDetailChange(section, field, "tko", checked)}
-                      />
-                      <Label htmlFor={`${section}-${field}-tko`} className="text-sm">
-                        TKO
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${section}-${field}-ot`}
-                        checked={sectionData[field]?.details?.ot || false}
-                        onCheckedChange={(checked) => handleFieldDetailChange(section, field, "ot", checked)}
-                      />
-                      <Label htmlFor={`${section}-${field}-ot`} className="text-sm">
-                        OT
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${section}-${field}-ot_op`}
-                        checked={sectionData[field]?.details?.ot_op || false}
-                        onCheckedChange={(checked) => handleFieldDetailChange(section, field, "ot_op", checked)}
-                      />
-                      <Label htmlFor={`${section}-${field}-ot_op`} className="text-sm">
-                        OT OP
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${section}-${field}-is`}
-                        checked={sectionData[field]?.details?.is || false}
-                        onCheckedChange={(checked) => handleFieldDetailChange(section, field, "is", checked)}
-                      />
-                      <Label htmlFor={`${section}-${field}-is`} className="text-sm">
-                        IS
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${section}-${field}-sop`}
-                        checked={sectionData[field]?.details?.sop || false}
-                        onCheckedChange={(checked) => handleFieldDetailChange(section, field, "sop", checked)}
-                      />
-                      <Label htmlFor={`${section}-${field}-sop`} className="text-sm">
-                        SOP
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${section}-${field}-validation_check`}
-                        checked={sectionData[field]?.details?.validation_check || false}
-                        onCheckedChange={(checked) =>
-                          handleFieldDetailChange(section, field, "validation_check", checked)
-                        }
-                      />
-                      <Label htmlFor={`${section}-${field}-validation_check`} className="text-sm">
-                        Validation Check
-                      </Label>
-                    </div>
                   </div>
                 </div>
 

@@ -3,11 +3,6 @@ const { Schema } = mongoose
 
 const ValidationSchema = new Schema(
   {
-    tko: { type: Boolean, default: false, required: false },
-    ot: { type: Boolean, default: false, required: false },
-    ot_op: { type: Boolean, default: false, required: false },
-    is: { type: Boolean, default: false, required: false },
-    sop: { type: Boolean, default: false, required: false },
     ok_nok: {
       type: String,
       enum: ["OK", "NOK", ""],

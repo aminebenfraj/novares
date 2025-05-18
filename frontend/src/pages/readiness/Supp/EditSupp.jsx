@@ -43,11 +43,6 @@ const fieldConfig = {
 
 // Define the validation field labels
 const validationFieldLabels = {
-  tko: "TKO",
-  ot: "OT",
-  ot_op: "OT OP",
-  is: "IS",
-  sop: "SOP",
   ok_nok: "Status",
   who: "Responsible Person",
   when: "Date",
@@ -313,81 +308,6 @@ function EditSuppPage() {
                       transition={{ duration: 0.3 }}
                       className="space-y-6"
                     >
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label htmlFor={`${activeTab}-tko`}>TKO</Label>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${activeTab}-tko`}
-                              checked={supp[activeTab]?.details?.tko || false}
-                              onCheckedChange={(checked) => handleValidationChange(activeTab, "tko", checked === true)}
-                            />
-                            <Label htmlFor={`${activeTab}-tko`}>Completed</Label>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${activeTab}-ot`}>OT</Label>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${activeTab}-ot`}
-                              checked={supp[activeTab]?.details?.ot || false}
-                              onCheckedChange={(checked) => handleValidationChange(activeTab, "ot", checked === true)}
-                            />
-                            <Label htmlFor={`${activeTab}-ot`}>Completed</Label>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${activeTab}-ot_op`}>OT OP</Label>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${activeTab}-ot_op`}
-                              checked={supp[activeTab]?.details?.ot_op || false}
-                              onCheckedChange={(checked) =>
-                                handleValidationChange(activeTab, "ot_op", checked === true)
-                              }
-                            />
-                            <Label htmlFor={`${activeTab}-ot_op`}>Completed</Label>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${activeTab}-is`}>IS</Label>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${activeTab}-is`}
-                              checked={supp[activeTab]?.details?.is || false}
-                              onCheckedChange={(checked) => handleValidationChange(activeTab, "is", checked === true)}
-                            />
-                            <Label htmlFor={`${activeTab}-is`}>Completed</Label>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${activeTab}-sop`}>SOP</Label>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${activeTab}-sop`}
-                              checked={supp[activeTab]?.details?.sop || false}
-                              onCheckedChange={(checked) => handleValidationChange(activeTab, "sop", checked === true)}
-                            />
-                            <Label htmlFor={`${activeTab}-sop`}>Completed</Label>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${activeTab}-validation_check`}>Validation Check</Label>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${activeTab}-validation_check`}
-                              checked={supp[activeTab]?.details?.validation_check || false}
-                              onCheckedChange={(checked) =>
-                                handleValidationChange(activeTab, "validation_check", checked === true)
-                              }
-                            />
-                            <Label htmlFor={`${activeTab}-validation_check`}>Completed</Label>
-                          </div>
-                        </div>
-                      </div>
-
-                      <Separator />
-
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor={`${activeTab}-ok_nok`}>Status</Label>
