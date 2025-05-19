@@ -15,44 +15,45 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { getProductProcessesById, updateProductProcesses } from "../../../apis/readiness/productProcessesApi"
 import { getAllReadiness } from "../../../apis/readiness/readinessApi"
+import MainLayout from "@/components/MainLayout"
 
 // Define the field labels and descriptions for better UI
 const fieldConfig = {
   technicalReview: {
-    label: "Technical Review",
-    description: "Technical review of the product design and specifications",
+    label: "Technical Review Product/Process with RETEX of previous/similar Product/Process",
+    description: "BD-PR-A01 Technical review",
   },
   dfmea: {
-    label: "DFMEA",
-    description: "Design Failure Mode and Effects Analysis",
+    label: "DFMEA validated/approved via ENTERPROJ",
+    description: "SKILL PRO",
   },
   pfmea: {
-    label: "PFMEA",
-    description: "Process Failure Mode and Effects Analysis",
+    label: "PFMEA validated /approved via ENTERPROJ",
+    description: "SKILL PRO",
   },
   injectionTools: {
-    label: "Injection Tools",
-    description: "Injection molding tools and equipment",
+    label: "Injection Tools  technical specifications & official  TKO ",
+    description: "BD-PD-B02",
   },
   paintingProcess: {
-    label: "Painting Process",
-    description: "Painting process and equipment",
+    label: "Painting Process specifications & Official TKO",
+    description: "BD-PM-A08",
   },
   assyMachine: {
-    label: "Assembly Machine",
-    description: "Assembly machines and equipment",
+    label: "Assy Machine  general technical specifications & official  TKO ",
+    description: "BD-PD-E02",
   },
   checkingFixture: {
-    label: "Checking Fixture",
-    description: "Checking fixtures and quality control equipment",
+    label: " Checking Fixture general technical specifications & official  TKO ",
+    description: "BD-PD-A02",
   },
   industrialCapacity: {
-    label: "Industrial Capacity",
-    description: "Industrial capacity and production capabilities",
+    label: "Industrial Capacity validated acc. SMART MAC POWER ",
+    description: "BD-PI-F03",
   },
   skillsDeployment: {
-    label: "Skills Deployment",
-    description: "Skills deployment and training",
+    label: "Skills deployment for Support Function if new technologies Product and/or Process",
+    description: "TD-HR-K01",
   },
 }
 
@@ -252,6 +253,7 @@ function EditProductProcessPage() {
   }
 
   return (
+    <MainLayout>
     <div className="container px-4 py-8 mx-auto">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="flex items-center justify-between mb-6">
@@ -293,7 +295,7 @@ function EditProductProcessPage() {
                   <TabsList className="flex flex-col items-stretch h-auto">
                     {Object.keys(fieldConfig).map((field) => (
                       <TabsTrigger key={field} value={field} className="relative justify-start mb-1 text-left pl-9">
-                        <span className="absolute left-2">
+                        <span className="absolute left-2 ">
                           {productProcess[field]?.value ? (
                             <CheckCircle className="w-4 h-4 text-green-500" />
                           ) : (
@@ -746,6 +748,7 @@ function EditProductProcessPage() {
         </form>
       </motion.div>
     </div>
+    </MainLayout>
   )
 }
 
