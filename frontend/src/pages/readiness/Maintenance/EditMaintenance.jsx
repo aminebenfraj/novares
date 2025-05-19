@@ -154,19 +154,66 @@ function EditMaintenancePage() {
     }))
   }
 
-  // Handle validation field change
-  const handleValidationChange = (field, validationField, value) => {
-    setMaintenance((prev) => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        details: {
-          ...prev[field].details,
-          [validationField]: value,
+ const handleValidationChange = (field, validationField, value) => {
+  let formattedValue = value;
+
+  // Handle "status" change
+  if (validationField === "status") {
+    if (value === "ok") {
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      formattedValue = value;
+
+      setMaintenance((prev) => ({
+        ...prev,
+        [field]: {
+          ...prev[field],
+          details: {
+            ...prev[field].details,
+            status: value,
+            when: today,
+          },
         },
-      },
-    }))
+      }));
+      return;
+    }
+
+    if (value === "nok") {
+      formattedValue = value;
+      setMaintenance((prev) => ({
+        ...prev,
+        [field]: {
+          ...prev[field],
+          details: {
+            ...prev[field].details,
+            status: value,
+            when: "",
+          },
+        },
+      }));
+      return;
+    }
   }
+
+  // Handle "when" field directly
+  if (validationField === "when") {
+    if (!value) {
+      formattedValue = new Date().toISOString().split("T")[0]; // Default to today
+    }
+  }
+
+  setMaintenance((prev) => ({
+    ...prev,
+    [field]: {
+      ...prev[field],
+      details: {
+        ...prev[field].details,
+        [validationField]: formattedValue,
+      },
+    },
+  }));
+};
+
+
 
   if (isLoading) {
     return (
@@ -338,11 +385,13 @@ function EditMaintenancePage() {
                             <div className="space-y-2">
                               <Label htmlFor={`${activeTab}-when`}>Date</Label>
                               <Input
-                                id={`${activeTab}-when`}
-                                value={maintenance[activeTab]?.details?.when || ""}
-                                onChange={(e) => handleValidationChange(activeTab, "when", e.target.value)}
-                                placeholder="YYYY-MM-DD"
-                              />
+  id={`${activeTab}-when`}
+  type="date"
+  value={maintenance[activeTab]?.details?.when || ""}
+  onChange={(e) => handleValidationChange(activeTab, "when", e.target.value)}
+/>
+
+
                             </div>
                           </div>
 

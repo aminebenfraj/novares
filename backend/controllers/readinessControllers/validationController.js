@@ -26,6 +26,13 @@ exports.getValidationById = async (req, res) => {
 // Create a new validation
 exports.createValidation = async (req, res) => {
   try {
+    // Apply logic for setting `when`
+    if (req.body.ok_nok === 'OK') {
+      req.body.when = new Date();
+    } else {
+      req.body.when = null;
+    }
+
     const validation = new Validation(req.body);
     const newValidation = await validation.save();
     res.status(201).json(newValidation);
@@ -34,22 +41,33 @@ exports.createValidation = async (req, res) => {
   }
 };
 
+
 // Update a validation
 exports.updateValidation = async (req, res) => {
   try {
+    // Apply logic for setting `when`
+    if (req.body.ok_nok === 'OK') {
+      req.body.when = new Date();
+    } else if (req.body.ok_nok === 'NOK' || req.body.ok_nok === '') {
+      req.body.when = null;
+    }
+
     const validation = await Validation.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
     );
+
     if (!validation) {
       return res.status(404).json({ message: 'Validation not found' });
     }
+
     res.status(200).json(validation);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
+
 
 // Delete a validation
 exports.deleteValidation = async (req, res) => {
