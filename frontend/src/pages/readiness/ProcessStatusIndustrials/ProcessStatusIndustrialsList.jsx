@@ -21,6 +21,7 @@ const fieldConfig = {
   processCapabilitiesPerformed: "Process Capabilities",
   pfmeaIssuesAddressed: "PFMEA Issues",
   reversePfmeaPerformed: "Reverse PFMEA",
+  checkingFixtures: "Checking Fixtures",
   industrialMeansAccepted: "Industrial Means",
 }
 

@@ -26,7 +26,6 @@ const fieldConfig = {
   serialProductionInjectionParametersDefined: "Serial Production Parameters",
   incompletePartsProduced: "Incomplete Parts Produced",
   toolmakerIssuesEradicated: "Toolmaker Issues Eradicated",
-  checkingFixturesAvailable: "Checking Fixtures Available",
 }
 
 function ToolingStatusList() {

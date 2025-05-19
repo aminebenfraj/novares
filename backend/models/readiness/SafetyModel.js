@@ -12,7 +12,6 @@ const SafetySchema = new Schema(
   {
     industrialMeansCompliance: { type: ValidationSubSchema, default: {} },
     teamTraining: { type: ValidationSubSchema, default: {} },
-    safetyOfficerInformed: { type: ValidationSubSchema, default: {} },
   },
   { timestamps: true, strict: true }
 );

@@ -4,7 +4,8 @@ const Validation = require('../../models/readiness/ValidationModel');
 const trainingFields = [
   "visualControlQualification",
   "dojoTrainingCompleted",
-  "trainingPlanDefined"
+  "trainingPlanDefined",
+  "trainingPlan"
 ];
 
 exports.createTraining = async (req, res) => {

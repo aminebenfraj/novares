@@ -19,7 +19,6 @@ const ToolingStatusSchema = new Schema(
     serialProductionInjectionParametersDefined: { type: ValidationSubSchema, default: {} },  
     incompletePartsProduced: { type: ValidationSubSchema, default: {} },  
     toolmakerIssuesEradicated: { type: ValidationSubSchema, default: {} },  
-    checkingFixturesAvailable: { type: ValidationSubSchema, default: {} },  
   },
   { timestamps: true, strict: true }
 );

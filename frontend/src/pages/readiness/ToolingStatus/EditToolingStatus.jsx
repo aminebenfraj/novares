@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { motion } from "framer-motion"
-import { Loader2, Save, ArrowLeft, CheckCircle, XCircle } from "lucide-react"
+import { Loader2, Save, ArrowLeft, CheckCircle, XCircle } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
@@ -55,10 +54,6 @@ const fieldConfig = {
   toolmakerIssuesEradicated: {
     label: "Toolmaker Issues Eradicated",
     description: "All toolmaker issues have been eradicated",
-  },
-  checkingFixturesAvailable: {
-    label: "Checking Fixtures Available",
-    description: "Checking fixtures are available",
   },
 }
 
@@ -400,6 +395,310 @@ function EditToolingStatusPage() {
                             />
                           </div>
                         </div>
+                        {activeTab === "manufacturedPartsAtLastRelease" && (
+                          <div className="mt-6 space-y-2">
+                            <Label>Validation Details</Label>
+                            <div className="overflow-hidden border rounded-md">
+                              <table className="w-full">
+                                <thead className="bg-muted">
+                                  <tr>
+                                    <th className="px-4 py-2 text-sm font-medium text-left">Milestones</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">TKO</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTOP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">IS</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">SOP</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-t">
+                                    <td className="px-4 py-2 text-sm font-medium">Initialized</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                  </tr>
+                                 
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Legend: o = Item initialized, x = Item validated/updated, blank = No status
+                            </p>
+                          </div>
+                        )}
+
+                        {activeTab === "specificationsConformity" && (
+                          <div className="mt-6 space-y-2">
+                            <Label>Validation Details</Label>
+                            <div className="overflow-hidden border rounded-md">
+                              <table className="w-full">
+                                <thead className="bg-muted">
+                                  <tr>
+                                    <th className="px-4 py-2 text-sm font-medium text-left">Milestones</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">TKO</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTOP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">IS</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">SOP</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-t">
+                                    <td className="px-4 py-2 text-sm font-medium">Initialized</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                  </tr>
+                                  
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Legend: o = Item initialized, x = Item validated/updated, blank = No status
+                            </p>
+                          </div>
+                        )}
+
+                        {activeTab === "partsGrainedAndValidated" && (
+                          <div className="mt-6 space-y-2">
+                            <Label>Validation Details</Label>
+                            <div className="overflow-hidden border rounded-md">
+                              <table className="w-full">
+                                <thead className="bg-muted">
+                                  <tr>
+                                    <th className="px-4 py-2 text-sm font-medium text-left">Milestones</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">TKO</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTOP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">IS</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">SOP</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-t">
+                                    <td className="px-4 py-2 text-sm font-medium">Initialized</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                  </tr>
+                                 
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Legend: o = Item initialized, x = Item validated/updated, blank = No status
+                            </p>
+                          </div>
+                        )}
+
+                        {activeTab === "noBreakOrIncidentDuringInjectionTrials" && (
+                          <div className="mt-6 space-y-2">
+                            <Label>Validation Details</Label>
+                            <div className="overflow-hidden border rounded-md">
+                              <table className="w-full">
+                                <thead className="bg-muted">
+                                  <tr>
+                                    <th className="px-4 py-2 text-sm font-medium text-left">Milestones</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">TKO</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTOP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">IS</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">SOP</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-t">
+                                    <td className="px-4 py-2 text-sm font-medium">Initialized</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center">o</td>
+                                    <td className="px-4 py-2 text-sm text-center">o</td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                  </tr>
+                                  
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Legend: o = Item initialized, x = Item validated/updated, blank = No status
+                            </p>
+                          </div>
+                        )}
+
+                        {activeTab === "toolsAccepted" && (
+                          <div className="mt-6 space-y-2">
+                            <Label>Validation Details</Label>
+                            <div className="overflow-hidden border rounded-md">
+                              <table className="w-full">
+                                <thead className="bg-muted">
+                                  <tr>
+                                    <th className="px-4 py-2 text-sm font-medium text-left">Milestones</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">TKO</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTOP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">IS</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">SOP</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-t">
+                                    <td className="px-4 py-2 text-sm font-medium">Initialized</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Legend: o = Item initialized, x = Item validated/updated, blank = No status
+                            </p>
+                          </div>
+                        )}
+
+                        {activeTab === "preSerialInjectionParametersDefined" && (
+                          <div className="mt-6 space-y-2">
+                            <Label>Validation Details</Label>
+                            <div className="overflow-hidden border rounded-md">
+                              <table className="w-full">
+                                <thead className="bg-muted">
+                                  <tr>
+                                    <th className="px-4 py-2 text-sm font-medium text-left">Milestones</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">TKO</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTOP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">IS</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">SOP</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-t">
+                                    <td className="px-4 py-2 text-sm font-medium">Initialized</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Legend: o = Item initialized, x = Item validated/updated, blank = No status
+                            </p>
+                          </div>
+                        )}
+
+                        {activeTab === "serialProductionInjectionParametersDefined" && (
+                          <div className="mt-6 space-y-2">
+                            <Label>Validation Details</Label>
+                            <div className="overflow-hidden border rounded-md">
+                              <table className="w-full">
+                                <thead className="bg-muted">
+                                  <tr>
+                                    <th className="px-4 py-2 text-sm font-medium text-left">Milestones</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">TKO</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTOP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">IS</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">SOP</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-t">
+                                    <td className="px-4 py-2 text-sm font-medium">Initialized</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                  </tr>
+                                 
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Legend: o = Item initialized, x = Item validated/updated, blank = No status
+                            </p>
+                          </div>
+                        )}
+
+                        {activeTab === "incompletePartsProduced" && (
+                          <div className="mt-6 space-y-2">
+                            <Label>Validation Details</Label>
+                            <div className="overflow-hidden border rounded-md">
+                              <table className="w-full">
+                                <thead className="bg-muted">
+                                  <tr>
+                                    <th className="px-4 py-2 text-sm font-medium text-left">Milestones</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">TKO</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTOP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">IS</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">SOP</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-t">
+                                    <td className="px-4 py-2 text-sm font-medium">Initialized</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                  </tr>
+                              
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Legend: o = Item initialized, x = Item validated/updated, blank = No status
+                            </p>
+                          </div>
+                        )}
+
+                        {activeTab === "toolmakerIssuesEradicated" && (
+                          <div className="mt-6 space-y-2">
+                            <Label>Validation Details</Label>
+                            <div className="overflow-hidden border rounded-md">
+                              <table className="w-full">
+                                <thead className="bg-muted">
+                                  <tr>
+                                    <th className="px-4 py-2 text-sm font-medium text-left">Milestones</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">TKO</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">OTOP</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">IS</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-center">SOP</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-t">
+                                    <td className="px-4 py-2 text-sm font-medium">Initialized</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Legend: o = Item initialized, x = Item validated/updated, blank = No status
+                            </p>
+                          </div>
+                        )}
+
+                        
                       </motion.div>
                     </TabsContent>
                   </Tabs>

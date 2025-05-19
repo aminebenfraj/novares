@@ -14,10 +14,7 @@ const RunAtRateProductionSchema = new Schema(
     selfRunRatePerformed: { type: ValidationSubSchema, default: {} }, 
     dimensionalInspectionsConform: { type: ValidationSubSchema, default: {} }, 
     rampUpDefined: { type: ValidationSubSchema, default: {} }, 
-    mppAuditCompleted: { type: ValidationSubSchema, default: {} }, 
-    reversePFMEACompleted: { type: ValidationSubSchema, default: {} }, 
-    paceBoardFollowUp: { type: ValidationSubSchema, default: {} },
-  },
+    mppAuditCompleted: { type: ValidationSubSchema, default: {} },   },
   { timestamps: true, strict: true }
 );
 

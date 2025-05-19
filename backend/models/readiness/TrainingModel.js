@@ -13,6 +13,7 @@ const TrainingSchema = new Schema(
     visualControlQualification: { type: ValidationSubSchema, default: {} }, // Operator qualification for visual control
     dojoTrainingCompleted: { type: ValidationSubSchema, default: {} }, // DOJO training completed
     trainingPlanDefined: { type: ValidationSubSchema, default: {} }, // Training plan for product/process defined per ramp-up
+    trainingPlan: { type: ValidationSubSchema, default: {} }, // Training plan for product/process defined per ramp-up
   },
   { timestamps: true, strict: true }
 );

@@ -10,7 +10,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
@@ -359,6 +358,56 @@ function EditMaintenancePage() {
                           </div>
                         </div>
                       </motion.div>
+                      <div className="mt-6 space-y-2">
+                        <Label>Validation Details</Label>
+                        <div className="overflow-hidden border rounded-md">
+                          <table className="w-full">
+                            <thead className="bg-muted">
+                              <tr>
+                                <th className="px-4 py-2 text-sm font-medium text-left">Milestones</th>
+                                <th className="px-4 py-2 text-sm font-medium text-center">TKO</th>
+                                <th className="px-4 py-2 text-sm font-medium text-center">OTP</th>
+                                <th className="px-4 py-2 text-sm font-medium text-center">OTOP</th>
+                                <th className="px-4 py-2 text-sm font-medium text-center">IS</th>
+                                <th className="px-4 py-2 text-sm font-medium text-center">SOP</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr className="border-t">
+                                <td className="px-4 py-2 text-sm font-medium"></td>
+                                {activeTab === "sparePartsIdentifiedAndAvailable" ? (
+                                  <>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center">o</td>
+                                    <td className="px-4 py-2 text-sm text-center">o</td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                  </>
+                                ) : activeTab === "processIntegratedInPlantMaintenance" ? (
+                                  <>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center">o</td>
+                                    <td className="px-4 py-2 text-sm text-center">o</td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                  </>
+                                ) : activeTab === "maintenanceStaffTrained" ? (
+                                  <>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                    <td className="px-4 py-2 text-sm text-center">o</td>
+                                    <td className="px-4 py-2 text-sm text-center">o</td>
+                                    <td className="px-4 py-2 text-sm text-center">x</td>
+                                    <td className="px-4 py-2 text-sm text-center"></td>
+                                  </>
+                                ) : null}
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Legend: o = Item initialized, x = Item validated/updated, blank = No status
+                        </p>
+                      </div>
                     </TabsContent>
                   </Tabs>
                 </CardContent>

@@ -11,7 +11,6 @@ const toolingStatusFields = [
   "serialProductionInjectionParametersDefined",
   "incompletePartsProduced",
   "toolmakerIssuesEradicated",
-  "checkingFixturesAvailable"
 ];
 
 exports.createToolingStatus = async (req, res) => {

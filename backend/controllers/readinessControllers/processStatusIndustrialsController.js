@@ -10,6 +10,7 @@ const processStatusIndustrialsFields = [
   "processCapabilitiesPerformed",
   "pfmeaIssuesAddressed",
   "reversePfmeaPerformed",
+  "checkingFixtures",
   "industrialMeansAccepted"
 ];
 

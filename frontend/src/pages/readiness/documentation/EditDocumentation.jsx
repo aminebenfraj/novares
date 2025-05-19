@@ -10,7 +10,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
@@ -39,6 +38,14 @@ const fieldConfig = {
   drpUpdated: {
     label: "DRP Updated",
     description: "Disaster Recovery Plan (DRP) updated",
+  },
+  checkCSR: {
+    label: "Check CSR",
+    description: "Check CSR",
+  },
+  dRP: {
+    label: "DRP",
+    description: "DRP",
   },
 }
 
@@ -328,7 +335,7 @@ function EditDocumentationPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.3 }}
-                         className="space-y-6"
+                        className="space-y-6"
                       >
                         <div className="space-y-4">
                           <div className="space-y-2">
@@ -384,6 +391,88 @@ function EditDocumentationPage() {
                               rows={4}
                             />
                           </div>
+                        </div>
+                        <div className="mt-6 space-y-2">
+                          <Label>Validation Details</Label>
+                          <div className="overflow-hidden border rounded-md">
+                            <table className="w-full">
+                              <thead className="bg-muted">
+                                <tr>
+                                  <th className="px-4 py-2 text-sm font-medium text-left">Milestones</th>
+                                  <th className="px-4 py-2 text-sm font-medium text-center">TKO</th>
+                                  <th className="px-4 py-2 text-sm font-medium text-center">OTP</th>
+                                  <th className="px-4 py-2 text-sm font-medium text-center">OTOP</th>
+                                  <th className="px-4 py-2 text-sm font-medium text-center">IS</th>
+                                  <th className="px-4 py-2 text-sm font-medium text-center">SOP</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr className="border-t">
+                                  <td className="px-4 py-2 text-sm font-medium"></td>
+                                  {activeTab === "workStandardsInPlace" ? (
+                                    <>
+                                      <td className="px-4 py-2 text-sm text-center"></td>
+                                      <td className="px-4 py-2 text-sm text-center">x</td>
+                                      <td className="px-4 py-2 text-sm text-center">x</td>
+                                      <td className="px-4 py-2 text-sm text-center">x</td>
+                                      <td className="px-4 py-2 text-sm text-center"></td>
+                                    </>
+                                  ) : activeTab === "polyvalenceMatrixUpdated" ? (
+                                    <>
+                                      <td className="px-4 py-2 text-sm text-center"></td>
+                                      <td className="px-4 py-2 text-sm text-center">o</td>
+                                      <td className="px-4 py-2 text-sm text-center">o</td>
+                                      <td className="px-4 py-2 text-sm text-center">x</td>
+                                      <td className="px-4 py-2 text-sm text-center"></td>
+                                    </>
+                                  ) : activeTab === "gaugesAvailable" ? (
+                                    <>
+                                      <td className="px-4 py-2 text-sm text-center">o</td>
+                                      <td className="px-4 py-2 text-sm text-center">o</td>
+                                      <td className="px-4 py-2 text-sm text-center">o</td>
+                                      <td className="px-4 py-2 text-sm text-center">x</td>
+                                      <td className="px-4 py-2 text-sm text-center"></td>
+                                    </>
+                                  ) : activeTab === "qualityFileApproved" ? (
+                                    <>
+                                      <td className="px-4 py-2 text-sm text-center"></td>
+                                      <td className="px-4 py-2 text-sm text-center">o</td>
+                                      <td className="px-4 py-2 text-sm text-center">x</td>
+                                      <td className="px-4 py-2 text-sm text-center"></td>
+                                      <td className="px-4 py-2 text-sm text-center"></td>
+                                    </>
+                                  ) : activeTab === "drpUpdated" ? (
+                                    <>
+                                      <td className="px-4 py-2 text-sm text-center"></td>
+                                      <td className="px-4 py-2 text-sm text-center"></td>
+                                      <td className="px-4 py-2 text-sm text-center">o</td>
+                                      <td className="px-4 py-2 text-sm text-center">x</td>
+                                      <td className="px-4 py-2 text-sm text-center"></td>
+                                    </>
+                                  ) : activeTab === "checkCSR" ? (
+                                    <>
+                                      <td className="px-4 py-2 text-sm text-center">o</td>
+                                      <td className="px-4 py-2 text-sm text-center">x</td>
+                                      <td className="px-4 py-2 text-sm text-center">x</td>
+                                      <td className="px-4 py-2 text-sm text-center">x</td>
+                                      <td className="px-4 py-2 text-sm text-center">x</td>
+                                    </>
+                                  ) : activeTab === "dRP" ? (
+                                    <>
+                                      <td className="px-4 py-2 text-sm text-center"></td>
+                                      <td className="px-4 py-2 text-sm text-center"></td>
+                                      <td className="px-4 py-2 text-sm text-center">o</td>
+                                      <td className="px-4 py-2 text-sm text-center">o</td>
+                                      <td className="px-4 py-2 text-sm text-center">x</td>
+                                    </>
+                                  ) : null}
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Legend: o = Item initialized, x = Item validated/updated, blank = No status
+                          </p>
                         </div>
                       </motion.div>
                     </TabsContent>

@@ -42,7 +42,11 @@ const ProcessStatusIndustrialsSchema = new Schema(
     reversePfmeaPerformed: { 
       type: ValidationSubSchema, 
       default: {} 
-    },  
+    },
+    checkingFixtures: { 
+      type: ValidationSubSchema, 
+      default: {} 
+    },
     industrialMeansAccepted: { 
       type: ValidationSubSchema, 
       default: {} 

@@ -18,6 +18,8 @@ const fieldConfig = {
   gaugesAvailable: "Gauges",
   qualityFileApproved: "Quality File",
   drpUpdated: "DRP",
+  checkCSR: "Check CSR",
+  dRP: "DRP",
 }
 
 function DocumentationListPage() {

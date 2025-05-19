@@ -7,8 +7,6 @@ const runAtRateProductionFields = [
   "dimensionalInspectionsConform",
   "rampUpDefined",
   "mppAuditCompleted",
-  "reversePFMEACompleted",
-  "paceBoardFollowUp"
 ];
 
 exports.createRunAtRateProduction = async (req, res) => {

@@ -15,7 +15,6 @@ import { getAllSafety } from "../../../apis/readiness/safetyApi"
 const fieldConfig = {
   industrialMeansCompliance: "Industrial Means Compliance",
   teamTraining: "Team Training",
-  safetyOfficerInformed: "Safety Officer Informed",
 }
 
 function SafetyList() {

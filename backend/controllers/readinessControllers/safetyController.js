@@ -4,7 +4,6 @@ const Validation = require('../../models/readiness/ValidationModel');
 const safetyFields = [
   "industrialMeansCompliance",
   "teamTraining",
-  "safetyOfficerInformed"
 ];
 
 exports.createSafety = async (req, res) => {

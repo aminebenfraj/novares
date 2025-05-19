@@ -9,6 +9,8 @@ const documentationFields = [
   "gaugesAvailable",
   "qualityFileApproved",
   "drpUpdated",
+  "dRP",
+  "checkCSR",
 ];
 
 // **Create a new Documentation entry**

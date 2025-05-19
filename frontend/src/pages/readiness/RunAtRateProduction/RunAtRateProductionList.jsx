@@ -18,8 +18,6 @@ const fieldConfig = {
   dimensionalInspectionsConform: "Dimensional Inspections",
   rampUpDefined: "Ramp Up Defined",
   mppAuditCompleted: "MPP Audit",
-  reversePFMEACompleted: "Reverse PFMEA",
-  paceBoardFollowUp: "Pace Board Follow-up",
 }
 
 function RunAtRateProductionList() {

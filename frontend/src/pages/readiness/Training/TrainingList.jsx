@@ -20,6 +20,7 @@ const fieldConfig = {
   visualControlQualification: "Visual Control Qualification",
   dojoTrainingCompleted: "Dojo Training Completed",
   trainingPlanDefined: "Training Plan Defined",
+  trainingPlan: "Training Plan",
 }
 
 function TrainingList() {

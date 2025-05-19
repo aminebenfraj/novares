@@ -50,6 +50,8 @@ const fieldDefinitions = {
     "gaugesAvailable",
     "qualityFileApproved",
     "drpUpdated",
+    "checkCSR",
+    "dRP",
   ],
   Logistics: ["loopsFlowsDefined", "storageDefined", "labelsCreated", "sapReferenced", "safetyStockReady"],
   Maintenance: ["sparePartsIdentifiedAndAvailable", "processIntegratedInPlantMaintenance", "maintenanceStaffTrained"],
@@ -63,6 +65,7 @@ const fieldDefinitions = {
     "processCapabilitiesPerformed",
     "pfmeaIssuesAddressed",
     "reversePfmeaPerformed",
+    "checkingFixtures",
     "industrialMeansAccepted",
   ],
   ProductProcess: [
@@ -82,10 +85,8 @@ const fieldDefinitions = {
     "dimensionalInspectionsConform",
     "rampUpDefined",
     "mppAuditCompleted",
-    "reversePFMEACompleted",
-    "paceBoardFollowUp",
   ],
-  Safety: ["industrialMeansCompliance", "teamTraining", "safetyOfficerInformed"],
+  Safety: ["industrialMeansCompliance", "teamTraining",],
   Supp: [
     "componentsRawMaterialAvailable",
     "packagingDefined",
@@ -103,9 +104,8 @@ const fieldDefinitions = {
     "serialProductionInjectionParametersDefined",
     "incompletePartsProduced",
     "toolmakerIssuesEradicated",
-    "checkingFixturesAvailable",
   ],
-  Training: ["visualControlQualification", "dojoTrainingCompleted", "trainingPlanDefined"],
+  Training: ["visualControlQualification", "dojoTrainingCompleted", "trainingPlanDefined","trainingPlan",],
 }
 
 // Helper function to format field names for display
