@@ -1,24 +1,23 @@
-const express = require("express");
+const express = require("express")
 const {
   createMassProduction,
   getAllMassProductions,
   getMassProductionById,
   updateMassProduction,
   deleteMassProduction,
+  getFilterOptions,
+} = require("../controllers/massProductionController")
 
-} = require("../controllers/massProductionController");
+const { protect, verifyAdmin } = require("../middlewares/authMiddleware")
 
-const { protect, verifyAdmin } = require("../middlewares/authMiddleware"); // ✅ Middleware for security
+const router = express.Router()
 
-const router = express.Router();
+// Mass Production Routes
+router.post("/create", protect, verifyAdmin, createMassProduction)
+router.get("/", protect, getAllMassProductions)
+router.get("/filters/:field", protect, getFilterOptions)
+router.get("/:id", protect, getMassProductionById)
+router.put("/:id", protect, updateMassProduction)
+router.delete("/:id", protect, verifyAdmin, deleteMassProduction)
 
-// ✅ MassProduction Routes (with Email Integration)
-router.post("/create", protect, verifyAdmin, createMassProduction); // ✅ Create & send email
-router.get("/", protect, getAllMassProductions); // ✅ Get all (only authenticated users)
-router.get("/:id", protect, getMassProductionById); // ✅ Get one by ID
-router.put("/:id", protect, updateMassProduction); // ✅ Only Admin can update
-router.delete("/:id", protect, verifyAdmin, deleteMassProduction); // ✅ Only Admin can delete
-
-
-
-module.exports = router;
+module.exports = router

@@ -32,6 +32,9 @@ export const getAllPedidos = async (page = 1, limit = 10, search = "", filters =
         } else {
           queryParams.append(key, value.toString())
         }
+      } else if (key === "fechaDesde" || key === "fechaHasta") {
+        // Format dates for API
+        queryParams.append(key, new Date(value).toISOString())
       } else {
         queryParams.append(key, value.toString())
       }
@@ -44,11 +47,9 @@ export const getAllPedidos = async (page = 1, limit = 10, search = "", filters =
     return await apiRequest("GET", url)
   } catch (error) {
     console.error("Error fetching pedidos:", error)
-    throw error // Rethrow the error for better error handling
+    throw error
   }
 }
-
-
 
 // Get filter options for dropdowns
 export const getFilterOptions = async (field) => {
@@ -80,6 +81,7 @@ export const deletePedido = (id) => {
   return apiRequest("DELETE", `${BASE_URL}/${id}`)
 }
 
+// Generate QR code for a pedido
 export const generateQRCode = (id) => {
   return apiRequest("GET", `${BASE_URL}/${id}/qrcode`)
 }

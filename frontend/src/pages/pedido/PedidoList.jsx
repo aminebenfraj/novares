@@ -1,13 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { getAllPedidos, deletePedido, getFilterOptions } from "../../apis/pedido/pedidoApi"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -38,10 +46,14 @@ import {
   Loader2,
   Box,
   X,
+  SlidersHorizontal,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import MainLayout from "@/components/MainLayout"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { DatePicker } from "../../components/ui/date-picker"
 
 // Animation variants
 const fadeIn = {
@@ -62,7 +74,6 @@ const PedidoList = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedPedido, setSelectedPedido] = useState(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [pedidoToDelete, setPedidoToDelete] = useState(null)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -89,8 +100,6 @@ const PedidoList = () => {
     fechaDesde: null,
     fechaHasta: null,
     table_status: "",
-    status: "",
-    stockStatus: "",
   })
 
   const [pagination, setPagination] = useState({
@@ -98,6 +107,11 @@ const PedidoList = () => {
     limit: 10,
     total: 0,
     totalPages: 0,
+  })
+
+  const [sortConfig, setSortConfig] = useState({
+    field: "fechaSolicitud",
+    order: -1,
   })
 
   // Debounce search to avoid too many requests
@@ -112,38 +126,33 @@ const PedidoList = () => {
   }, [searchTerm])
 
   // Load filter options on component mount
-  useEffect(() => {
-    const loadFilterOptions = async () => {
-      try {
-        const options = {}
+  const loadFilterOptions = useCallback(async () => {
+    try {
+      const options = {}
+      const fields = ["tipo", "fabricante", "proveedor", "solicitante", "recepcionado", "pedir", "ano", "table_status"]
 
-        for (const field of [
-          "tipo",
-          "fabricante",
-          "proveedor",
-          "solicitante",
-          "recepcionado",
-          "pedir",
-          "ano",
-          "table_status",
-        ]) {
-          const data = await getFilterOptions(field)
-          options[field] = data
-        }
+      // Use Promise.all for parallel requests
+      const results = await Promise.all(fields.map((field) => getFilterOptions(field)))
 
-        setFilterOptions(options)
-      } catch (error) {
-        console.error("Error loading filter options:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load filter options",
-        })
-      }
+      // Map results to their respective fields
+      fields.forEach((field, index) => {
+        options[field] = results[index]
+      })
+
+      setFilterOptions(options)
+    } catch (error) {
+      console.error("Error loading filter options:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load filter options",
+      })
     }
+  }, [toast])
 
+  useEffect(() => {
     loadFilterOptions()
-  }, [])
+  }, [loadFilterOptions])
 
   const handleFilterChange = (field, value) => {
     // If value is "all", set to empty string for any field
@@ -162,7 +171,7 @@ const PedidoList = () => {
     }))
   }
 
-  const fetchPedidos = async () => {
+  const fetchPedidos = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
@@ -177,7 +186,7 @@ const PedidoList = () => {
         }
       })
 
-      const response = await getAllPedidos(pagination.page, pagination.limit, debouncedSearch, apiFilters)
+      const response = await getAllPedidos(pagination.page, pagination.limit, debouncedSearch, apiFilters, sortConfig)
 
       if (response && response.data) {
         setPedidos(response.data)
@@ -202,21 +211,31 @@ const PedidoList = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [pagination.page, pagination.limit, debouncedSearch, filters, sortConfig, toast])
 
   // Fetch pedidos when pagination, search, filters change
   useEffect(() => {
     fetchPedidos()
-  }, [pagination.page, pagination.limit, debouncedSearch])
+  }, [fetchPedidos])
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }))
-    fetchPedidos()
-  }, [filters])
+  }, [filters, debouncedSearch])
 
   const handlePageChange = (newPage) => {
     setPagination((prev) => ({ ...prev, page: newPage }))
+  }
+
+  const handleSortChange = (field) => {
+    setSortConfig((prev) => {
+      if (prev.field === field) {
+        // Toggle order if same field
+        return { field, order: prev.order === 1 ? -1 : 1 }
+      }
+      // Default to descending for new field
+      return { field, order: -1 }
+    })
   }
 
   const confirmDelete = (pedido) => {
@@ -260,9 +279,8 @@ const PedidoList = () => {
       fechaDesde: null,
       fechaHasta: null,
       table_status: "",
-      status: "",
-      stockStatus: "",
     })
+    setSearchTerm("")
   }
 
   const getStatusFromPedido = (pedido) => {
@@ -328,6 +346,9 @@ const PedidoList = () => {
     return "N/A"
   }
 
+  // Count active filters
+  const activeFilterCount = Object.values(filters).filter((value) => value !== "" && value !== null).length
+
   return (
     <MainLayout>
       <motion.div className="container py-6 mx-auto" initial="hidden" animate="visible" variants={fadeIn}>
@@ -370,14 +391,14 @@ const PedidoList = () => {
                   <Button variant="outline" className="w-full md:w-auto">
                     <Filter className="w-4 h-4 mr-2" />
                     Advanced Filters
-                    {Object.values(filters).some((v) => v !== "" && v !== null) && (
+                    {activeFilterCount > 0 && (
                       <Badge variant="secondary" className="ml-1">
-                        {Object.values(filters).filter((v) => v !== "" && v !== null).length}
+                        {activeFilterCount}
                       </Badge>
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="p-0 w-80" align="end">
+                <PopoverContent className="p-0 w-[350px]" align="end">
                   <div className="p-4 border-b">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium">Filters</h4>
@@ -387,7 +408,155 @@ const PedidoList = () => {
                       </Button>
                     </div>
                   </div>
-                  {/* Filter options would go here */}
+                  <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
+                    {/* Type Filter */}
+                    <div className="space-y-2">
+                      <Label htmlFor="tipo-filter">Type</Label>
+                      <Select value={filters.tipo} onValueChange={(value) => handleFilterChange("tipo", value)}>
+                        <SelectTrigger id="tipo-filter">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Types</SelectItem>
+                          {filterOptions.tipo.map((tipo) => (
+                            <SelectItem key={tipo._id} value={tipo._id}>
+                              {tipo.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Solicitante Filter */}
+                    <div className="space-y-2">
+                      <Label htmlFor="solicitante-filter">Requester</Label>
+                      <Select
+                        value={filters.solicitante}
+                        onValueChange={(value) => handleFilterChange("solicitante", value)}
+                      >
+                        <SelectTrigger id="solicitante-filter">
+                          <SelectValue placeholder="Select requester" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Requesters</SelectItem>
+                          {filterOptions.solicitante.map((solicitante) => (
+                            <SelectItem key={solicitante._id} value={solicitante._id}>
+                              {solicitante.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Table Status Filter */}
+                    <div className="space-y-2">
+                      <Label htmlFor="table-status-filter">Status</Label>
+                      <Select
+                        value={filters.table_status}
+                        onValueChange={(value) => handleFilterChange("table_status", value)}
+                      >
+                        <SelectTrigger id="table-status-filter">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Statuses</SelectItem>
+                          {filterOptions.table_status.map((status) => (
+                            <SelectItem key={status._id} value={status._id}>
+                              <div className="flex items-center">
+                                <div
+                                  className="w-3 h-3 mr-2 rounded-full"
+                                  style={{ backgroundColor: status.color }}
+                                ></div>
+                                {status.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Date Range Filter */}
+                    <div className="space-y-2">
+                      <Label>Request Date Range</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="fecha-desde" className="text-xs">
+                            From
+                          </Label>
+                          <DatePicker
+                            id="fecha-desde"
+                            date={filters.fechaDesde}
+                            setDate={(date) => handleFilterChange("fechaDesde", date)}
+                            className="w-full"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="fecha-hasta" className="text-xs">
+                            To
+                          </Label>
+                          <DatePicker
+                            id="fecha-hasta"
+                            date={filters.fechaHasta}
+                            setDate={(date) => handleFilterChange("fechaHasta", date)}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Year Range Filter */}
+                    <div className="space-y-2">
+                      <Label>Year Range</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="ano-desde" className="text-xs">
+                            From
+                          </Label>
+                          <Select
+                            value={filters.anoDesde}
+                            onValueChange={(value) => handleFilterChange("anoDesde", value)}
+                          >
+                            <SelectTrigger id="ano-desde">
+                              <SelectValue placeholder="From year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="any">Any</SelectItem>
+                              {filterOptions.ano
+                                .sort((a, b) => a - b)
+                                .map((ano) => (
+                                  <SelectItem key={`from-${ano}`} value={ano.toString()}>
+                                    {ano}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="ano-hasta" className="text-xs">
+                            To
+                          </Label>
+                          <Select
+                            value={filters.anoHasta}
+                            onValueChange={(value) => handleFilterChange("anoHasta", value)}
+                          >
+                            <SelectTrigger id="ano-hasta">
+                              <SelectValue placeholder="To year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="any">Any</SelectItem>
+                              {filterOptions.ano
+                                .sort((a, b) => a - b)
+                                .map((ano) => (
+                                  <SelectItem key={`to-${ano}`} value={ano.toString()}>
+                                    {ano}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <div className="flex items-center justify-between p-4 border-t">
                     <Button variant="ghost" onClick={() => setIsFilterOpen(false)}>
                       Cancel
@@ -403,6 +572,31 @@ const PedidoList = () => {
                   </div>
                 </PopoverContent>
               </Popover>
+
+              {/* Sort Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full md:w-auto">
+                    <SlidersHorizontal className="w-4 h-4 mr-2" />
+                    Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuRadioGroup
+                    value={`${sortConfig.field}-${sortConfig.order}`}
+                    onValueChange={(value) => {
+                      const [field, order] = value.split("-")
+                      setSortConfig({ field, order: Number.parseInt(order) })
+                    }}
+                  >
+                    <DropdownMenuRadioItem value="fechaSolicitud-1">Date (Oldest First)</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="fechaSolicitud--1">Date (Newest First)</DropdownMenuRadioItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuRadioItem value="importePedido-1">Amount (Low to High)</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="importePedido--1">Amount (High to Low)</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </CardContent>
         </Card>
@@ -419,11 +613,11 @@ const PedidoList = () => {
                 <Box className="w-12 h-12 mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-medium">No orders found</h3>
                 <p className="mt-1 mb-4 text-muted-foreground">
-                  {searchTerm || Object.values(filters).some((v) => v !== "" && v !== null)
+                  {searchTerm || activeFilterCount > 0
                     ? "Try adjusting your filters"
                     : "Create your first order to get started"}
                 </p>
-                {!searchTerm && !Object.values(filters).some((v) => v !== "" && v !== null) && (
+                {!searchTerm && activeFilterCount === 0 && (
                   <Button onClick={() => navigate("/pedido/create")}>
                     <Plus className="w-4 h-4 mr-2" />
                     Create Order
@@ -435,13 +629,66 @@ const PedidoList = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Reference</TableHead>
-                      <TableHead>Requester</TableHead>
-                      <TableHead>Provider</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Request Date</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead className="cursor-pointer hover:text-primary" onClick={() => handleSortChange("tipo")}>
+                        Type
+                        {sortConfig.field === "tipo" && (
+                          <span className="ml-1">{sortConfig.order === 1 ? "↑" : "↓"}</span>
+                        )}
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:text-primary"
+                        onClick={() => handleSortChange("referencia")}
+                      >
+                        Reference
+                        {sortConfig.field === "referencia" && (
+                          <span className="ml-1">{sortConfig.order === 1 ? "↑" : "↓"}</span>
+                        )}
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:text-primary"
+                        onClick={() => handleSortChange("solicitante")}
+                      >
+                        Requester
+                        {sortConfig.field === "solicitante" && (
+                          <span className="ml-1">{sortConfig.order === 1 ? "↑" : "↓"}</span>
+                        )}
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:text-primary"
+                        onClick={() => handleSortChange("proveedor")}
+                      >
+                        Provider
+                        {sortConfig.field === "proveedor" && (
+                          <span className="ml-1">{sortConfig.order === 1 ? "↑" : "↓"}</span>
+                        )}
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:text-primary"
+                        onClick={() => handleSortChange("importePedido")}
+                      >
+                        Amount
+                        {sortConfig.field === "importePedido" && (
+                          <span className="ml-1">{sortConfig.order === 1 ? "↑" : "↓"}</span>
+                        )}
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:text-primary"
+                        onClick={() => handleSortChange("fechaSolicitud")}
+                      >
+                        Request Date
+                        {sortConfig.field === "fechaSolicitud" && (
+                          <span className="ml-1">{sortConfig.order === 1 ? "↑" : "↓"}</span>
+                        )}
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:text-primary"
+                        onClick={() => handleSortChange("table_status")}
+                      >
+                        Status
+                        {sortConfig.field === "table_status" && (
+                          <span className="ml-1">{sortConfig.order === 1 ? "↑" : "↓"}</span>
+                        )}
+                      </TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>

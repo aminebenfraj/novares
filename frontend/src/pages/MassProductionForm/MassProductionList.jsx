@@ -46,7 +46,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Plus,
   Search,
-  Filter,
   MoreHorizontal,
   Eye,
   Edit,
@@ -63,6 +62,7 @@ import {
   LayoutDashboard,
   SlidersHorizontal,
   AlertCircle,
+  X,
 } from "lucide-react"
 
 // Import the AlertDialog components
@@ -93,106 +93,182 @@ const MassProductionList = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
   const [massProductions, setMassProductions] = useState([])
-  const [filteredProductions, setFilteredProductions] = useState([])
   const [customers, setCustomers] = useState([])
   const [productDesignations, setProductDesignations] = useState([])
   const [loading, setLoading] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
   const [searchTerm, setSearchTerm] = useState("")
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [customerFilter, setCustomerFilter] = useState("all")
+  const [productFilter, setProductFilter] = useState("all")
   const [sortConfig, setSortConfig] = useState({ key: "createdAt", direction: "desc" })
   const [viewMode, setViewMode] = useState("table")
   const [selectedItems, setSelectedItems] = useState([])
   const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false)
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false)
   const [dateFilter, setDateFilter] = useState({ from: "", to: "" })
-  const [progressFilter, setProgressFilter] = useState("all")
+  const [progressFilter, setProgressFilter] = useState("")
   const [error, setError] = useState(null)
-  const itemsPerPage = 10
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  })
+
+  const [idFilter, setIdFilter] = useState("all")
+  const [projectFilter, setProjectFilter] = useState("all")
+  const [requestDateFilter, setRequestDateFilter] = useState("")
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   // Stats for dashboard
   const stats = useMemo(() => {
     return {
-      total: massProductions.length,
+      total: pagination.total || 0,
       ongoing: massProductions.filter((item) => item.status === "on-going").length,
       standby: massProductions.filter((item) => item.status === "stand-by").length,
       closed: massProductions.filter((item) => item.status === "closed").length,
       cancelled: massProductions.filter((item) => item.status === "cancelled").length,
     }
-  }, [massProductions])
+  }, [massProductions, pagination.total])
 
-  // Fetch data on component mount
+  // Load filter options
   useEffect(() => {
-    const fetchData = async () => {
+    const loadFilterOptions = async () => {
       try {
-        setLoading(true)
-        setError(null)
-        const [massProductionsData, customersData, productDesignationsData] = await Promise.all([
-          getAllMassProductions(),
-          getAllCustomers(),
-          getAllpd(),
-        ])
+        const [customersData, productDesignationsData] = await Promise.all([getAllCustomers(), getAllpd()])
 
-        // Process and set mass productions data
-        if (Array.isArray(massProductionsData)) {
-          // Add calculated completion percentage to each item
-          const enhancedData = massProductionsData.map((item) => ({
-            ...item,
-            completionPercentage: calculateCompletionPercentage(item),
-          }))
-
-          setMassProductions(enhancedData)
-          setFilteredProductions(enhancedData)
-          setTotalPages(Math.ceil(enhancedData.length / itemsPerPage))
-        } else {
-          console.error("Invalid mass productions data format:", massProductionsData)
-          setError("Invalid data format received from server")
-          setMassProductions([])
-          setFilteredProductions([])
-        }
-
-        // Process and set customers data
         if (Array.isArray(customersData)) {
           setCustomers(customersData)
-        } else {
-          console.error("Invalid customers data format:", customersData)
-          setCustomers([])
         }
 
-        // Process and set product designations data
         if (Array.isArray(productDesignationsData)) {
           setProductDesignations(productDesignationsData)
-        } else {
-          console.error("Invalid product designations data format:", productDesignationsData)
-          setProductDesignations([])
         }
       } catch (error) {
-        console.error("Error fetching data:", error)
-        setError("Failed to load data. Please try again.")
+        console.error("Error loading filter options:", error)
         toast({
-          title: "Error",
-          description: "Failed to load data. Please refresh the page.",
           variant: "destructive",
+          title: "Error",
+          description: "Failed to load filter options",
         })
-      } finally {
-        setLoading(false)
       }
     }
 
-    fetchData()
+    loadFilterOptions()
   }, [toast])
+
+  // Fetch data with filters and pagination
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Prepare query parameters
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+        search: debouncedSearchTerm,
+        sortBy: sortConfig.key,
+        sortOrder: sortConfig.direction === "asc" ? 1 : -1,
+      }
+
+      // Add filters if they exist
+      if (statusFilter !== "all") params.status = statusFilter
+      if (customerFilter !== "all") params.customer = customerFilter
+      if (productFilter !== "all") params.product_designation = productFilter
+      if (idFilter !== "all") params.id = idFilter
+      if (projectFilter !== "all") params.project_n = projectFilter
+      if (requestDateFilter) params.dateFrom = requestDateFilter
+      if (dateFilter.to) params.dateTo = dateFilter.to
+
+      const response = await getAllMassProductions(params)
+
+      if (response && response.data) {
+        // Add calculated completion percentage to each item
+        const enhancedData = response.data.map((item) => ({
+          ...item,
+          completionPercentage: calculateCompletionPercentage(item),
+        }))
+
+        setMassProductions(enhancedData)
+
+        // Update pagination info
+        if (response.pagination) {
+          setPagination({
+            page: response.pagination.page,
+            limit: response.pagination.limit,
+            total: response.pagination.total,
+            totalPages: response.pagination.totalPages,
+          })
+        }
+      } else {
+        setError("Invalid data format received from server")
+        setMassProductions([])
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error)
+      setError("Failed to load data. Please try again.")
+      toast({
+        title: "Error",
+        description: "Failed to load data. Please refresh the page.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [
+    pagination.page,
+    pagination.limit,
+    debouncedSearchTerm,
+    statusFilter,
+    customerFilter,
+    productFilter,
+    dateFilter,
+    sortConfig,
+    toast,
+    idFilter,
+    projectFilter,
+    requestDateFilter,
+  ])
+
+  // Fetch data when dependencies change
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, page: 1 }))
+  }, [
+    debouncedSearchTerm,
+    statusFilter,
+    customerFilter,
+    productFilter,
+    idFilter,
+    projectFilter,
+    requestDateFilter,
+    dateFilter,
+    sortConfig,
+  ])
 
   // Calculate completion percentage for a mass production item
   const calculateCompletionPercentage = useCallback((item) => {
     if (!item) return 0
 
     const stages = [
-      item.feasibility || item.feasability,
+      item.feasibility || item.feasibility,
       item.validation_for_offer,
       item.ok_for_lunch,
       item.kick_off,
@@ -249,138 +325,6 @@ const MassProductionList = () => {
     return false
   }, [])
 
-  // Apply filters and sorting
-  useEffect(() => {
-    let result = [...massProductions]
-
-    // Apply search filter
-    if (searchTerm) {
-      const lowerCaseSearchTerm = searchTerm.toLowerCase()
-      result = result.filter(
-        (item) =>
-          (item.id && item.id.toLowerCase().includes(lowerCaseSearchTerm)) ||
-          (item.project_n && item.project_n.toLowerCase().includes(lowerCaseSearchTerm)) ||
-          (item.description && item.description.toLowerCase().includes(lowerCaseSearchTerm)) ||
-          (item.customer &&
-            item.customer.username &&
-            item.customer.username.toLowerCase().includes(lowerCaseSearchTerm)),
-      )
-    }
-
-    // Apply status filter
-    if (statusFilter !== "all") {
-      result = result.filter((item) => item.status === statusFilter)
-    }
-
-    // Apply customer filter
-    if (customerFilter !== "all") {
-      result = result.filter((item) => item.customer && item.customer._id === customerFilter)
-    }
-
-    // Apply date range filter
-    if (dateFilter.from || dateFilter.to) {
-      result = result.filter((item) => {
-        const itemDate = item.initial_request ? new Date(item.initial_request) : null
-        if (!itemDate) return false
-
-        if (dateFilter.from && dateFilter.to) {
-          const fromDate = new Date(dateFilter.from)
-          const toDate = new Date(dateFilter.to)
-          toDate.setHours(23, 59, 59, 999) // Include the entire end day
-          return itemDate >= fromDate && itemDate <= toDate
-        } else if (dateFilter.from) {
-          const fromDate = new Date(dateFilter.from)
-          return itemDate >= fromDate
-        } else if (dateFilter.to) {
-          const toDate = new Date(dateFilter.to)
-          toDate.setHours(23, 59, 59, 999) // Include the entire end day
-          return itemDate <= toDate
-        }
-
-        return true
-      })
-    }
-
-    // Apply progress filter
-    if (progressFilter !== "all") {
-      result = result.filter((item) => {
-        const percentage = item.completionPercentage || 0
-
-        switch (progressFilter) {
-          case "not-started":
-            return percentage === 0
-          case "in-progress":
-            return percentage > 0 && percentage < 100
-          case "completed":
-            return percentage === 100
-          default:
-            return true
-        }
-      })
-    }
-
-    // Apply sorting
-    if (sortConfig.key) {
-      result.sort((a, b) => {
-        // Handle nested properties like customer.username
-        if (sortConfig.key.includes(".")) {
-          const keys = sortConfig.key.split(".")
-          let aValue = a
-          let bValue = b
-
-          for (const key of keys) {
-            aValue = aValue?.[key]
-            bValue = bValue?.[key]
-          }
-
-          if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1
-          if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1
-          return 0
-        }
-
-        // Handle dates
-        if (
-          sortConfig.key === "createdAt" ||
-          sortConfig.key === "initial_request" ||
-          sortConfig.key === "ppap_submission_date" ||
-          sortConfig.key === "next_review"
-        ) {
-          const dateA = a[sortConfig.key] ? new Date(a[sortConfig.key]) : new Date(0)
-          const dateB = b[sortConfig.key] ? new Date(b[sortConfig.key]) : new Date(0)
-
-          return sortConfig.direction === "asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime()
-        }
-
-        // Handle completion percentage
-        if (sortConfig.key === "completionPercentage") {
-          const percentA = a.completionPercentage || 0
-          const percentB = b.completionPercentage || 0
-
-          return sortConfig.direction === "asc" ? percentA - percentB : percentB - percentA
-        }
-
-        // Handle regular string/number properties
-        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === "asc" ? -1 : 1
-        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === "asc" ? 1 : -1
-        return 0
-      })
-    }
-
-    setFilteredProductions(result)
-    setTotalPages(Math.ceil(result.length / itemsPerPage))
-    setCurrentPage(1) // Reset to first page when filters change
-
-    // Clear selected items when filters change
-    setSelectedItems([])
-  }, [massProductions, searchTerm, statusFilter, customerFilter, sortConfig, dateFilter, progressFilter])
-
-  // Get current page items
-  const getCurrentPageItems = useCallback(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    return filteredProductions.slice(startIndex, endIndex)
-  }, [currentPage, filteredProductions, itemsPerPage])
-
   // Handle sort request
   const requestSort = useCallback(
     (key) => {
@@ -406,7 +350,10 @@ const MassProductionList = () => {
     try {
       setDeleteLoading(true)
       await deleteMassProduction(itemToDelete._id)
-      setMassProductions(massProductions.filter((item) => item._id !== itemToDelete._id))
+
+      // Refresh data after deletion
+      fetchData()
+
       toast({
         title: "Success",
         description: "Mass production record deleted successfully",
@@ -434,8 +381,8 @@ const MassProductionList = () => {
       // Delete each selected item
       await Promise.all(selectedItems.map((id) => deleteMassProduction(id)))
 
-      // Update local state
-      setMassProductions((prevState) => prevState.filter((item) => !selectedItems.includes(item._id)))
+      // Refresh data after deletion
+      fetchData()
 
       toast({
         title: "Success",
@@ -458,34 +405,12 @@ const MassProductionList = () => {
   }
 
   // Handle refresh data
-  const handleRefresh = async () => {
-    try {
-      setLoading(true)
-      const massProductionsData = await getAllMassProductions()
-
-      if (Array.isArray(massProductionsData)) {
-        // Add calculated completion percentage to each item
-        const enhancedData = massProductionsData.map((item) => ({
-          ...item,
-          completionPercentage: calculateCompletionPercentage(item),
-        }))
-
-        setMassProductions(enhancedData)
-        toast({
-          title: "Success",
-          description: "Data refreshed successfully.",
-        })
-      }
-    } catch (error) {
-      console.error("Error refreshing data:", error)
-      toast({
-        title: "Error",
-        description: "Failed to refresh data. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
+  const handleRefresh = () => {
+    fetchData()
+    toast({
+      title: "Refreshing",
+      description: "Refreshing data...",
+    })
   }
 
   // Handle checkbox selection
@@ -503,23 +428,21 @@ const MassProductionList = () => {
   const handleSelectAllOnPage = useCallback(
     (checked) => {
       if (checked) {
-        const currentPageIds = getCurrentPageItems().map((item) => item._id)
+        const currentPageIds = massProductions.map((item) => item._id)
         setSelectedItems((prev) => [...new Set([...prev, ...currentPageIds])])
       } else {
-        const currentPageIds = getCurrentPageItems().map((item) => item._id)
+        const currentPageIds = massProductions.map((item) => item._id)
         setSelectedItems((prev) => prev.filter((id) => !currentPageIds.includes(id)))
       }
     },
-    [getCurrentPageItems],
+    [massProductions],
   )
 
   // Export selected items to CSV
   const exportToCSV = () => {
     // Get items to export
     const itemsToExport =
-      selectedItems.length > 0
-        ? massProductions.filter((item) => selectedItems.includes(item._id))
-        : filteredProductions
+      selectedItems.length > 0 ? massProductions.filter((item) => selectedItems.includes(item._id)) : massProductions
 
     if (itemsToExport.length === 0) {
       toast({
@@ -550,8 +473,7 @@ const MassProductionList = () => {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.setAttribute("href", url)
-    link.setAttribute("download", `mass-productions-${new Date().toLocaleString
-().split("T")[0]}.csv`)
+    link.setAttribute("download", `mass-productions-${new Date().toISOString().split("T")[0]}.csv`)
     link.style.visibility = "hidden"
     document.body.appendChild(link)
     link.click()
@@ -602,6 +524,19 @@ const MassProductionList = () => {
     if (percentage >= 20) return "bg-orange-500"
     return "bg-red-500"
   }, [])
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm("")
+    setStatusFilter("all")
+    setCustomerFilter("all")
+    setProductFilter("all")
+    setIdFilter("all")
+    setProjectFilter("all")
+    setRequestDateFilter("")
+    setDateFilter({ from: "", to: "" })
+    setSortConfig({ key: "createdAt", direction: "desc" })
+  }
 
   // Render loading skeletons
   const renderSkeletons = () => {
@@ -669,27 +604,27 @@ const MassProductionList = () => {
 
   // Render pagination controls
   const renderPagination = () => {
-    if (totalPages <= 1) return null
+    if (pagination.totalPages <= 1) return null
 
     return (
       <Pagination>
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              onClick={() => setPagination((prev) => ({ ...prev, page: Math.max(prev.page - 1, 1) }))}
+              disabled={pagination.page === 1}
+              className={pagination.page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
             />
           </PaginationItem>
 
-          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+          {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
             // Show first page, last page, current page, and pages around current
             let pageToShow
 
-            if (totalPages <= 5) {
+            if (pagination.totalPages <= 5) {
               // If 5 or fewer pages, show all
               pageToShow = i + 1
-            } else if (currentPage <= 3) {
+            } else if (pagination.page <= 3) {
               // If near start, show first 5
               pageToShow = i + 1
               if (i === 4)
@@ -698,9 +633,9 @@ const MassProductionList = () => {
                     <PaginationEllipsis />
                   </PaginationItem>
                 )
-            } else if (currentPage >= totalPages - 2) {
+            } else if (pagination.page >= pagination.totalPages - 2) {
               // If near end, show last 5
-              pageToShow = totalPages - 4 + i
+              pageToShow = pagination.totalPages - 4 + i
               if (i === 0)
                 return (
                   <PaginationItem key="ellipsis-start">
@@ -709,7 +644,7 @@ const MassProductionList = () => {
                 )
             } else {
               // If in middle, show current and surrounding
-              pageToShow = currentPage - 2 + i
+              pageToShow = pagination.page - 2 + i
               if (i === 0)
                 return (
                   <PaginationItem key="ellipsis-start">
@@ -726,7 +661,10 @@ const MassProductionList = () => {
 
             return (
               <PaginationItem key={pageToShow}>
-                <PaginationLink isActive={currentPage === pageToShow} onClick={() => setCurrentPage(pageToShow)}>
+                <PaginationLink
+                  isActive={pagination.page === pageToShow}
+                  onClick={() => setPagination((prev) => ({ ...prev, page: pageToShow }))}
+                >
                   {pageToShow}
                 </PaginationLink>
               </PaginationItem>
@@ -735,9 +673,11 @@ const MassProductionList = () => {
 
           <PaginationItem>
             <PaginationNext
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              onClick={() => setPagination((prev) => ({ ...prev, page: Math.min(prev.page + 1, prev.totalPages) }))}
+              disabled={pagination.page === pagination.totalPages}
+              className={
+                pagination.page === pagination.totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"
+              }
             />
           </PaginationItem>
         </PaginationContent>
@@ -827,58 +767,38 @@ const MassProductionList = () => {
     return (
       <Card className="mb-6">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Advanced Filters</CardTitle>
-          <CardDescription>Refine your search with additional filters</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">Advanced Filters</CardTitle>
+              <CardDescription>Refine your search with additional filters</CardDescription>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setAdvancedFiltersOpen(false)}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Date Range</label>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Input
-                    type="date"
-                    value={dateFilter.from}
-                    onChange={(e) => setDateFilter((prev) => ({ ...prev, from: e.target.value }))}
-                    placeholder="From"
-                  />
-                </div>
-                <div className="flex-1">
-                  <Input
-                    type="date"
-                    value={dateFilter.to}
-                    onChange={(e) => setDateFilter((prev) => ({ ...prev, to: e.target.value }))}
-                    placeholder="To"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Progress</label>
-              <Select value={progressFilter} onValueChange={setProgressFilter}>
+              <label className="text-sm font-medium">Product Designation</label>
+              <Select value={productFilter} onValueChange={setProductFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Filter by progress" />
+                  <SelectValue placeholder="Select product" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Progress Levels</SelectItem>
-                  <SelectItem value="not-started">Not Started (0%)</SelectItem>
-                  <SelectItem value="in-progress">In Progress (1-99%)</SelectItem>
-                  <SelectItem value="completed">Completed (100%)</SelectItem>
+                  <SelectItem value="all">All Products</SelectItem>
+                  {productDesignations.map((product) => (
+                    <SelectItem key={product._id} value={product._id}>
+                      {product.part_name} ({product.reference})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex items-end gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setDateFilter({ from: "", to: "" })
-                  setProgressFilter("all")
-                }}
-              >
-                Reset Filters
+              <Button variant="outline" className="flex-1" onClick={clearFilters}>
+                Reset All Filters
               </Button>
               <Button variant="default" className="flex-1" onClick={() => setAdvancedFiltersOpen(false)}>
                 Apply Filters
@@ -892,9 +812,8 @@ const MassProductionList = () => {
 
   // Render table view
   const renderTableView = () => {
-    const currentItems = getCurrentPageItems()
     const areAllCurrentPageSelected =
-      currentItems.length > 0 && currentItems.every((item) => selectedItems.includes(item._id))
+      massProductions.length > 0 && massProductions.every((item) => selectedItems.includes(item._id))
 
     return (
       <div className="border rounded-md">
@@ -946,7 +865,7 @@ const MassProductionList = () => {
           <TableBody>
             {loading ? (
               renderSkeletons()
-            ) : currentItems.length === 0 ? (
+            ) : massProductions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center">
                   No records found.
@@ -954,7 +873,7 @@ const MassProductionList = () => {
               </TableRow>
             ) : (
               <AnimatePresence initial={false} mode="popLayout">
-                {currentItems.map((item, index) => (
+                {massProductions.map((item, index) => (
                   <motion.tr
                     key={item._id}
                     variants={itemVariants}
@@ -1023,25 +942,30 @@ const MassProductionList = () => {
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => navigate(`/masspd/detail/${item._id}`)}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/masspd/edit/${item._id}`)}>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => handleDeleteClick(item)}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
+                       <DropdownMenuContent align="end">
+  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+
+  <DropdownMenuItem onClick={() => navigate(`/masspd/detail/${item._id}`)}>
+    <Eye className="w-4 h-4 mr-2" />
+    View
+  </DropdownMenuItem>
+
+  <DropdownMenuItem onClick={() => navigate(`/masspd/edit/${item._id}`)}>
+    <Edit className="w-4 h-4 mr-2" />
+    Edit
+  </DropdownMenuItem>
+
+  <DropdownMenuSeparator />
+
+  <DropdownMenuItem
+    className="text-destructive focus:text-destructive"
+    onClick={() => handleDeleteClick(item)}
+  >
+    <Trash2 className="w-4 h-4 mr-2" />
+    Delete
+  </DropdownMenuItem>
+</DropdownMenuContent>
+
                       </DropdownMenu>
                     </TableCell>
                   </motion.tr>
@@ -1056,13 +980,11 @@ const MassProductionList = () => {
 
   // Render card view
   const renderCardView = () => {
-    const currentItems = getCurrentPageItems()
-
     if (loading) {
       return <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">{renderCardSkeletons()}</div>
     }
 
-    if (currentItems.length === 0) {
+    if (massProductions.length === 0) {
       return (
         <Card className="w-full">
           <CardContent className="flex flex-col items-center justify-center h-40">
@@ -1076,7 +998,7 @@ const MassProductionList = () => {
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <AnimatePresence initial={false} mode="popLayout">
-          {currentItems.map((item, index) => (
+          {massProductions.map((item, index) => (
             <motion.div
               key={item._id}
               variants={itemVariants}
@@ -1229,52 +1151,160 @@ const MassProductionList = () => {
           {advancedFiltersOpen && renderAdvancedFilters()}
 
           {/* Filters and Search */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <div className="relative md:col-span-2">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by ID, project number or description..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4" />
-                    <SelectValue placeholder="Filter by status" />
+          <Card className="mb-6">
+            <CardHeader className="pb-3">
+              <CardTitle>Filters</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by ID, project number, description or customer..."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+                  {/* ID Filter */}
+                  <div>
+                    <Select value={idFilter} onValueChange={setIdFilter}>
+                      <SelectTrigger>
+                        <div className="flex items-center gap-2">
+                          <SelectValue placeholder="ID" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All IDs</SelectItem>
+                        {massProductions
+                          .map((item) => item.id)
+                          .filter((value, index, self) => value && self.indexOf(value) === index)
+                          .map((id) => (
+                            <SelectItem key={id} value={id}>
+                              {id}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="on-going">On-going</SelectItem>
-                  <SelectItem value="stand-by">Stand-by</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Select value={customerFilter} onValueChange={setCustomerFilter}>
-                <SelectTrigger>
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4" />
-                    <SelectValue placeholder="Filter by customer" />
+
+                  {/* Project Filter */}
+                  <div>
+                    <Select value={projectFilter} onValueChange={setProjectFilter}>
+                      <SelectTrigger>
+                        <div className="flex items-center gap-2">
+                          <SelectValue placeholder="Project" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Projects</SelectItem>
+                        {massProductions
+                          .map((item) => item.project_n)
+                          .filter((value, index, self) => value && self.indexOf(value) === index)
+                          .map((project) => (
+                            <SelectItem key={project} value={project}>
+                              {project}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Customers</SelectItem>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer._id} value={customer._id}>
-                      {customer.username}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+
+                  {/* Customer Filter */}
+                  <div>
+                    <Select value={customerFilter} onValueChange={setCustomerFilter}>
+                      <SelectTrigger>
+                        <div className="flex items-center gap-2">
+                          <SelectValue placeholder="Customer" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Customers</SelectItem>
+                        {customers.map((customer) => (
+                          <SelectItem key={customer._id} value={customer._id}>
+                            {customer.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Request Date Filter */}
+                  <div>
+                    <Input
+                      type="date"
+                      placeholder="Request Date"
+                      value={requestDateFilter}
+                      onChange={(e) => setRequestDateFilter(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Status Filter */}
+                  <div>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger>
+                        <div className="flex items-center gap-2">
+                          <SelectValue placeholder="Status" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="on-going">On-going</SelectItem>
+                        <SelectItem value="stand-by">Stand-by</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={clearFilters} className="gap-2">
+                    <X className="w-4 h-4" />
+                    Clear Filters
+                  </Button>
+
+                  {/* Sort Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="gap-2">
+                        <SlidersHorizontal className="w-4 h-4" />
+                        Sort
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Sort By</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setSortConfig({ key: "createdAt", direction: "desc" })}>
+                        Date (Newest First)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortConfig({ key: "createdAt", direction: "asc" })}>
+                        Date (Oldest First)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortConfig({ key: "project_n", direction: "asc" })}>
+                        Project (A-Z)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortConfig({ key: "project_n", direction: "desc" })}>
+                        Project (Z-A)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setSortConfig({ key: "completionPercentage", direction: "desc" })}
+                      >
+                        Progress (High-Low)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setSortConfig({ key: "completionPercentage", direction: "asc" })}
+                      >
+                        Progress (Low-High)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Bulk Actions */}
           {selectedItems.length > 0 && (
@@ -1298,8 +1328,8 @@ const MassProductionList = () => {
           {/* Stats */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>
-              Showing {filteredProductions.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}-
-              {Math.min(currentPage * itemsPerPage, filteredProductions.length)} of {filteredProductions.length} records
+              Showing {pagination.total > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0}-
+              {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} records
             </span>
             {loading && (
               <div className="flex items-center gap-1 text-primary">
