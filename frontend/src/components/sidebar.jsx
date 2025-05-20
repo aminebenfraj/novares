@@ -45,9 +45,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-import { getCurrentUser } from "../apis/userApi"
 
 // Navigation structure based on user's grouping
 const navigationItems = [
@@ -390,31 +388,8 @@ const mainPages = [
 
 export const Sidebar = ({ isOpen, toggleSidebar }) => {
   const [expandedItems, setExpandedItems] = useState({})
-  const [user, setUser] = useState({ username: "Loading...", email: "..." })
   const [searchTerm, setSearchTerm] = useState("")
   const location = useLocation()
-
-  // Fetch user data only once
-  useEffect(() => {
-    let isMounted = true
-
-    const fetchUser = async () => {
-      try {
-        const userData = await getCurrentUser()
-        if (isMounted) {
-          setUser(userData)
-        }
-      } catch (error) {
-        console.error("Failed to fetch user data:", error)
-      }
-    }
-
-    fetchUser()
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
 
   // Handle expanding menu items based on current path
   useEffect(() => {
@@ -517,22 +492,6 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
         } shadow-sm z-50`}
       >
         <div className="flex flex-col h-full">
-          {/* User profile section */}
-          <div className="px-4 py-3 border-b dark:border-zinc-800">
-            <div className="flex items-center gap-3">
-              <Avatar className="w-10 h-10 border-2 border-slate-100 dark:border-zinc-800">
-                <AvatarImage src="/placeholder.svg?height=40&width=40" alt="User" />
-                <AvatarFallback className="bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300">
-                  {user.username ? user.username.substring(0, 2).toUpperCase() : "AD"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate dark:text-zinc-200">{user.username || "User"}</p>
-                <p className="text-xs truncate text-muted-foreground">{user.email || "user@example.com"}</p>
-              </div>
-            </div>
-          </div>
-
           {/* Search bar */}
           <div className="px-4 py-2 border-b dark:border-zinc-800">
             <div className="relative">
@@ -540,7 +499,7 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
               <Input
                 type="search"
                 placeholder="Search menu..."
-                className="pl-8 h-9 bg-slate-50 dark:bg-zinc-800 border-slate-200 dark:border-zinc-700"
+                className="pl-8 h-9 bg-slate-50 dark:bg-zinc-800 border-slate-200 dark:border-zinc-700 focus-visible:ring-primary/20"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -555,25 +514,24 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
               </h3>
               <div className="grid grid-cols-3 gap-1">
                 {mainPages.map((page) => (
-                  <Link
-                    key={page.id}
-                    to={page.path}
-                    className={`flex flex-col items-center justify-center p-2 rounded-md transition-colors text-center ${
-                      location.pathname === page.path
-                        ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
-                        : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/50"
-                    }`}
-                    onClick={(e) => handleNavigationClick(e, page.path)}
-                  >
-                    <page.icon
-                      className={`w-5 h-5 mb-1 ${
+                  <motion.div key={page.id} whileHover={{ y: -2 }} whileTap={{ y: 0 }}>
+                    <Link
+                      to={page.path}
+                      className={`flex flex-col items-center justify-center p-2 rounded-md transition-colors text-center ${
                         location.pathname === page.path
-                          ? "text-slate-900 dark:text-zinc-100"
-                          : "text-slate-500 dark:text-zinc-400"
+                          ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
+                          : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/50"
                       }`}
-                    />
-                    <span className="text-xs">{page.label}</span>
-                  </Link>
+                      onClick={(e) => handleNavigationClick(e, page.path)}
+                    >
+                      <page.icon
+                        className={`w-5 h-5 mb-1 ${
+                          location.pathname === page.path ? "text-primary" : "text-slate-500 dark:text-zinc-400"
+                        }`}
+                      />
+                      <span className="text-xs">{page.label}</span>
+                    </Link>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -689,8 +647,12 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
           {/* Footer actions */}
           <div className="p-4 mt-auto border-t dark:border-zinc-800">
             <div className="flex flex-col gap-2">
-              <Button variant="outline" className="justify-start w-full" size="sm">
-                <HelpCircle className="w-4 h-4 mr-2" />
+              <Button
+                variant="outline"
+                className="justify-start w-full transition-colors border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800/50"
+                size="sm"
+              >
+                <HelpCircle className="w-4 h-4 mr-2 text-primary" />
                 Help & Support
               </Button>
             </div>
