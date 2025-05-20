@@ -78,8 +78,6 @@ exports.createMaterial = async (req, res) => {
   }
 }
 
-// Get all materials with populated references
-
 // Get all materials with pagination, filtering, and search
 exports.getAllMaterials = async (req, res) => {
   try {
@@ -96,8 +94,6 @@ exports.getAllMaterials = async (req, res) => {
       critical,
       consumable,
       stockStatus,
-      minPrice,
-      maxPrice,
     } = req.query
 
     // Ensure page & limit are valid positive integers
@@ -172,13 +168,6 @@ exports.getAllMaterials = async (req, res) => {
           filter.$expr = { $gt: ["$currentStock", "$minimumStock"] }
           break
       }
-    }
-
-    // Price range filter
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      filter.price = {}
-      if (minPrice !== undefined) filter.price.$gte = Number.parseFloat(minPrice)
-      if (maxPrice !== undefined) filter.price.$lte = Number.parseFloat(maxPrice)
     }
 
     // Prepare sort options
@@ -271,7 +260,6 @@ exports.getMaterialById = async (req, res) => {
     res.status(500).json({
       message: "Error fetching material details",
       error: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     })
   }
 }
@@ -330,7 +318,6 @@ exports.removeReferenceFromHistory = async (req, res) => {
     const { materialId, historyId } = req.params
 
     const material = await Material.findById(materialId)
-console.log("Material ID:", materialId, "History ID:", historyId);
 
     if (!material) {
       return res.status(404).json({ message: "Material not found" })

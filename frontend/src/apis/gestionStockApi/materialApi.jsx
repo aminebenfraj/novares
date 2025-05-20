@@ -33,7 +33,7 @@ export const getAllMaterials = async (page = 1, limit = 10, search = "", filters
     return await apiRequest("GET", url)
   } catch (error) {
     console.error("Error fetching materials:", error)
-    throw error // Rethrow the error for better error handling
+    throw error
   }
 }
 

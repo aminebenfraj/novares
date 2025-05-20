@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
+import { useState, useEffect, useCallback } from "react"
+import { Link, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -52,6 +52,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox"
 
 import { getAllMaterials, deleteMaterial, getFilterOptions } from "../../../apis/gestionStockApi/materialApi"
 import MainLayout from "@/components/MainLayout"
@@ -59,17 +60,18 @@ import MainLayout from "@/components/MainLayout"
 // Animation variants
 const fadeIn = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.5 } },
+  visible: { opacity: 1, transition: { duration: 0.3 } },
 }
 
 const itemVariants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.3 } },
-  exit: { opacity: 0, transition: { duration: 0.2 } },
+  visible: { opacity: 1, transition: { duration: 0.2 } },
+  exit: { opacity: 0, transition: { duration: 0.1 } },
 }
 
 const MaterialList = () => {
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [materials, setMaterials] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -96,9 +98,6 @@ const MaterialList = () => {
     location: "",
     critical: "",
     consumable: "",
-    stockStatus: "",
-    minPrice: "",
-    maxPrice: "",
   })
 
   // Sorting state
@@ -127,35 +126,35 @@ const MaterialList = () => {
   }, [searchTerm])
 
   // Load filter options on component mount
-  useEffect(() => {
-    const loadFilterOptions = async () => {
-      try {
-        const options = {}
+  const loadFilterOptions = useCallback(async () => {
+    try {
+      const options = {}
 
-        // Get manufacturer options directly from materials
-        const manufacturerData = await getFilterOptions("manufacturer")
-        options.manufacturers = manufacturerData.map((name) => ({ name }))
+      // Get manufacturer options directly from materials
+      const manufacturerData = await getFilterOptions("manufacturer")
+      options.manufacturers = manufacturerData.map((name) => ({ name }))
 
-        // Get other options from their respective collections
-        options.suppliers = await getFilterOptions("supplier")
-        options.categories = await getFilterOptions("category")
-        options.locations = await getFilterOptions("location")
+      // Get other options from their respective collections
+      options.suppliers = await getFilterOptions("supplier")
+      options.categories = await getFilterOptions("category")
+      options.locations = await getFilterOptions("location")
 
-        setFilterOptions(options)
-      } catch (error) {
-        console.error("Error loading filter options:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load filter options",
-        })
-      }
+      setFilterOptions(options)
+    } catch (error) {
+      console.error("Error loading filter options:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load filter options",
+      })
     }
+  }, [toast])
 
+  useEffect(() => {
     loadFilterOptions()
-  }, [])
+  }, [loadFilterOptions])
 
-  const fetchMaterials = async () => {
+  const fetchMaterials = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
@@ -163,30 +162,19 @@ const MaterialList = () => {
       // Map active tab to stockStatus filter
       let stockStatusFilter = ""
       if (activeTab !== "all") {
-        switch (activeTab) {
-          case "out_of_stock":
-            stockStatusFilter = "out_of_stock"
-            break
-          case "low_stock":
-            stockStatusFilter = "low_stock"
-            break
-          case "in_stock":
-            stockStatusFilter = "in_stock"
-            break
-        }
+        stockStatusFilter = activeTab
       }
 
       // Combine tab filter with other filters
       const combinedFilters = {
         ...filters,
-        stockStatus: stockStatusFilter || filters.stockStatus,
+        stockStatus: stockStatusFilter,
       }
 
       const response = await getAllMaterials(pagination.page, pagination.limit, debouncedSearch, combinedFilters, sort)
 
       if (response && response.data) {
         setMaterials(response.data)
-
         setPagination({
           ...pagination,
           page: response.page || 1,
@@ -210,17 +198,16 @@ const MaterialList = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [pagination.page, pagination.limit, debouncedSearch, activeTab, filters, sort, toast])
 
   // Fetch materials when pagination, search, filters or sort changes
   useEffect(() => {
     fetchMaterials()
-  }, [pagination.page, pagination.limit, debouncedSearch, activeTab, sort])
+  }, [pagination.page, pagination.limit, debouncedSearch, activeTab, sort, fetchMaterials])
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }))
-    fetchMaterials()
   }, [filters])
 
   const handlePageChange = (newPage) => {
@@ -270,9 +257,6 @@ const MaterialList = () => {
       location: "",
       critical: "",
       consumable: "",
-      stockStatus: "",
-      minPrice: "",
-      maxPrice: "",
     })
   }
 
@@ -322,8 +306,7 @@ const MaterialList = () => {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.setAttribute("href", url)
-    link.setAttribute("download", `materials-${new Date().toLocaleString
-().slice(0, 10)}.csv`)
+    link.setAttribute("download", `materials-${new Date().toLocaleDateString().replace(/\//g, "-")}.csv`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -422,7 +405,6 @@ const MaterialList = () => {
                   </div>
                   <ScrollArea className="h-[400px]">
                     <div className="p-4 space-y-4">
-                      {/* Filter options here */}
                       {/* Manufacturer filter */}
                       <div className="space-y-2">
                         <Label htmlFor="manufacturer">Manufacturer</Label>
@@ -444,7 +426,104 @@ const MaterialList = () => {
                         </Select>
                       </div>
 
-                      {/* More filters here */}
+                      {/* Supplier filter */}
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier">Supplier</Label>
+                        <Select
+                          value={filters.supplier}
+                          onValueChange={(value) => handleFilterChange("supplier", value)}
+                        >
+                          <SelectTrigger id="supplier">
+                            <SelectValue placeholder="Select supplier" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Suppliers</SelectItem>
+                            {filterOptions.suppliers.map((supplier) => (
+                              <SelectItem key={supplier._id} value={supplier._id}>
+                                {supplier.companyName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Category filter */}
+                      <div className="space-y-2">
+                        <Label htmlFor="category">Category</Label>
+                        <Select
+                          value={filters.category}
+                          onValueChange={(value) => handleFilterChange("category", value)}
+                        >
+                          <SelectTrigger id="category">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Categories</SelectItem>
+                            {filterOptions.categories.map((category) => (
+                              <SelectItem key={category._id} value={category._id}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Location filter */}
+                      <div className="space-y-2">
+                        <Label htmlFor="location">Location</Label>
+                        <Select
+                          value={filters.location}
+                          onValueChange={(value) => handleFilterChange("location", value)}
+                        >
+                          <SelectTrigger id="location">
+                            <SelectValue placeholder="Select location" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Locations</SelectItem>
+                            {filterOptions.locations.map((location) => (
+                              <SelectItem key={location._id} value={location._id}>
+                                {location.location}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Critical filter */}
+                      <div className="space-y-2">
+                        <Label htmlFor="critical">Critical Items</Label>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="critical"
+                            checked={filters.critical === "true"}
+                            onCheckedChange={(checked) => handleFilterChange("critical", checked ? "true" : "")}
+                          />
+                          <label
+                            htmlFor="critical"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Show only critical items
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Consumable filter */}
+                      <div className="space-y-2">
+                        <Label htmlFor="consumable">Consumable Items</Label>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="consumable"
+                            checked={filters.consumable === "true"}
+                            onCheckedChange={(checked) => handleFilterChange("consumable", checked ? "true" : "")}
+                          />
+                          <label
+                            htmlFor="consumable"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Show only consumable items
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   </ScrollArea>
                   <div className="flex items-center justify-between p-4 border-t">
@@ -614,15 +693,11 @@ const MaterialList = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => (window.location.href = `/materials/details/${material._id}`)}
-                                >
+                                <DropdownMenuItem onClick={() => navigate(`/materials/details/${material._id}`)}>
                                   <Eye className="w-4 h-4 mr-2" />
                                   View Details
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => (window.location.href = `/materials/edit/${material._id}`)}
-                                >
+                                <DropdownMenuItem onClick={() => navigate(`/materials/edit/${material._id}`)}>
                                   <Edit className="w-4 h-4 mr-2" />
                                   Edit
                                 </DropdownMenuItem>
