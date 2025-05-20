@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -336,8 +335,7 @@ const Dashboard = () => {
         id: material._id,
         title: `Material ${material.reference || material._id}`,
         description: `${material.description || "Material"} - Stock: ${material.currentStock}`,
-        time: new Date(material.updatedAt || material.createdAt).toLocaleString
-(),
+        time: new Date(material.updatedAt || material.createdAt).toLocaleString(),
         icon: Package,
         iconColor: "bg-blue-100 text-blue-700",
         date: new Date(material.updatedAt || material.createdAt),
@@ -352,8 +350,7 @@ const Dashboard = () => {
         id: order._id,
         title: `Order ${order.referencia?.reference || order._id}`,
         description: `${order.descripcionInterna || "Order"} - ${getPropertyValue(order.proveedor) || "Supplier"}`,
-        time: new Date(order.fechaSolicitud || order.createdAt || new Date()).toLocaleString
-(),
+        time: new Date(order.fechaSolicitud || order.createdAt || new Date()).toLocaleString(),
         icon: ShoppingCart,
         iconColor: "bg-emerald-100 text-emerald-700",
         date: new Date(order.fechaSolicitud || order.createdAt || new Date()),
@@ -368,8 +365,7 @@ const Dashboard = () => {
         id: prod._id || prod.id,
         title: `Project ${prod.project_n || prod.id || prod._id}`,
         description: `Status: ${prod.status} - ${prod.description || "Production"}`,
-        time: new Date(prod.updatedAt || prod.createdAt || new Date()).toLocaleString
-(),
+        time: new Date(prod.updatedAt || prod.createdAt || new Date()).toLocaleString(),
         icon: Box,
         iconColor: "bg-purple-100 text-purple-700",
         date: new Date(prod.updatedAt || prod.createdAt || new Date()),
@@ -384,8 +380,7 @@ const Dashboard = () => {
         id: entry._id,
         title: `Readiness ${entry.id || entry._id}`,
         description: `${entry.project_name || "Project"} - Status: ${entry.status || "Unknown"}`,
-        time: new Date(entry.updatedAt || entry.createdAt || new Date()).toLocaleString
-(),
+        time: new Date(entry.updatedAt || entry.createdAt || new Date()).toLocaleString(),
         icon: FileText,
         iconColor: "bg-amber-100 text-amber-700",
         date: new Date(entry.updatedAt || entry.createdAt || new Date()),
@@ -525,6 +520,136 @@ const Dashboard = () => {
     }
   }
 
+  // Generate chart data for inventory status
+  const getInventoryStatusChartData = () => {
+    const inventoryStatus = calculateInventoryStatus()
+
+    return {
+      labels: ["In Stock", "Critical", "Out of Stock"],
+      datasets: [
+        {
+          data: [inventoryStatus.inStock, inventoryStatus.critical, inventoryStatus.outOfStock],
+          backgroundColor: ["rgb(34, 197, 94)", "rgb(245, 158, 11)", "rgb(239, 68, 68)"],
+          borderWidth: 1,
+        },
+      ],
+    }
+  }
+
+  // Generate chart data for machine utilization
+  const getMachineUtilizationChartData = () => {
+    // Get top 5 machines by allocation count
+    const topMachines = machines
+      .map((machine) => {
+        const machineAllocations = allocations.filter(
+          (a) => a.machine?._id === machine._id || a.machine === machine._id,
+        )
+        return {
+          name: machine.name || machine.reference || `Machine ${machine._id}`,
+          count: machineAllocations.length,
+          totalStock: machineAllocations.reduce((sum, a) => sum + (a.quantity || 0), 0),
+        }
+      })
+      .sort((a, b) => b.totalStock - a.totalStock)
+      .slice(0, 5)
+
+    return {
+      labels: topMachines.map((m) => m.name),
+      datasets: [
+        {
+          label: "Allocated Stock",
+          data: topMachines.map((m) => m.totalStock),
+          backgroundColor: "rgba(59, 130, 246, 0.7)",
+        },
+      ],
+    }
+  }
+
+  // Generate chart data for material consumption
+  const getMaterialConsumptionChartData = () => {
+    // Group materials by category (using first word of description as category)
+    const categories = {}
+
+    materials.forEach((material) => {
+      const category = material.description ? material.description.split(" ")[0] : "Other"
+
+      if (!categories[category]) {
+        categories[category] = {
+          count: 0,
+          stock: 0,
+        }
+      }
+
+      categories[category].count++
+      categories[category].stock += material.currentStock || 0
+    })
+
+    // Get top 6 categories by count
+    const topCategories = Object.entries(categories)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6)
+
+    return {
+      labels: topCategories.map((c) => c.name),
+      datasets: [
+        {
+          label: "Current Stock",
+          data: topCategories.map((c) => c.stock),
+          borderColor: "rgb(59, 130, 246)",
+          backgroundColor: "rgba(59, 130, 246, 0.1)",
+          tension: 0.3,
+          fill: true,
+        },
+      ],
+    }
+  }
+
+  // Generate chart data for orders status
+  const getOrdersStatusChartData = () => {
+    // Group orders by month and status
+    const monthsData = {}
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+
+    // Initialize months
+    months.forEach((month) => {
+      monthsData[month] = {
+        received: 0,
+        pending: 0,
+      }
+    })
+
+    // Fill with actual data (using mock distribution for demo)
+    orders.forEach((order) => {
+      const date = order.fechaSolicitud ? new Date(order.fechaSolicitud) : new Date()
+      const month = date.toLocaleString("en-US", { month: "short" })
+
+      if (monthsData[month]) {
+        if (order.recepcionado === "Si" || order.recepcionado === true) {
+          monthsData[month].received++
+        } else {
+          monthsData[month].pending++
+        }
+      }
+    })
+
+    return {
+      labels: months,
+      datasets: [
+        {
+          label: "Received",
+          data: months.map((m) => monthsData[m].received),
+          backgroundColor: "rgba(34, 197, 94, 0.7)",
+        },
+        {
+          label: "Pending",
+          data: months.map((m) => monthsData[m].pending),
+          backgroundColor: "rgba(245, 158, 11, 0.7)",
+        },
+      ],
+    }
+  }
+
   const inventoryStatus = calculateInventoryStatus()
   const projectStatus = calculateProjectStatus()
   const recentActivities = getRecentActivities()
@@ -650,26 +775,38 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Inventory Trends</CardTitle>
-                    <CardDescription>Stock levels over the past 6 months</CardDescription>
+                    <CardTitle className="text-lg">Inventory Status</CardTitle>
+                    <CardDescription>Current stock levels distribution</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {loading ? (
                       <Skeleton className="w-full h-[300px]" />
                     ) : (
                       <div className="h-[300px]">
-                        <Line
-                          data={getInventoryChartData()}
+                        <Doughnut
+                          data={getInventoryStatusChartData()}
                           options={{
                             responsive: true,
                             maintainAspectRatio: false,
-                            scales: {
-                              y: {
-                                beginAtZero: true,
+                            plugins: {
+                              legend: {
+                                position: "right",
+                              },
+                              tooltip: {
+                                callbacks: {
+                                  label: (context) => `${context.label}: ${context.raw}%`,
+                                },
                               },
                             },
                           }}
                         />
+                        <div className="mt-4 text-sm text-center text-muted-foreground">
+                          <p>This chart shows the distribution of your inventory by stock status.</p>
+                          <p>
+                            Green represents items with healthy stock levels, amber shows critical items, and red
+                            indicates out-of-stock items.
+                          </p>
+                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -677,8 +814,8 @@ const Dashboard = () => {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Orders by Month</CardTitle>
-                    <CardDescription>Number of orders placed each month</CardDescription>
+                    <CardTitle className="text-lg">Machine Utilization</CardTitle>
+                    <CardDescription>Stock allocation across machines</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {loading ? (
@@ -686,17 +823,122 @@ const Dashboard = () => {
                     ) : (
                       <div className="h-[300px]">
                         <Bar
-                          data={getOrdersChartData()}
+                          data={getMachineUtilizationChartData()}
                           options={{
                             responsive: true,
                             maintainAspectRatio: false,
                             scales: {
                               y: {
                                 beginAtZero: true,
+                                title: {
+                                  display: true,
+                                  text: "Allocated Stock",
+                                },
+                              },
+                              x: {
+                                title: {
+                                  display: true,
+                                  text: "Machines",
+                                },
                               },
                             },
                           }}
                         />
+                        <div className="mt-4 text-sm text-center text-muted-foreground">
+                          <p>This chart displays the top 5 machines by allocated stock quantity.</p>
+                          <p>
+                            Higher bars indicate machines with more materials allocated to them, helping identify
+                            resource distribution.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Material Distribution</CardTitle>
+                    <CardDescription>Stock levels by material category</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {loading ? (
+                      <Skeleton className="w-full h-[300px]" />
+                    ) : (
+                      <div className="h-[300px]">
+                        <Line
+                          data={getMaterialConsumptionChartData()}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                              y: {
+                                beginAtZero: true,
+                                title: {
+                                  display: true,
+                                  text: "Current Stock",
+                                },
+                              },
+                              x: {
+                                title: {
+                                  display: true,
+                                  text: "Material Categories",
+                                },
+                              },
+                            },
+                          }}
+                        />
+                        <div className="mt-4 text-sm text-center text-muted-foreground">
+                          <p>This chart shows stock levels grouped by material categories.</p>
+                          <p>
+                            The trend line helps identify which categories have the highest inventory levels and may
+                            require attention.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Order Status</CardTitle>
+                    <CardDescription>Received vs pending orders</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {loading ? (
+                      <Skeleton className="w-full h-[300px]" />
+                    ) : (
+                      <div className="h-[300px]">
+                        <Bar
+                          data={getOrdersStatusChartData()}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                              y: {
+                                beginAtZero: true,
+                                stacked: true,
+                                title: {
+                                  display: true,
+                                  text: "Number of Orders",
+                                },
+                              },
+                              x: {
+                                stacked: true,
+                              },
+                            },
+                          }}
+                        />
+                        <div className="mt-4 text-sm text-center text-muted-foreground">
+                          <p>This stacked bar chart compares received vs pending orders over the last 6 months.</p>
+                          <p>
+                            Green sections represent completed orders, while amber sections show pending orders that
+                            require attention.
+                          </p>
+                        </div>
                       </div>
                     )}
                   </CardContent>
