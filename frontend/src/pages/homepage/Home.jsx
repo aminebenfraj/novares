@@ -24,6 +24,8 @@ import {
   PieChart,
   LayoutDashboard,
   Users,
+  AlertCircle,
+  X,
 } from "lucide-react"
 import { Card, CardContent, CardFooter, CardTitle, CardHeader, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -537,6 +539,10 @@ const Dashboard = () => {
   }
 
   // Generate chart data for machine utilization
+  const [chartInfoOpen, setChartInfoOpen] = useState(false)
+  const [chartInfoContent, setChartInfoContent] = useState({ title: "", description: "" })
+
+  // Generate chart data for machine utilization
   const getMachineUtilizationChartData = () => {
     // Get top 5 machines by allocation count
     const topMachines = machines
@@ -547,7 +553,7 @@ const Dashboard = () => {
         return {
           name: machine.name || machine.reference || `Machine ${machine._id}`,
           count: machineAllocations.length,
-          totalStock: machineAllocations.reduce((sum, a) => sum + (a.quantity || 0), 0),
+          totalStock: machineAllocations.reduce((sum, a) => sum + (Number.parseInt(a.allocatedStock) || 0), 0),
         }
       })
       .sort((a, b) => b.totalStock - a.totalStock)
@@ -563,6 +569,34 @@ const Dashboard = () => {
         },
       ],
     }
+  }
+
+  const ChartInfoPopup = ({ title, description, isOpen, onClose }) => {
+    if (!isOpen) return null
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg dark:bg-zinc-900">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">{title}</h3>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          <p className="text-muted-foreground">{description}</p>
+          <div className="flex justify-end mt-4">
+            <Button variant="outline" onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const openChartInfo = (title, description) => {
+    setChartInfoContent({ title, description })
+    setChartInfoOpen(true)
   }
 
   // Generate chart data for material consumption
@@ -673,11 +707,11 @@ const Dashboard = () => {
     <MainLayout>
       <div>
         {/* Welcome banner */}
-        <div className="w-full p-6 text-white bg-gradient-to-r from-primary to-primary/80">
+        <div className="w-full p-6 mb-6 text-white rounded-lg shadow-md bg-gradient-to-r from-primary to-primary/80">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <h2 className="mb-2 text-2xl font-bold">Welcome to the Management Dashboard</h2>
-              <p>Monitor your inventory, production processes, and orders in one place.</p>
+              <p className="text-white/90">Get a comprehensive overview of your inventory, production, and orders.</p>
             </div>
             <div className="flex gap-2">
               <Button
@@ -717,42 +751,156 @@ const Dashboard = () => {
               Overview
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <StatCard
-                icon={Package}
-                title="Materials"
-                value={materials.length}
-                trend={5}
-                color="bg-blue-500"
-                isLoading={loading}
-                onClick={() => navigate("/materials")}
-              />
-              <StatCard
-                icon={AlertTriangle}
-                title="Low Stock Items"
-                value={getLowStockCount()}
-                trend={-2}
-                color="bg-rose-500"
-                isLoading={loading}
-                onClick={() => navigate("/materials")}
-              />
-              <StatCard
-                icon={Box}
-                title="Active Projects"
-                value={getActiveProjects()}
-                trend={8}
-                color="bg-emerald-500"
-                isLoading={loading}
-                onClick={() => navigate("/masspd")}
-              />
-              <StatCard
-                icon={ShoppingCart}
-                title="Pending Orders"
-                value={getPendingOrders()}
-                trend={3}
-                color="bg-amber-500"
-                isLoading={loading}
-                onClick={() => navigate("/pedido")}
-              />
+              <motion.div
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                whileTap={{ y: 0, transition: { duration: 0.2 } }}
+                className="w-full"
+              >
+                <Card
+                  className="overflow-hidden transition-all shadow-sm cursor-pointer hover:shadow-md"
+                  onClick={() => navigate("/materials")}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="w-full">
+                        <p className="text-sm font-medium text-muted-foreground">Materials</p>
+                        {loading ? (
+                          <Skeleton className="w-20 h-8 mt-1" />
+                        ) : (
+                          <h3 className="mt-1 text-2xl font-bold">{materials.length}</h3>
+                        )}
+                        {!loading && (
+                          <div className="flex items-center mt-1">
+                            <TrendingUp className="w-3 h-3 mr-1 text-emerald-500" />
+                            <span className="text-xs font-medium text-emerald-500">+5%</span>
+                            <span className="ml-1 text-xs text-muted-foreground">vs last month</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-3 bg-blue-500 rounded-full">
+                        <Package className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                  </CardContent>
+                  <div className="h-1 bg-muted">
+                    <div className="h-full bg-blue-500" style={{ width: `${Math.min(Math.abs(5) * 2, 100)}%` }}></div>
+                  </div>
+                </Card>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                whileTap={{ y: 0, transition: { duration: 0.2 } }}
+                className="w-full"
+              >
+                <Card
+                  className="overflow-hidden transition-all shadow-sm cursor-pointer hover:shadow-md"
+                  onClick={() => navigate("/materials")}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="w-full">
+                        <p className="text-sm font-medium text-muted-foreground">Low Stock Items</p>
+                        {loading ? (
+                          <Skeleton className="w-20 h-8 mt-1" />
+                        ) : (
+                          <h3 className="mt-1 text-2xl font-bold">{getLowStockCount()}</h3>
+                        )}
+                        {!loading && (
+                          <div className="flex items-center mt-1">
+                            <TrendingDown className="w-3 h-3 mr-1 text-rose-500" />
+                            <span className="text-xs font-medium text-rose-500">-2%</span>
+                            <span className="ml-1 text-xs text-muted-foreground">vs last month</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-3 rounded-full bg-rose-500">
+                        <AlertTriangle className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                  </CardContent>
+                  <div className="h-1 bg-muted">
+                    <div className="h-full bg-rose-500" style={{ width: `${Math.min(Math.abs(2) * 2, 100)}%` }}></div>
+                  </div>
+                </Card>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                whileTap={{ y: 0, transition: { duration: 0.2 } }}
+                className="w-full"
+              >
+                <Card
+                  className="overflow-hidden transition-all shadow-sm cursor-pointer hover:shadow-md"
+                  onClick={() => navigate("/masspd")}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="w-full">
+                        <p className="text-sm font-medium text-muted-foreground">Active Projects</p>
+                        {loading ? (
+                          <Skeleton className="w-20 h-8 mt-1" />
+                        ) : (
+                          <h3 className="mt-1 text-2xl font-bold">{getActiveProjects()}</h3>
+                        )}
+                        {!loading && (
+                          <div className="flex items-center mt-1">
+                            <TrendingUp className="w-3 h-3 mr-1 text-emerald-500" />
+                            <span className="text-xs font-medium text-emerald-500">+8%</span>
+                            <span className="ml-1 text-xs text-muted-foreground">vs last month</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-3 rounded-full bg-emerald-500">
+                        <Box className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                  </CardContent>
+                  <div className="h-1 bg-muted">
+                    <div
+                      className="h-full bg-emerald-500"
+                      style={{ width: `${Math.min(Math.abs(8) * 2, 100)}%` }}
+                    ></div>
+                  </div>
+                </Card>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                whileTap={{ y: 0, transition: { duration: 0.2 } }}
+                className="w-full"
+              >
+                <Card
+                  className="overflow-hidden transition-all shadow-sm cursor-pointer hover:shadow-md"
+                  onClick={() => navigate("/pedido")}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="w-full">
+                        <p className="text-sm font-medium text-muted-foreground">Pending Orders</p>
+                        {loading ? (
+                          <Skeleton className="w-20 h-8 mt-1" />
+                        ) : (
+                          <h3 className="mt-1 text-2xl font-bold">{getPendingOrders()}</h3>
+                        )}
+                        {!loading && (
+                          <div className="flex items-center mt-1">
+                            <TrendingUp className="w-3 h-3 mr-1 text-emerald-500" />
+                            <span className="text-xs font-medium text-emerald-500">+3%</span>
+                            <span className="ml-1 text-xs text-muted-foreground">vs last month</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-3 rounded-full bg-amber-500">
+                        <ShoppingCart className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                  </CardContent>
+                  <div className="h-1 bg-muted">
+                    <div className="h-full bg-amber-500" style={{ width: `${Math.min(Math.abs(3) * 2, 100)}%` }}></div>
+                  </div>
+                </Card>
+              </motion.div>
             </div>
           </div>
 
@@ -775,7 +923,21 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Inventory Status</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">Inventory Status</CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          openChartInfo(
+                            "Inventory Status",
+                            "This chart shows the distribution of your inventory by stock status. Green represents items with healthy stock levels, amber shows critical items, and red indicates out-of-stock items.",
+                          )
+                        }
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
                     <CardDescription>Current stock levels distribution</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -800,13 +962,6 @@ const Dashboard = () => {
                             },
                           }}
                         />
-                        <div className="mt-4 text-sm text-center text-muted-foreground">
-                          <p>This chart shows the distribution of your inventory by stock status.</p>
-                          <p>
-                            Green represents items with healthy stock levels, amber shows critical items, and red
-                            indicates out-of-stock items.
-                          </p>
-                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -814,7 +969,21 @@ const Dashboard = () => {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Machine Utilization</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">Machine Utilization</CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          openChartInfo(
+                            "Machine Utilization",
+                            "This chart displays the top 5 machines by allocated stock quantity. Higher bars indicate machines with more materials allocated to them, helping identify resource distribution.",
+                          )
+                        }
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
                     <CardDescription>Stock allocation across machines</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -844,13 +1013,6 @@ const Dashboard = () => {
                             },
                           }}
                         />
-                        <div className="mt-4 text-sm text-center text-muted-foreground">
-                          <p>This chart displays the top 5 machines by allocated stock quantity.</p>
-                          <p>
-                            Higher bars indicate machines with more materials allocated to them, helping identify
-                            resource distribution.
-                          </p>
-                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -860,7 +1022,21 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Material Distribution</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">Material Distribution</CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          openChartInfo(
+                            "Material Distribution",
+                            "This chart shows stock levels grouped by material categories. The trend line helps identify which categories have the highest inventory levels and may require attention.",
+                          )
+                        }
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
                     <CardDescription>Stock levels by material category</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -890,13 +1066,6 @@ const Dashboard = () => {
                             },
                           }}
                         />
-                        <div className="mt-4 text-sm text-center text-muted-foreground">
-                          <p>This chart shows stock levels grouped by material categories.</p>
-                          <p>
-                            The trend line helps identify which categories have the highest inventory levels and may
-                            require attention.
-                          </p>
-                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -904,7 +1073,21 @@ const Dashboard = () => {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Order Status</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">Order Status</CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          openChartInfo(
+                            "Order Status",
+                            "This stacked bar chart compares received vs pending orders over the last 6 months. Green sections represent completed orders, while amber sections show pending orders that require attention.",
+                          )
+                        }
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
                     <CardDescription>Received vs pending orders</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -932,13 +1115,6 @@ const Dashboard = () => {
                             },
                           }}
                         />
-                        <div className="mt-4 text-sm text-center text-muted-foreground">
-                          <p>This stacked bar chart compares received vs pending orders over the last 6 months.</p>
-                          <p>
-                            Green sections represent completed orders, while amber sections show pending orders that
-                            require attention.
-                          </p>
-                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -1453,6 +1629,12 @@ const Dashboard = () => {
             </TabsContent>
           </Tabs>
         </div>
+        <ChartInfoPopup
+          title={chartInfoContent.title}
+          description={chartInfoContent.description}
+          isOpen={chartInfoOpen}
+          onClose={() => setChartInfoOpen(false)}
+        />
       </div>
     </MainLayout>
   )
