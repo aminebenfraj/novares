@@ -45,21 +45,21 @@ import {
 
 // Define role fields for checkin
 const roleFields = [
-  { id: "Project_Manager", label: "Project Manager" },
-  { id: "Business_Manager", label: "Business Manager" },
-  { id: "Financial_Leader", label: "Financial Leader" },
-  { id: "Manufacturing_Eng_Manager", label: "Manufacturing Eng. Manager" },
-  { id: "Manufacturing_Eng_Leader", label: "Manufacturing Eng. Leader" },
-  { id: "Methodes_UAP1_3", label: "Methodes UAP1&3" },
-  { id: "Methodes_UAP2", label: "Methodes UAP2" },
-  { id: "Maintenance_Manager", label: "Maintenance Manager" },
-  { id: "Maintenance_Leader_UAP2", label: "Maintenance Leader UAP2" },
-  { id: "Prod_Plant_Manager_UAP1", label: "Prod. Plant Manager UAP1" },
-  { id: "Prod_Plant_Manager_UAP2", label: "Prod. Plant Manager UAP2" },
-  { id: "Quality_Manager", label: "Quality Manager" },
-  { id: "Quality_Leader_UAP1", label: "Quality Leader UAP1" },
-  { id: "Quality_Leader_UAP2", label: "Quality Leader UAP2" },
-  { id: "Quality_Leader_UAP3", label: "Quality Leader UAP3" },
+  { id: "Project Manager", label: "Project Manager" },
+  { id: "Business Manager", label: "Business Manager" },
+  { id: "Financial Leader", label: "Financial Leader" },
+  { id: "Manufacturing Eng. Manager", label: "Manufacturing Eng. Manager" },
+  { id: "Manufacturing Eng. Leader", label: "Manufacturing Eng. Leader" },
+  { id: "Methodes UAP1&3", label: "Methodes UAP1&3" },
+  { id: "Methodes UAP2", label: "Methodes UAP2" },
+  { id: "Maintenance Manager", label: "Maintenance Manager" },
+  { id: "Maintenance Leader UAP2", label: "Maintenance Leader UAP2" },
+  { id: "Prod. Plant Manager UAP1", label: "Prod. Plant Manager UAP1" },
+  { id: "Prod. Plant Manager UAP2", label: "Prod. Plant Manager UAP2" },
+  { id: "Quality Manager", label: "Quality Manager" },
+  { id: "Quality Leader UAP1", label: "Quality Leader UAP1" },
+  { id: "Quality Leader UAP2", label: "Quality Leader UAP2" },
+  { id: "Quality Leader UAP3", label: "Quality Leader UAP3" },
 ]
 
 // Field definitions

@@ -130,7 +130,7 @@ exports.createMassProduction = async (req, res) => {
 
     // Find all users with the checked roles
     const usersToNotify = await User.find({
-      roles: { $in: checkedRoles },
+      roles: { $in: Object.keys(checkinRoles) },
     })
 
     // Send email to each user
