@@ -1,7 +1,7 @@
 const Call = require("../../models/logistic/CallModel")
 const Machine = require("../../models/gestionStockModels/MachineModel") // Add this import
 const excel = require("exceljs")
-const { sendCallCreationEmail } = require("../../utils/emailService")
+const { sendCallCreationEmail } = require("../../utils/emailServiceCall")
 
 exports.exportCallsToExcel = async (req, res) => {
   try {
