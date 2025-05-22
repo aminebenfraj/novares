@@ -132,6 +132,7 @@ const CallDashboard = () => {
       if (apiFilters.machineId === "all") delete apiFilters.machineId
       if (apiFilters.status === "all") delete apiFilters.status
       if (!apiFilters.date) delete apiFilters.date
+
       const callsData = await getCalls(apiFilters)
       setCalls(callsData)
     } catch (error) {
@@ -325,7 +326,12 @@ const CallDashboard = () => {
       if (!silent) {
         toast({
           title: "Verificación completada",
-          description: response.data.message || "Se han verificado las llamadas expiradas",
+          description:
+            response && response.data && response.data.message
+              ? response.data.message
+              : response && response.message
+                ? response.message
+                : "Se han verificado las llamadas expiradas",
           variant: "success",
         })
       }
@@ -491,349 +497,356 @@ const CallDashboard = () => {
 
   return (
     <MainLayout>
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="container py-6 mx-auto space-y-6"
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Panel de Control</h1>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center">
-              Usuario:{" "}
-              <Badge variant="outline" className="ml-1 font-mono">
-                {isProduction ? "PRODUCCION" : "LOGISTICA"}
-              </Badge>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="container py-6 mx-auto space-y-6"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Panel de Control</h1>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center">
+                Usuario:{" "}
+                <Badge variant="outline" className="ml-1 font-mono">
+                  {isProduction ? "PRODUCCION" : "LOGISTICA"}
+                </Badge>
+              </div>
+              <div className="flex items-center">
+                <Calendar className="w-4 h-4 mr-1" />
+                {new Date().toLocaleDateString()}
+              </div>
             </div>
-            <div className="flex items-center">
-              <Calendar className="w-4 h-4 mr-1" />
-              {new Date().toLocaleDateString()}
-            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => (isLogistics ? handleCheckExpiredCalls(false) : fetchCalls(false))}
+                    disabled={checkingExpired || refreshing}
+                  >
+                    {checkingExpired || refreshing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
+                        <RotateCw className="w-4 h-4" />
+                      </motion.div>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isLogistics ? "Verificar llamadas expiradas" : "Actualizar datos"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={isLogistics ? () => handleCheckExpiredCalls(false) : () => fetchCalls(false)}
-                  disabled={checkingExpired || refreshing}
-                >
-                  {checkingExpired || refreshing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
-                      <RotateCw className="w-4 h-4" />
-                    </motion.div>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{isLogistics ? "Verificar llamadas expiradas" : "Actualizar datos"}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
+        <Separator />
 
-      <Separator />
+        {/* Statistics Cards */}
+        <CallStats calls={calls} />
 
-      {/* Statistics Cards */}
-      <CallStats calls={calls} />
-
-      {isProduction && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>Llamar a LOGISTICA</CardTitle>
-              <CardDescription>Selecciona una máquina para crear una llamada a LOGISTICA</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
-                <div className="flex-1">
-                  <Label htmlFor="machineSelect">Seleccionar máquina</Label>
-                  <div className="flex gap-2 mt-1">
-                    <div className="flex-1">
-                      <Select value={selectedMachine || ""} onValueChange={handleMachineSelect}>
-                        <SelectTrigger id="machineSelect">
-                          <SelectValue placeholder="Seleccionar máquina" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {machines && machines.length > 0 ? (
-                            machines.map((machine) => (
-                              <SelectItem key={machine._id} value={machine._id}>
-                                {machine.name} {machine.status !== "active" && `(${machine.status})`}
+        {isProduction && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Llamar a LOGISTICA</CardTitle>
+                <CardDescription>Selecciona una máquina para crear una llamada a LOGISTICA</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
+                  <div className="flex-1">
+                    <Label htmlFor="machineSelect">Seleccionar máquina</Label>
+                    <div className="flex gap-2 mt-1">
+                      <div className="flex-1">
+                        <Select value={selectedMachine || ""} onValueChange={handleMachineSelect}>
+                          <SelectTrigger id="machineSelect">
+                            <SelectValue placeholder="Seleccionar máquina" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {machines && machines.length > 0 ? (
+                              machines.map((machine) => (
+                                <SelectItem key={machine._id} value={machine._id}>
+                                  {machine.name} {machine.status !== "active" && `(${machine.status})`}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="no-machines" disabled>
+                                No hay máquinas disponibles
                               </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value="no-machines" disabled>
-                              No hay máquinas disponibles
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1">
+                    <Label htmlFor="durationInput">Duración (minutos)</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        id="durationInput"
+                        type="number"
+                        min="1"
+                        value={callDuration}
+                        onChange={handleDurationChange}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={handleCallLogistics}
+                        disabled={!selectedMachine || creatingCall}
+                        className="flex items-center gap-2"
+                      >
+                        {creatingCall ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <PhoneCall className="w-4 h-4" />
+                        )}
+                        Llamar
+                      </Button>
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
-                <div className="flex-1">
-                  <Label htmlFor="durationInput">Duración (minutos)</Label>
-                  <div className="flex gap-2 mt-1">
-                    <Input
-                      id="durationInput"
-                      type="number"
-                      min="1"
-                      value={callDuration}
-                      onChange={handleDurationChange}
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={handleCallLogistics}
-                      disabled={!selectedMachine || creatingCall}
-                      className="flex items-center gap-2"
-                    >
-                      {creatingCall ? <Loader2 className="w-4 h-4 animate-spin" /> : <PhoneCall className="w-4 h-4" />}
-                      Llamar
-                    </Button>
-                  </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle>Registro de Llamadas</CardTitle>
+              <div className="flex gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleExportToExcel}
+                          className="flex items-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          Exportar
+                        </Button>
+                      </motion.div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Exportar datos a CSV</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDeleteAllExceptFirst10}
+                          className="flex items-center gap-2 mr-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Eliminar excepto 10
+                        </Button>
+                      </motion.div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Eliminar todas las llamadas excepto las primeras 10</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-4">
+                <div className="space-y-2">
+                  <Label htmlFor="filterMachine">Máquina</Label>
+                  <Select value={filters.machineId} onValueChange={(value) => handleFilterChange("machineId", value)}>
+                    <SelectTrigger id="filterMachine">
+                      <SelectValue placeholder="Todas las máquinas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las máquinas</SelectItem>
+                      {machines.map((machine) => (
+                        <SelectItem key={machine._id} value={machine._id}>
+                          {machine.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="filterDate">Fecha</Label>
+                  <Input
+                    id="filterDate"
+                    type="date"
+                    value={filters.date}
+                    onChange={(e) => handleFilterChange("date", e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="filterStatus">Estatus</Label>
+                  <Select value={filters.status} onValueChange={(value) => handleFilterChange("status", value)}>
+                    <SelectTrigger id="filterStatus">
+                      <SelectValue placeholder="Todos los estados" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los estados</SelectItem>
+                      <SelectItem value="Pendiente">Pendiente</SelectItem>
+                      <SelectItem value="Realizada">Realizada</SelectItem>
+                      <SelectItem value="Expirada">Expirada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-end">
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full">
+                    <Button onClick={applyFilters} className="w-full">
+                      <Filter className="w-4 h-4 mr-2" />
+                      Aplicar Filtros
+                    </Button>
+                  </motion.div>
+                </div>
+              </div>
+
+              <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="mb-4">
+                <TabsList>
+                  <TabsTrigger value="all">Todas</TabsTrigger>
+                  <TabsTrigger value="pending">Pendientes</TabsTrigger>
+                  <TabsTrigger value="completed">Completadas</TabsTrigger>
+                  <TabsTrigger value="expired">Expiradas</TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-bold">Nº DE MÁQUINA</TableHead>
+                      <TableHead className="font-bold">FECHA</TableHead>
+                      <TableHead className="font-bold">HORA LLAMADA</TableHead>
+                      <TableHead className="font-bold">DURACIÓN (MIN)</TableHead>
+                      <TableHead className="font-bold">TIEMPO RESTANTE</TableHead>
+                      <TableHead className="font-bold">ESTATUS</TableHead>
+                      <TableHead className="font-bold">ACCIÓN</TableHead>
+                      <TableHead className="font-bold">HORA TAREA TERMINADA</TableHead>
+                      <TableHead className="font-bold">DELETE</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="h-24 text-center">
+                          <div className="flex items-center justify-center">
+                            <Loader2 className="w-6 h-6 mr-2 animate-spin" />
+                            <span>Cargando...</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredCalls.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                          No hay llamadas registradas
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      <AnimatePresence>
+                        {filteredCalls.map((call) => (
+                          <motion.tr
+                            key={call._id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="border-b"
+                          >
+                            <TableCell className="font-medium">{getMachineNames(call)}</TableCell>
+                            <TableCell>{new Date(call.date).toLocaleDateString()}</TableCell>
+                            <TableCell>{new Date(call.callTime).toLocaleTimeString()}</TableCell>
+                            <TableCell>{call.duration || 90}</TableCell>
+                            <TableCell>
+                              <CallTimer
+                                remainingTime={call.remainingTime}
+                                status={call.status}
+                                duration={call.duration || 90}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={getStatusBadgeVariant(call.status)}
+                                className={
+                                  call.status === "Realizada" ? "bg-green-500 hover:bg-green-600 text-white" : ""
+                                }
+                              >
+                                {getStatusIcon(call.status)}
+                                {call.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {isLogistics && call.status === "Pendiente" && (
+                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                  {completingCall[call._id] ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                  ) : (
+                                    <Checkbox
+                                      onCheckedChange={() => handleCompleteCall(call._id)}
+                                      className="w-5 h-5"
+                                    />
+                                  )}
+                                </motion.div>
+                              )}
+                              {call.status === "Realizada" && <Checkbox checked disabled className="w-5 h-5" />}
+                              {call.status === "Expirada" && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Info className="w-5 h-5 text-red-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Llamada expirada automáticamente</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {call.completionTime ? new Date(call.completionTime).toLocaleTimeString() : "-"}
+                            </TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="icon" onClick={() => handleDeleteCall(call._id)}>
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>{" "}
+                            </TableCell>
+                          </motion.tr>
+                        ))}
+                      </AnimatePresence>
+                    )}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
         </motion.div>
-      )}
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-      >
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle>Registro de Llamadas</CardTitle>
-            <div className="flex gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleExportToExcel}
-                        className="flex items-center gap-2"
-                      >
-                        <Download className="w-4 h-4" />
-                        Exportar
-                      </Button>
-                    </motion.div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Exportar datos a CSV</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDeleteAllExceptFirst10}
-                        className="flex items-center gap-2 mr-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Eliminar excepto 10
-                      </Button>
-                    </motion.div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Eliminar todas las llamadas excepto las primeras 10</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-4">
-              <div className="space-y-2">
-                <Label htmlFor="filterMachine">Máquina</Label>
-                <Select value={filters.machineId} onValueChange={(value) => handleFilterChange("machineId", value)}>
-                  <SelectTrigger id="filterMachine">
-                    <SelectValue placeholder="Todas las máquinas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas las máquinas</SelectItem>
-                    {machines.map((machine) => (
-                      <SelectItem key={machine._id} value={machine._id}>
-                        {machine.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="filterDate">Fecha</Label>
-                <Input
-                  id="filterDate"
-                  type="date"
-                  value={filters.date}
-                  onChange={(e) => handleFilterChange("date", e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="filterStatus">Estatus</Label>
-                <Select value={filters.status} onValueChange={(value) => handleFilterChange("status", value)}>
-                  <SelectTrigger id="filterStatus">
-                    <SelectValue placeholder="Todos los estados" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los estados</SelectItem>
-                    <SelectItem value="Pendiente">Pendiente</SelectItem>
-                    <SelectItem value="Realizada">Realizada</SelectItem>
-                    <SelectItem value="Expirada">Expirada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-end">
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full">
-                  <Button onClick={applyFilters} className="w-full">
-                    <Filter className="w-4 h-4 mr-2" />
-                    Aplicar Filtros
-                  </Button>
-                </motion.div>
-              </div>
-            </div>
-
-            <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="mb-4">
-              <TabsList>
-                <TabsTrigger value="all">Todas</TabsTrigger>
-                <TabsTrigger value="pending">Pendientes</TabsTrigger>
-                <TabsTrigger value="completed">Completadas</TabsTrigger>
-                <TabsTrigger value="expired">Expiradas</TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            <div className="border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="font-bold">Nº DE MÁQUINA</TableHead>
-                    <TableHead className="font-bold">FECHA</TableHead>
-                    <TableHead className="font-bold">HORA LLAMADA</TableHead>
-                    <TableHead className="font-bold">DURACIÓN (MIN)</TableHead>
-                    <TableHead className="font-bold">TIEMPO RESTANTE</TableHead>
-                    <TableHead className="font-bold">ESTATUS</TableHead>
-                    <TableHead className="font-bold">ACCIÓN</TableHead>
-                    <TableHead className="font-bold">HORA TAREA TERMINADA</TableHead>
-                    <TableHead className="font-bold">DELETE</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="h-24 text-center">
-                        <div className="flex items-center justify-center">
-                          <Loader2 className="w-6 h-6 mr-2 animate-spin" />
-                          <span>Cargando...</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredCalls.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
-                        No hay llamadas registradas
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    <AnimatePresence>
-                      {filteredCalls.map((call) => (
-                        <motion.tr
-                          key={call._id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="border-b"
-                        >
-                          <TableCell className="font-medium">{getMachineNames(call)}</TableCell>
-                          <TableCell>{new Date(call.date).toLocaleDateString()}</TableCell>
-                          <TableCell>{new Date(call.callTime).toLocaleTimeString()}</TableCell>
-                          <TableCell>{call.duration || 90}</TableCell>
-                          <TableCell>
-                            <CallTimer
-                              remainingTime={call.remainingTime}
-                              status={call.status}
-                              duration={call.duration || 90}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={getStatusBadgeVariant(call.status)}
-                              className={
-                                call.status === "Realizada" ? "bg-green-500 hover:bg-green-600 text-white" : ""
-                              }
-                            >
-                              {getStatusIcon(call.status)}
-                              {call.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {isLogistics && call.status === "Pendiente" && (
-                              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                                {completingCall[call._id] ? (
-                                  <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : (
-                                  <Checkbox onCheckedChange={() => handleCompleteCall(call._id)} className="w-5 h-5" />
-                                )}
-                              </motion.div>
-                            )}
-                            {call.status === "Realizada" && <Checkbox checked disabled className="w-5 h-5" />}
-                            {call.status === "Expirada" && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Info className="w-5 h-5 text-red-500" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Llamada expirada automáticamente</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {call.completionTime ? new Date(call.completionTime).toLocaleTimeString() : "-"}
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="icon" onClick={() => handleDeleteCall(call._id)}>
-                              <Trash2 className="w-4 h-4 text-red-500" />
-                            </Button>{" "}
-                          </TableCell>
-                        </motion.tr>
-                      ))}
-                    </AnimatePresence>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
       </motion.div>
-    </motion.div>
-  </MainLayout>
+    </MainLayout>
   )
 }
 
