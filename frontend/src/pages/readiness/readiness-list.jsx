@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,9 +44,16 @@ import {
   ChevronRight,
   SlidersHorizontal,
   X,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Target,
+  BarChart3,
+  Filter,
 } from "lucide-react"
 import MainLayout from "@/components/MainLayout"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 // Animation variants
 const fadeIn = {
@@ -58,6 +65,118 @@ const itemVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { duration: 0.3 } },
   exit: { opacity: 0, transition: { duration: 0.2 } },
+}
+
+// Enhanced tracking calculation functions
+const calculateCompletionPercentage = (data) => {
+  if (!data) return 0
+
+  const stages = [
+    { key: "documentation", data: data.Documentation, weight: 1.0 },
+    { key: "logistics", data: data.Logistics, weight: 1.0 },
+    { key: "maintenance", data: data.Maintenance, weight: 1.0 },
+    { key: "packaging", data: data.Packaging, weight: 1.0 },
+    { key: "processStatusIndustrials", data: data.ProcessStatusIndustrials, weight: 1.0 },
+    { key: "productProcess", data: data.ProductProcess, weight: 1.0 },
+    { key: "runAtRateProduction", data: data.RunAtRateProduction, weight: 1.0 },
+    { key: "safety", data: data.Safety, weight: 1.0 },
+    { key: "supp", data: data.Suppliers, weight: 1.0 },
+    { key: "toolingStatus", data: data.ToolingStatus, weight: 1.0 },
+    { key: "training", data: data.Training, weight: 1.0 },
+  ]
+
+  const totalWeight = stages.reduce((sum, stage) => sum + stage.weight, 0)
+  let weightedCompletion = 0
+
+  stages.forEach((stage) => {
+    if (!stage.data) return
+
+    if (isStageCompleted(stage.data)) {
+      weightedCompletion += stage.weight
+    } else if (typeof stage.data === "object") {
+      const stagePercentage = calculateStagePercentage(stage.data)
+      weightedCompletion += (stage.weight * stagePercentage) / 100
+    }
+  })
+
+  return Math.round((weightedCompletion / totalWeight) * 100)
+}
+
+const isStageCompleted = (stage) => {
+  if (!stage) return false
+  if (stage.check === true || stage.value === true) return true
+
+  if (typeof stage === "object") {
+    const tasks = Object.entries(stage).filter(
+      ([key, value]) => typeof value === "object" && value !== null && !key.startsWith("_") && key !== "checkin",
+    )
+
+    if (tasks.length > 0) {
+      const completedTasks = tasks.filter(
+        ([_, value]) => value.value === true || value.check === true || (value.task && value.task.check === true),
+      ).length
+      // Increased threshold to 90% for more accurate completion detection
+      return completedTasks / tasks.length >= 0.9
+    }
+
+    return Object.values(stage).some((prop) => {
+      if (typeof prop === "object" && prop !== null) {
+        return prop.check === true || prop.value === true
+      }
+      return false
+    })
+  }
+  return false
+}
+
+const calculateStagePercentage = (stage) => {
+  if (!stage) return 0
+
+  if (stage.check !== undefined || stage.value !== undefined) {
+    return stage.check || stage.value ? 100 : 0
+  }
+
+  const tasks = Object.entries(stage).filter(
+    ([key, value]) => typeof value === "object" && value !== null && !key.startsWith("_") && key !== "checkin",
+  )
+
+  if (tasks.length === 0) return 0
+
+  let completedTasksCount = 0
+  let totalTasksCount = 0
+
+  tasks.forEach(([_, value]) => {
+    totalTasksCount++
+
+    if (value.value === true || value.check === true || (value.task && value.task.check === true)) {
+      completedTasksCount++
+    } else if (value.percentage !== undefined) {
+      completedTasksCount += value.percentage / 100
+    } else if (typeof value === "object" && Object.keys(value).some((k) => value[k] === true)) {
+      const trueProps = Object.values(value).filter((v) => v === true).length
+      const totalProps = Object.keys(value).length
+      completedTasksCount += trueProps / totalProps
+    }
+  })
+
+  return Math.round((completedTasksCount / totalTasksCount) * 100)
+}
+
+const getProgressColor = (percentage) => {
+  if (percentage >= 90) return "bg-green-600"
+  if (percentage >= 75) return "bg-green-500"
+  if (percentage >= 50) return "bg-amber-500"
+  if (percentage >= 25) return "bg-orange-500"
+  return "bg-red-500"
+}
+
+const getProgressLabel = (percentage) => {
+  if (percentage >= 90) return "Almost Complete"
+  if (percentage >= 75) return "Nearly Done"
+  if (percentage >= 50) return "Halfway"
+  if (percentage >= 25) return "In Progress"
+  if (percentage > 0) return "Started"
+  return "Not Started"
 }
 
 const ReadinessList = () => {
@@ -77,6 +196,7 @@ const ReadinessList = () => {
   const [projectNumberFilter, setProjectNumberFilter] = useState("")
   const [partNumberFilter, setPartNumberFilter] = useState("")
   const [partDesignationFilter, setPartDesignationFilter] = useState("")
+  const [progressFilter, setProgressFilter] = useState("all")
 
   // Filter options for dropdowns
   const [filterOptions, setFilterOptions] = useState({
@@ -155,6 +275,9 @@ const ReadinessList = () => {
         case "part_designation":
           setPartDesignationFilter("")
           break
+        case "progress":
+          setProgressFilter("all")
+          break
         default:
           break
       }
@@ -174,6 +297,9 @@ const ReadinessList = () => {
         break
       case "part_designation":
         setPartDesignationFilter(value)
+        break
+      case "progress":
+        setProgressFilter(value)
         break
       default:
         break
@@ -204,7 +330,28 @@ const ReadinessList = () => {
       const response = await getAllReadiness(params)
 
       if (response && response.data) {
-        setReadinessEntries(response.data)
+        let filteredData = response.data
+
+        // Apply client-side progress filtering if needed
+        if (progressFilter !== "all") {
+          filteredData = filteredData.filter((entry) => {
+            const percentage = calculateCompletionPercentage(entry)
+            switch (progressFilter) {
+              case "completed":
+                return percentage >= 90
+              case "inProgress":
+                return percentage >= 25 && percentage < 90
+              case "started":
+                return percentage > 0 && percentage < 25
+              case "notStarted":
+                return percentage === 0
+              default:
+                return true
+            }
+          })
+        }
+
+        setReadinessEntries(filteredData)
 
         // Update pagination info
         if (response.pagination) {
@@ -238,6 +385,7 @@ const ReadinessList = () => {
     projectNumberFilter,
     partNumberFilter,
     partDesignationFilter,
+    progressFilter,
     sortConfig,
     toast,
   ])
@@ -250,7 +398,7 @@ const ReadinessList = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }))
-  }, [debouncedSearchTerm, statusFilter, projectNumberFilter, partNumberFilter, partDesignationFilter])
+  }, [debouncedSearchTerm, statusFilter, projectNumberFilter, partNumberFilter, partDesignationFilter, progressFilter])
 
   // Handle page change
   const handlePageChange = (newPage) => {
@@ -309,6 +457,7 @@ const ReadinessList = () => {
     setProjectNumberFilter("")
     setPartNumberFilter("")
     setPartDesignationFilter("")
+    setProgressFilter("all")
   }
 
   // Get status badge variant
@@ -339,9 +488,13 @@ const ReadinessList = () => {
   }
 
   // Count active filters
-  const activeFilterCount = [statusFilter, projectNumberFilter, partNumberFilter, partDesignationFilter].filter(
-    (filter) => filter !== "",
-  ).length
+  const activeFilterCount = [
+    statusFilter,
+    projectNumberFilter,
+    partNumberFilter,
+    partDesignationFilter,
+    progressFilter !== "all" ? progressFilter : "",
+  ].filter((filter) => filter !== "").length
 
   return (
     <MainLayout>
@@ -365,11 +518,105 @@ const ReadinessList = () => {
           </Alert>
         )}
 
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle>Filters</CardTitle>
+        {/* Tracking Summary Card */}
+        {!loading && readinessEntries.length > 0 && (
+          <Card className="mb-6 border-2 shadow-sm">
+            <CardHeader className="pb-2 bg-slate-50">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                Tracking Summary
+              </CardTitle>
+              <CardDescription>Overview of readiness progress across all entries</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                <div className="p-4 transition-all border rounded-lg shadow-sm bg-slate-50 hover:shadow-md">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-muted-foreground">Total Projects</span>
+                    <Target className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <div className="text-2xl font-bold">{pagination.total}</div>
+                  <div className="mt-2 text-xs text-muted-foreground">All readiness entries</div>
+                </div>
+
+                <div className="p-4 transition-all border rounded-lg shadow-sm bg-green-50 hover:shadow-md">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-muted-foreground">Completed</span>
+                    <TrendingUp className="w-4 h-4 text-green-500" />
+                  </div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {readinessEntries.filter((entry) => calculateCompletionPercentage(entry) >= 90).length}
+                  </div>
+                  <div className="mt-2 text-xs text-green-600">
+                    {Math.round(
+                      (readinessEntries.filter((entry) => calculateCompletionPercentage(entry) >= 90).length /
+                        readinessEntries.length) *
+                        100,
+                    )}
+                    % of total
+                  </div>
+                </div>
+
+                <div className="p-4 transition-all border rounded-lg shadow-sm bg-amber-50 hover:shadow-md">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-muted-foreground">In Progress</span>
+                    <Activity className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <div className="text-2xl font-bold text-amber-600">
+                    {
+                      readinessEntries.filter((entry) => {
+                        const percentage = calculateCompletionPercentage(entry)
+                        return percentage > 0 && percentage < 90
+                      }).length
+                    }
+                  </div>
+                  <div className="mt-2 text-xs text-amber-600">
+                    {Math.round(
+                      (readinessEntries.filter((entry) => {
+                        const percentage = calculateCompletionPercentage(entry)
+                        return percentage > 0 && percentage < 90
+                      }).length /
+                        readinessEntries.length) *
+                        100,
+                    )}
+                    % of total
+                  </div>
+                </div>
+
+                <div className="p-4 transition-all border rounded-lg shadow-sm bg-red-50 hover:shadow-md">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-muted-foreground">Not Started</span>
+                    <TrendingDown className="w-4 h-4 text-red-500" />
+                  </div>
+                  <div className="text-2xl font-bold text-red-600">
+                    {readinessEntries.filter((entry) => calculateCompletionPercentage(entry) === 0).length}
+                  </div>
+                  <div className="mt-2 text-xs text-red-600">
+                    {Math.round(
+                      (readinessEntries.filter((entry) => calculateCompletionPercentage(entry) === 0).length /
+                        readinessEntries.length) *
+                        100,
+                    )}
+                    % of total
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="mb-6 border-2 shadow-sm">
+          <CardHeader className="pb-3 bg-slate-50">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-primary" />
+                Filters
+              </CardTitle>
+              <Badge variant="outline">{activeFilterCount} active</Badge>
+            </div>
+            <CardDescription>Filter and search readiness entries</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <div className="flex flex-col gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -381,7 +628,7 @@ const ReadinessList = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
                 {/* Status Filter */}
                 <div>
                   <Select value={statusFilter || "all"} onValueChange={(value) => handleFilterChange("status", value)}>
@@ -458,6 +705,22 @@ const ReadinessList = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Progress Filter */}
+                <div>
+                  <Select value={progressFilter} onValueChange={(value) => handleFilterChange("progress", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Progress" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Progress</SelectItem>
+                      <SelectItem value="completed">Completed (≥90%)</SelectItem>
+                      <SelectItem value="inProgress">In Progress (25-89%)</SelectItem>
+                      <SelectItem value="started">Just Started (1-24%)</SelectItem>
+                      <SelectItem value="notStarted">Not Started (0%)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="flex justify-between">
@@ -498,7 +761,7 @@ const ReadinessList = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-2 shadow-sm">
           <CardContent className="p-0">
             {loading ? (
               <div className="flex items-center justify-center py-24">
@@ -568,6 +831,7 @@ const ReadinessList = () => {
                           <span className="ml-1">{sortConfig.order === 1 ? "↑" : "↓"}</span>
                         )}
                       </TableHead>
+                      <TableHead className="cursor-pointer hover:text-primary">Progress</TableHead>
                       <TableHead
                         className="cursor-pointer hover:text-primary"
                         onClick={() => handleSortChange("createdAt")}
@@ -598,6 +862,53 @@ const ReadinessList = () => {
                           <TableCell>{entry.part_designation || "N/A"}</TableCell>
                           <TableCell>
                             <Badge variant={getStatusBadge(entry.status)}>{entry.status}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1">
+                                      <div className="relative w-full h-2 overflow-hidden rounded-full bg-muted">
+                                        <div
+                                          className={`absolute top-0 left-0 h-full ${getProgressColor(
+                                            calculateCompletionPercentage(entry),
+                                          )}`}
+                                          style={{ width: `${calculateCompletionPercentage(entry)}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                    <span className="text-xs font-medium text-muted-foreground min-w-[3rem]">
+                                      {calculateCompletionPercentage(entry)}%
+                                    </span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <div className="text-sm">
+                                    <p className="font-medium">
+                                      {getProgressLabel(calculateCompletionPercentage(entry))}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {calculateCompletionPercentage(entry)}% of tasks completed
+                                    </p>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <div className="mt-1">
+                              <Badge
+                                variant={
+                                  calculateCompletionPercentage(entry) >= 90
+                                    ? "success"
+                                    : calculateCompletionPercentage(entry) >= 50
+                                      ? "warning"
+                                      : "outline"
+                                }
+                                className="text-xs"
+                              >
+                                {getProgressLabel(calculateCompletionPercentage(entry))}
+                              </Badge>
+                            </div>
                           </TableCell>
                           <TableCell>{formatDate(entry.createdAt)}</TableCell>
                           <TableCell className="text-right">
