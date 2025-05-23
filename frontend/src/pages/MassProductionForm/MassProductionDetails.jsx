@@ -455,22 +455,36 @@ const MassProductionDetails = () => {
     if (!data) return 0
 
     const stages = [
-      { key: "feasibility", data: data.feasibility || data.feasability },
-      { key: "validation", data: data.validation_for_offer },
-      { key: "okForLaunch", data: data.ok_for_lunch },
-      { key: "kickOff", data: data.kick_off },
-      { key: "design", data: data.design },
-      { key: "facilities", data: data.facilities },
-      { key: "ppTuning", data: data.p_p_tuning },
-      { key: "processQualif", data: data.process_qualif },
-      { key: "qualifConfirm", data: data.qualification_confirmation },
+      { key: "feasibility", data: data.feasibility || data.feasability, weight: 1.0 },
+      { key: "validation", data: data.validation_for_offer, weight: 1.0 },
+      { key: "okForLaunch", data: data.ok_for_lunch, weight: 1.0 },
+      { key: "kickOff", data: data.kick_off, weight: 1.0 },
+      { key: "design", data: data.design, weight: 1.0 },
+      { key: "facilities", data: data.facilities, weight: 1.0 },
+      { key: "ppTuning", data: data.p_p_tuning, weight: 1.0 },
+      { key: "processQualif", data: data.process_qualif, weight: 1.0 },
+      { key: "qualifConfirm", data: data.qualification_confirmation, weight: 1.0 },
     ]
 
-    // Count total stages and completed stages
-    const totalStages = stages.length
-    const completedStages = stages.filter((stage) => isStageCompleted(stage.data)).length
+    // Calculate total weight and weighted completion
+    const totalWeight = stages.reduce((sum, stage) => sum + stage.weight, 0)
+    let weightedCompletion = 0
 
-    return Math.round((completedStages / totalStages) * 100)
+    stages.forEach((stage) => {
+      if (!stage.data) return
+
+      // For completed stages
+      if (isStageCompleted(stage.data)) {
+        weightedCompletion += stage.weight
+      }
+      // For partially completed stages
+      else if (typeof stage.data === "object") {
+        const stagePercentage = calculateStagePercentage(stage.data)
+        weightedCompletion += (stage.weight * stagePercentage) / 100
+      }
+    })
+
+    return Math.round((weightedCompletion / totalWeight) * 100)
   }
 
   const isStageCompleted = (stage) => {
@@ -520,10 +534,29 @@ const MassProductionDetails = () => {
 
     // Calculate percentage for in-progress stages
     const percentage = calculateStagePercentage(stage)
+
+    // More granular status labels based on percentage
+    let label = "In Progress"
+    let color = "amber"
+
+    if (percentage >= 75) {
+      label = "Almost Complete"
+      color = "green"
+    } else if (percentage >= 50) {
+      label = "Halfway Done"
+      color = "amber"
+    } else if (percentage >= 25) {
+      label = "Started"
+      color = "orange"
+    } else if (percentage > 0) {
+      label = "Just Started"
+      color = "red"
+    }
+
     return {
       status: "inProgress",
-      label: "In Progress",
-      color: "amber",
+      label: label,
+      color: color,
       percentage: percentage,
     }
   }
@@ -543,11 +576,27 @@ const MassProductionDetails = () => {
 
     if (tasks.length === 0) return 0
 
-    const completedTasks = tasks.filter(
-      ([_, value]) => value.value === true || value.check === true || (value.task && value.task.check === true),
-    ).length
+    let completedTasksCount = 0
+    let totalTasksCount = 0
 
-    return Math.round((completedTasks / tasks.length) * 100)
+    // Count completed tasks with proper weighting
+    tasks.forEach(([_, value]) => {
+      totalTasksCount++
+
+      if (value.value === true || value.check === true || (value.task && value.task.check === true)) {
+        completedTasksCount++
+      } else if (value.percentage !== undefined) {
+        // If task has a percentage, add partial completion
+        completedTasksCount += value.percentage / 100
+      } else if (typeof value === "object" && Object.keys(value).some((k) => value[k] === true)) {
+        // If any property is true, count as partially complete
+        const trueProps = Object.values(value).filter((v) => v === true).length
+        const totalProps = Object.keys(value).length
+        completedTasksCount += trueProps / totalProps
+      }
+    })
+
+    return Math.round((completedTasksCount / totalTasksCount) * 100)
   }
 
   const formatDate = (dateString) => {
@@ -944,7 +993,6 @@ const MassProductionDetails = () => {
                 </CardContent>
               </Card>
             </motion.div>
-
             {/* Process Stages Dashboard */}
             <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
               <Card className="border shadow-sm">
@@ -967,7 +1015,7 @@ const MassProductionDetails = () => {
                             This dashboard shows the status of each process stage. Click on a stage to view details or
                             add missing information.
                           </p>
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
                             <Badge variant="success" className="gap-1">
                               <CheckCircle className="w-3 h-3" /> Completed
                             </Badge>
@@ -982,7 +1030,7 @@ const MassProductionDetails = () => {
                       </HoverCardContent>
                     </HoverCard>
                   </div>
-                  <CardDescription>Track the status of each process stage and add missing information</CardDescription>
+                  <CardDescription>Track the status of each process stage</CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -1000,9 +1048,15 @@ const MassProductionDetails = () => {
                               status.status === "completed"
                                 ? "border-l-green-500"
                                 : status.status === "inProgress"
-                                  ? "border-l-amber-500"
+                                  ? status.percentage >= 75
+                                    ? "border-l-green-400"
+                                    : status.percentage >= 50
+                                      ? "border-l-amber-500"
+                                      : status.percentage >= 25
+                                        ? "border-l-orange-500"
+                                        : "border-l-red-400"
                                   : "border-l-slate-300"
-                            } hover:shadow-sm transition-all cursor-pointer`}
+                            } hover:shadow-md transition-all cursor-pointer`}
                             onClick={() => {
                               if (status.status === "missing") {
                                 navigate(`/${stage.path}/create?massProductionId=${id}`)
@@ -1022,8 +1076,17 @@ const MassProductionDetails = () => {
                                     <CheckCircle className="w-3 h-3" /> Completed
                                   </Badge>
                                 ) : status.status === "inProgress" ? (
-                                  <Badge variant="warning" className="gap-1">
-                                    <Clock className="w-3 h-3" /> {status.percentage}% Done
+                                  <Badge
+                                    variant={
+                                      status.percentage >= 75
+                                        ? "success"
+                                        : status.percentage >= 50
+                                          ? "warning"
+                                          : "outline"
+                                    }
+                                    className="gap-1"
+                                  >
+                                    <Clock className="w-3 h-3" /> {status.percentage}%
                                   </Badge>
                                 ) : (
                                   <Badge variant="outline" className="gap-1">
@@ -1033,7 +1096,22 @@ const MassProductionDetails = () => {
                               </div>
                               <div className="mt-3">
                                 {status.status !== "missing" && (
-                                  <Progress value={status.percentage} className="h-2 mb-2" />
+                                  <div className="relative w-full h-2 mb-2 overflow-hidden rounded-full bg-muted">
+                                    <div
+                                      className={`absolute top-0 left-0 h-full ${
+                                        status.percentage >= 90
+                                          ? "bg-green-600"
+                                          : status.percentage >= 75
+                                            ? "bg-green-500"
+                                            : status.percentage >= 50
+                                              ? "bg-amber-500"
+                                              : status.percentage >= 25
+                                                ? "bg-orange-500"
+                                                : "bg-red-500"
+                                      }`}
+                                      style={{ width: `${status.percentage}%` }}
+                                    />
+                                  </div>
                                 )}
                                 <div className="flex items-center justify-between text-sm">
                                   <span className="text-muted-foreground">
@@ -1041,7 +1119,7 @@ const MassProductionDetails = () => {
                                       ? "Click to add information"
                                       : status.status === "completed"
                                         ? "All requirements met"
-                                        : `${status.percentage}% complete`}
+                                        : status.label}
                                   </span>
                                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                                 </div>
@@ -1055,7 +1133,118 @@ const MassProductionDetails = () => {
                 </CardContent>
               </Card>
             </motion.div>
+            // Add a new component for tracking summary with shadcn components
+            <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
+              <Card className="border shadow-sm">
+                <CardHeader className="bg-muted/30">
+                  <CardTitle className="flex items-center text-xl">
+                    <BarChart className="w-5 h-5 mr-2 text-primary" />
+                    Tracking Summary
+                  </CardTitle>
+                  <CardDescription>Detailed progress tracking for this mass production</CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-6">
+                    {/* Overall progress */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base font-medium">Overall Progress</h3>
+                        <Badge
+                          variant={
+                            completionPercentage >= 75 ? "success" : completionPercentage >= 50 ? "warning" : "outline"
+                          }
+                        >
+                          {completionPercentage}% Complete
+                        </Badge>
+                      </div>
+                      <div className="relative w-full h-3 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={`absolute top-0 left-0 h-full ${
+                            completionPercentage >= 90
+                              ? "bg-green-600"
+                              : completionPercentage >= 75
+                                ? "bg-green-500"
+                                : completionPercentage >= 50
+                                  ? "bg-amber-500"
+                                  : completionPercentage >= 25
+                                    ? "bg-orange-500"
+                                    : "bg-red-500"
+                          }`}
+                          style={{ width: `${completionPercentage}%` }}
+                        />
+                      </div>
+                    </div>
 
+                    {/* Stage progress breakdown */}
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      {stages.map((stage) => {
+                        const status = getStageStatus(stage.data)
+                        return (
+                          <div key={stage.id} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                {stage.icon}
+                                <span className="ml-2 text-sm font-medium">{stage.name}</span>
+                              </div>
+                              <span className="text-xs font-medium">{status.percentage}%</span>
+                            </div>
+                            <div className="relative w-full h-2 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className={`absolute top-0 left-0 h-full ${
+                                  status.percentage >= 90
+                                    ? "bg-green-600"
+                                    : status.percentage >= 75
+                                      ? "bg-green-500"
+                                      : status.percentage >= 50
+                                        ? "bg-amber-500"
+                                        : status.percentage >= 25
+                                          ? "bg-orange-500"
+                                          : "bg-red-500"
+                                }`}
+                                style={{ width: `${status.percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Completion estimate */}
+                    <div className="p-4 border rounded-md bg-muted/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CalendarDays className="w-4 h-4 text-primary" />
+                        <h3 className="text-sm font-medium">Estimated Completion</h3>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Current Progress:</span>
+                          <span className="font-medium">{completionPercentage}%</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Estimated Completion Date:</span>
+                          <span className="font-medium">
+                            {massProduction.sop
+                              ? formatDate(massProduction.sop)
+                              : completionPercentage >= 75
+                                ? "On Track"
+                                : completionPercentage >= 50
+                                  ? "Possible Delays"
+                                  : "Needs Attention"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Status:</span>
+                          <Badge variant={getStatusBadge(massProduction.status).variant} className="flex items-center">
+                            {getStatusBadge(massProduction.status).icon}
+                            {massProduction.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
             {/* Timeline Card */}
             <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
               <Card className="border shadow-sm">
@@ -1167,17 +1356,16 @@ const MassProductionDetails = () => {
                 </CardContent>
               </Card>
             </motion.div>
-
             {/* Missing Information Card */}
             <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
               <Card className="border shadow-sm border-amber-200">
                 <CardHeader className="bg-amber-50">
                   <CardTitle className="flex items-center text-xl text-amber-800">
                     <AlertTriangle className="w-5 h-5 mr-2 text-amber-500" />
-                    Missing Information
+                    Action Items
                   </CardTitle>
                   <CardDescription className="text-amber-700">
-                    The following information is missing or incomplete
+                    Complete the following items to finalize this production record
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -1224,7 +1412,6 @@ const MassProductionDetails = () => {
                 </CardContent>
               </Card>
             </motion.div>
-
             {/* Section Details */}
             {activeTab !== "overview" && (
               <motion.div

@@ -267,24 +267,78 @@ const MassProductionList = () => {
   const calculateCompletionPercentage = useCallback((item) => {
     if (!item) return 0
 
+    // Define all possible stages with their weights
     const stages = [
-      item.feasibility || item.feasibility,
-      item.validation_for_offer,
-      item.ok_for_lunch,
-      item.kick_off,
-      item.design,
-      item.facilities,
-      item.p_p_tuning,
-      item.process_qualif,
-      item.qualification_confirmation,
+      { key: "feasibility", data: item.feasibility || item.feasability, weight: 1.0 },
+      { key: "validation_for_offer", data: item.validation_for_offer, weight: 1.0 },
+      { key: "ok_for_lunch", data: item.ok_for_lunch, weight: 1.0 },
+      { key: "kick_off", data: item.kick_off, weight: 1.0 },
+      { key: "design", data: item.design, weight: 1.0 },
+      { key: "facilities", data: item.facilities, weight: 1.0 },
+      { key: "p_p_tuning", data: item.p_p_tuning, weight: 1.0 },
+      { key: "process_qualif", data: item.process_qualif, weight: 1.0 },
+      { key: "qualification_confirmation", data: item.qualification_confirmation, weight: 1.0 },
     ]
 
-    // Count total stages and completed stages
-    const totalStages = stages.length
-    const completedStages = stages.filter((stage) => isStageCompleted(stage)).length
+    // Calculate total weight and weighted completion
+    const totalWeight = stages.reduce((sum, stage) => sum + stage.weight, 0)
+    let weightedCompletion = 0
 
-    return Math.round((completedStages / totalStages) * 100)
+    stages.forEach((stage) => {
+      if (!stage.data) return
+
+      // For completed stages
+      if (isStageCompleted(stage.data)) {
+        weightedCompletion += stage.weight
+      }
+      // For partially completed stages
+      else if (typeof stage.data === "object") {
+        const stagePercentage = calculateStagePercentage(stage.data)
+        weightedCompletion += (stage.weight * stagePercentage) / 100
+      }
+    })
+
+    return Math.round((weightedCompletion / totalWeight) * 100)
   }, [])
+
+  // Improve stage percentage calculation for more accurate tracking
+  const calculateStagePercentage = (stage) => {
+    if (!stage) return 0
+
+    // If it's a simple object with a direct check or value
+    if (stage.check !== undefined || stage.value !== undefined) {
+      return stage.check || stage.value ? 100 : 0
+    }
+
+    // For complex objects with tasks
+    const tasks = Object.entries(stage).filter(
+      ([key, value]) => typeof value === "object" && value !== null && !key.startsWith("_") && key !== "checkin",
+    )
+
+    if (tasks.length === 0) return 0
+
+    let completedTasksCount = 0
+    let totalTasksCount = 0
+
+    // Count completed tasks with proper weighting
+    tasks.forEach(([_, value]) => {
+      totalTasksCount++
+
+      if (value.value === true || value.check === true || (value.task && value.task.check === true)) {
+        completedTasksCount++
+      } else if (value.percentage !== undefined) {
+        // If task has a percentage, add partial completion
+        completedTasksCount += value.percentage / 100
+      } else if (typeof value === "object" && Object.keys(value).some((k) => value[k] === true)) {
+        // If any property is true, count as partially complete
+        const trueProps = Object.values(value).filter((v) => v === true).length
+        const totalProps = Object.keys(value).length
+        completedTasksCount += trueProps / totalProps
+      }
+    })
+
+    return Math.round((completedTasksCount / totalTasksCount) * 100)
+  }
 
   // Check if a stage is completed
   const isStageCompleted = useCallback((stage) => {
@@ -519,9 +573,10 @@ const MassProductionList = () => {
 
   // Get progress color based on percentage
   const getProgressColor = useCallback((percentage) => {
-    if (percentage >= 80) return "bg-green-500"
+    if (percentage >= 90) return "bg-green-600"
+    if (percentage >= 75) return "bg-green-500"
     if (percentage >= 50) return "bg-amber-500"
-    if (percentage >= 20) return "bg-orange-500"
+    if (percentage >= 25) return "bg-orange-500"
     return "bg-red-500"
   }, [])
 
@@ -810,7 +865,7 @@ const MassProductionList = () => {
     )
   }
 
-  // Render table view
+  // Enhance the table view with improved tracking visualization
   const renderTableView = () => {
     const areAllCurrentPageSelected =
       massProductions.length > 0 && massProductions.every((item) => selectedItems.includes(item._id))
@@ -920,16 +975,48 @@ const MassProductionList = () => {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="flex items-center gap-2">
-                              <Progress
-                                value={item.completionPercentage || 0}
-                                className="w-16 h-2"
-                                indicatorClassName={getProgressColor(item.completionPercentage || 0)}
-                              />
+                              <div className="relative w-20 h-2 overflow-hidden rounded-full bg-muted">
+                                <div
+                                  className={`absolute top-0 left-0 h-full ${getProgressColor(item.completionPercentage || 0)}`}
+                                  style={{ width: `${item.completionPercentage || 0}%` }}
+                                />
+                              </div>
                               <span className="text-xs font-medium">{item.completionPercentage || 0}%</span>
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Completion: {item.completionPercentage || 0}%</p>
+                          <TooltipContent className="p-0">
+                            <div className="p-2">
+                              <p className="mb-1 font-medium">Progress: {item.completionPercentage || 0}%</p>
+                              <div className="space-y-1 text-xs">
+                                {item.feasibility && (
+                                  <div className="flex justify-between">
+                                    <span>Feasibility:</span> <span>{calculateStagePercentage(item.feasibility)}%</span>
+                                  </div>
+                                )}
+                                {item.validation_for_offer && (
+                                  <div className="flex justify-between">
+                                    <span>Validation:</span>{" "}
+                                    <span>{calculateStagePercentage(item.validation_for_offer)}%</span>
+                                  </div>
+                                )}
+                                {item.ok_for_lunch && (
+                                  <div className="flex justify-between">
+                                    <span>OK for Launch:</span>{" "}
+                                    <span>{calculateStagePercentage(item.ok_for_lunch)}%</span>
+                                  </div>
+                                )}
+                                {item.kick_off && (
+                                  <div className="flex justify-between">
+                                    <span>Kick Off:</span> <span>{calculateStagePercentage(item.kick_off)}%</span>
+                                  </div>
+                                )}
+                                {item.design && (
+                                  <div className="flex justify-between">
+                                    <span>Design:</span> <span>{calculateStagePercentage(item.design)}%</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -942,30 +1029,29 @@ const MassProductionList = () => {
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                       <DropdownMenuContent align="end">
-  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
 
-  <DropdownMenuItem onClick={() => navigate(`/masspd/detail/${item._id}`)}>
-    <Eye className="w-4 h-4 mr-2" />
-    View
-  </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/masspd/detail/${item._id}`)}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </DropdownMenuItem>
 
-  <DropdownMenuItem onClick={() => navigate(`/masspd/edit/${item._id}`)}>
-    <Edit className="w-4 h-4 mr-2" />
-    Edit
-  </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/masspd/edit/${item._id}`)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
 
-  <DropdownMenuSeparator />
+                          <DropdownMenuSeparator />
 
-  <DropdownMenuItem
-    className="text-destructive focus:text-destructive"
-    onClick={() => handleDeleteClick(item)}
-  >
-    <Trash2 className="w-4 h-4 mr-2" />
-    Delete
-  </DropdownMenuItem>
-</DropdownMenuContent>
-
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleDeleteClick(item)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
                   </motion.tr>
