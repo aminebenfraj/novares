@@ -16,7 +16,7 @@ import { getAllSuppliers } from "../../../apis/gestionStockApi/supplierApi"
 import { getAllCategories } from "../../../apis/gestionStockApi/categoryApi"
 import { getAllLocations } from "../../../apis/gestionStockApi/locationApi"
 import { getAllMachines } from "../../../apis/gestionStockApi/machineApi"
-import { Save, ArrowLeft, Package, Tag, MapPin, Truck } from "lucide-react"
+import { Save, ArrowLeft, Package, Tag, MapPin, Truck, Search } from "lucide-react"
 import MainLayout from "@/components/MainLayout"
 
 const EditMaterial = () => {
@@ -45,6 +45,7 @@ const EditMaterial = () => {
   const [categories, setCategories] = useState([])
   const [locations, setLocations] = useState([])
   const [machines, setMachines] = useState([])
+  const [machineSearch, setMachineSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("basic")
   const [error, setError] = useState("")
@@ -82,9 +83,6 @@ const EditMaterial = () => {
       setOriginalReference(data.reference || "")
     } catch (error) {
       console.error("Failed to fetch material:", error)
-      // Don't redirect immediately, show an error message instead
-      setLoading(false)
-      // Add a state for error message
       setError("Failed to load material data. Please try again or contact support.")
     }
   }
@@ -145,7 +143,6 @@ const EditMaterial = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Validate required ObjectId fields
     const requiredObjectIds = [
       { field: "supplier", label: "Supplier" },
       { field: "location", label: "Location" },
@@ -155,16 +152,13 @@ const EditMaterial = () => {
     for (const { field, label } of requiredObjectIds) {
       if (!material[field] || material[field] === "") {
         alert(`${label} is required. Please select a valid ${label.toLowerCase()}.`)
-        // Set active tab to the location tab where these fields are
         setActiveTab("location")
         return
       }
     }
 
     try {
-      // Check if reference has changed
       if (material.reference !== originalReference) {
-        // Create a new referenceHistory entry
         const updatedMaterial = {
           ...material,
           referenceHistory: [
@@ -184,8 +178,6 @@ const EditMaterial = () => {
       navigate("/materials")
     } catch (error) {
       console.error("Failed to update material:", error)
-
-      // Provide more specific error messages based on the error response
       if (error.response && error.response.data && error.response.data.message) {
         alert(`Failed to update material: ${error.response.data.message}`)
       } else {
@@ -193,6 +185,10 @@ const EditMaterial = () => {
       }
     }
   }
+
+  const filteredMachines = machines.filter((machine) =>
+    machine.name.toLowerCase().includes(machineSearch.toLowerCase())
+  )
 
   if (loading) {
     return (
@@ -329,7 +325,7 @@ const EditMaterial = () => {
                     {activeTab === "basic" && "Edit the basic details of this material"}
                     {activeTab === "stock" && "Manage stock levels and pricing"}
                     {activeTab === "location" && "Set location and categorization"}
-                    {activeTab === "machines" && "Associate with machines and add details"}
+                    {activeTab === "machines" && "Associate machines and add additional details"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -464,7 +460,7 @@ const EditMaterial = () => {
                             <Checkbox
                               id="consumable"
                               name="consumable"
-                              checked={material.consumable}
+                              checked={material.consumitable}
                               onCheckedChange={(checked) =>
                                 handleChange({ target: { name: "consumable", type: "checkbox", checked } })
                               }
@@ -580,25 +576,64 @@ const EditMaterial = () => {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="space-y-4"
+                      className="space-y-6"
                     >
                       <div className="space-y-2">
-                        <Label>Associated Machines</Label>
-                        <ScrollArea className="h-[200px] border rounded-md p-4">
-                          <div className="grid grid-cols-2 gap-2">
-                            {machines.map((machine) => (
-                              <div key={machine._id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`machine-${machine._id}`}
-                                  checked={material.machines.includes(machine._id)}
-                                  onCheckedChange={() => handleMachineChange(machine._id)}
-                                />
-                                <Label htmlFor={`machine-${machine._id}`} className="font-normal">
-                                  {machine.name}
-                                </Label>
-                              </div>
-                            ))}
-                          </div>
+                        <Label htmlFor="machine-search">Search Machines</Label>
+                        <div className="relative">
+                          <Search className="absolute w-4 h-4 text-gray-500 transform -translate-y-1/2 left-3 top-1/2" />
+                          <Input
+                            id="machine-search"
+                            placeholder="Search machines..."
+                            value={machineSearch}
+                            onChange={(e) => setMachineSearch(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Associated Machines ({material.machines.length} selected)</Label>
+                        <ScrollArea className="h-[300px] border rounded-md p-4 bg-gray-50 dark:bg-zinc-800">
+                          {filteredMachines.length > 0 ? (
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                              {filteredMachines.map((machine) => (
+                                <motion.div
+                                  key={machine._id}
+                                  className={`p-3 border rounded-md transition-all duration-200 ${
+                                    material.machines.includes(machine._id)
+                                      ? "bg-primary/10 border-primary"
+                                      : "bg-white dark:bg-zinc-700 border-gray-200 dark:border-zinc-600"
+                                  } hover:shadow-md`}
+                                  whileHover={{ scale: 1.02 }}
+                                  whileTap={{ scale: 0.98 }}
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    <Checkbox
+                                      id={`machine-${machine._id}`}
+                                      checked={material.machines.includes(machine._id)}
+                                      onCheckedChange={() => handleMachineChange(machine._id)}
+                                      aria-label={`Select ${machine.name}`}
+                                    />
+                                    <div>
+                                      <Label
+                                        htmlFor={`machine-${machine._id}`}
+                                        className="font-medium cursor-pointer"
+                                      >
+                                        {machine.name}
+                                      </Label>
+                                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Status: {machine.status || "Unknown"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="py-4 text-center text-gray-500 dark:text-gray-400">
+                              No machines found matching your search.
+                            </p>
+                          )}
                         </ScrollArea>
                       </div>
                       <div className="space-y-2">
@@ -608,9 +643,14 @@ const EditMaterial = () => {
                           name="comment"
                           value={material.comment}
                           onChange={handleChange}
-                          rows={4}
-                          placeholder="Enter any additional information about this material"
+                          rows={5}
+                          placeholder="Enter any additional details about this material's use with machines..."
+                          maxLength={500}
+                          className="resize-none"
                         />
+                        <p className="text-sm text-right text-gray-500 dark:text-gray-400">
+                          {material.comment.length}/500 characters
+                        </p>
                       </div>
                     </motion.div>
                   )}
@@ -625,4 +665,3 @@ const EditMaterial = () => {
 }
 
 export default EditMaterial
-
