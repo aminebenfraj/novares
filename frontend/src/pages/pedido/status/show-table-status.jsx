@@ -92,7 +92,7 @@ function ShowTableStatus() {
               <p className="text-muted-foreground">View and manage all table statuses</p>
             </div>
           </div>
-          <Button onClick={() => navigate("/table-status/create")}>
+          <Button onClick={() => navigate("/tablestatus/create")}>
             <Plus className="w-4 h-4 mr-2" />
             Add New Status
           </Button>
@@ -126,7 +126,7 @@ function ShowTableStatus() {
                         <p className="text-sm text-muted-foreground">Order: {status.order}</p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => navigate(`/table-status/edit/${status._id}`)}>
+                    <Button variant="ghost" size="sm" onClick={() => navigate(`/tablestatus/edit/${status._id}`)}>
                       <Edit className="w-4 h-4 mr-2" />
                       Edit
                     </Button>
