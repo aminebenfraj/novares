@@ -68,7 +68,6 @@ import {
   LayoutDashboard,
   Lock,
   Package,
-  PenLine,
   Plus,
   Settings,
   ShieldCheck,
@@ -1383,79 +1382,6 @@ const MassProductionDetails = () => {
                         </div>
                       )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-            {/* Missing Information Card */}
-            <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
-              <Card className="border shadow-sm border-amber-200">
-                <CardHeader className="bg-amber-50">
-                  <CardTitle className="flex items-center text-xl text-amber-800">
-                    <AlertTriangle className="w-5 h-5 mr-2 text-amber-500" />
-                    Action Items
-                  </CardTitle>
-                  <CardDescription className="text-amber-700">
-                    Complete the following items to finalize this production record
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {stages
-                      .filter((stage) => !stage.locked && getStageStatus(stage.data).status === "missing")
-                      .map((stage) => (
-                        <Button
-                          key={stage.id}
-                          variant="outline"
-                          className="justify-start border-amber-200 hover:border-amber-300 hover:bg-amber-50"
-                          onClick={() => navigate(`/${stage.path}/create?massProductionId=${id}`)}
-                        >
-                          <Plus className="w-4 h-4 mr-2 text-amber-500" />
-                          Add {stage.name} Information
-                        </Button>
-                      ))}
-
-                    {stages
-                      .filter((stage) => !stage.locked && getStageStatus(stage.data).status === "inProgress")
-                      .map((stage) => (
-                        <Button
-                          key={stage.id}
-                          variant="outline"
-                          className="justify-start border-slate-200"
-                          onClick={() => navigateToEditPage(stage.path, stage.data)}
-                        >
-                          <PenLine className="w-4 h-4 mr-2 text-slate-500" />
-                          Complete {stage.name} Information ({getStageStatus(stage.data).percentage}% done)
-                        </Button>
-                      ))}
-
-                    {/* Show locked stages information */}
-                    {stages
-                      .filter((stage) => stage.locked)
-                      .map((stage) => (
-                        <div
-                          key={stage.id}
-                          className="flex items-center justify-between p-3 border rounded-md border-muted bg-muted/30 opacity-60"
-                        >
-                          <div className="flex items-center">
-                            <Lock className="w-4 h-4 mr-2 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">{stage.name}</span>
-                          </div>
-                          <Badge variant="outline">Locked</Badge>
-                        </div>
-                      ))}
-
-                    {stages.filter(
-                      (stage) =>
-                        (!stage.locked && getStageStatus(stage.data).status === "missing") ||
-                        (!stage.locked && getStageStatus(stage.data).status === "inProgress"),
-                    ).length === 0 &&
-                      stages.filter((stage) => stage.locked).length === 0 && (
-                        <div className="col-span-2 p-4 text-center border border-green-200 rounded-md bg-green-50">
-                          <CheckCircle className="w-6 h-6 mx-auto mb-2 text-green-500" />
-                          <p className="font-medium text-green-800">All available information is complete!</p>
-                        </div>
-                      )}
                   </div>
                 </CardContent>
               </Card>
