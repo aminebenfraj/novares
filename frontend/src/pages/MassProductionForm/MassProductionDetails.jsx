@@ -66,6 +66,7 @@ import {
   Factory,
   HelpCircle,
   LayoutDashboard,
+  Lock,
   Package,
   PenLine,
   Plus,
@@ -599,6 +600,16 @@ const MassProductionDetails = () => {
     return Math.round((completedTasksCount / totalTasksCount) * 100)
   }
 
+  // Helper to check if the first three stages are completed for unlocking remaining stages
+  const isUnlocked = () => {
+    return (
+      isStageCompleted(massProduction.feasibility || massProduction.feasability) &&
+      isStageCompleted(massProduction.validation_for_offer) &&
+      isStageCompleted(massProduction.ok_for_lunch) &&
+      isStageCompleted(massProduction.kick_off)
+    )
+  }
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A"
     try {
@@ -723,7 +734,7 @@ const MassProductionDetails = () => {
 
   const statusBadge = getStatusBadge(massProduction.status)
 
-  // Define stage data for the dashboard
+  // Define stage data for the dashboard with locking logic
   const stages = [
     {
       id: "feasibility",
@@ -731,6 +742,7 @@ const MassProductionDetails = () => {
       icon: <BarChart className="w-5 h-5 text-blue-500" />,
       data: massProduction.feasibility || massProduction.feasability,
       path: "feasibility",
+      locked: false, // Always unlocked
     },
     {
       id: "validation",
@@ -738,6 +750,7 @@ const MassProductionDetails = () => {
       icon: <FileCheck className="w-5 h-5 text-indigo-500" />,
       data: massProduction.validation_for_offer,
       path: "validationforoffer",
+      locked: !isStageCompleted(massProduction.feasibility || massProduction.feasability),
     },
     {
       id: "okForLaunch",
@@ -745,6 +758,10 @@ const MassProductionDetails = () => {
       icon: <CheckSquare className="w-5 h-5 text-green-500" />,
       data: massProduction.ok_for_lunch,
       path: "okforlunch",
+      locked: !(
+        isStageCompleted(massProduction.feasibility || massProduction.feasability) &&
+        isStageCompleted(massProduction.validation_for_offer)
+      ),
     },
     {
       id: "kickOff",
@@ -752,6 +769,7 @@ const MassProductionDetails = () => {
       icon: <Calendar className="w-5 h-5 text-amber-500" />,
       data: massProduction.kick_off,
       path: "kickoff",
+      locked: !isStageCompleted(massProduction.ok_for_lunch),
     },
     {
       id: "design",
@@ -759,6 +777,7 @@ const MassProductionDetails = () => {
       icon: <Package className="w-5 h-5 text-purple-500" />,
       data: massProduction.design,
       path: "design",
+      locked: !isUnlocked(),
     },
     {
       id: "facilities",
@@ -766,6 +785,7 @@ const MassProductionDetails = () => {
       icon: <Factory className="w-5 h-5 text-orange-500" />,
       data: massProduction.facilities,
       path: "facilities",
+      locked: !isUnlocked(),
     },
     {
       id: "ppTuning",
@@ -773,6 +793,7 @@ const MassProductionDetails = () => {
       icon: <Settings className="w-5 h-5 text-cyan-500" />,
       data: massProduction.p_p_tuning,
       path: "p_p_tuning",
+      locked: !isUnlocked(),
     },
     {
       id: "processQualif",
@@ -780,6 +801,7 @@ const MassProductionDetails = () => {
       icon: <ShieldCheck className="w-5 h-5 text-red-500" />,
       data: massProduction.process_qualif,
       path: "processqualification",
+      locked: !isUnlocked(),
     },
     {
       id: "qualifConfirm",
@@ -787,6 +809,7 @@ const MassProductionDetails = () => {
       icon: <ClipboardCheck className="w-5 h-5 text-emerald-500" />,
       data: massProduction.qualification_confirmation,
       path: "qualificationconfirmation",
+      locked: !isUnlocked(),
     },
   ]
 
@@ -1056,8 +1079,10 @@ const MassProductionDetails = () => {
                                         ? "border-l-orange-500"
                                         : "border-l-red-400"
                                   : "border-l-slate-300"
-                            } hover:shadow-md transition-all cursor-pointer`}
+                            } ${stage.locked ? "opacity-50 cursor-not-allowed" : "hover:shadow-md cursor-pointer"} transition-all`}
                             onClick={() => {
+                              if (stage.locked) return // Prevent navigation if locked
+
                               if (status.status === "missing") {
                                 navigate(`/${stage.path}/create?massProductionId=${id}`)
                               } else {
@@ -1070,8 +1095,13 @@ const MassProductionDetails = () => {
                                 <div className="flex items-center">
                                   {stage.icon}
                                   <h3 className="ml-2 font-medium">{stage.name}</h3>
+                                  {stage.locked && <Lock className="w-4 h-4 ml-2 text-muted-foreground" />}
                                 </div>
-                                {status.status === "completed" ? (
+                                {stage.locked ? (
+                                  <Badge variant="outline" className="gap-1">
+                                    <Lock className="w-3 h-3" /> Locked
+                                  </Badge>
+                                ) : status.status === "completed" ? (
                                   <Badge variant="success" className="gap-1">
                                     <CheckCircle className="w-3 h-3" /> Completed
                                   </Badge>
@@ -1095,7 +1125,7 @@ const MassProductionDetails = () => {
                                 )}
                               </div>
                               <div className="mt-3">
-                                {status.status !== "missing" && (
+                                {status.status !== "missing" && !stage.locked && (
                                   <div className="relative w-full h-2 mb-2 overflow-hidden rounded-full bg-muted">
                                     <div
                                       className={`absolute top-0 left-0 h-full ${
@@ -1115,13 +1145,15 @@ const MassProductionDetails = () => {
                                 )}
                                 <div className="flex items-center justify-between text-sm">
                                   <span className="text-muted-foreground">
-                                    {status.status === "missing"
-                                      ? "Click to add information"
-                                      : status.status === "completed"
-                                        ? "All requirements met"
-                                        : status.label}
+                                    {stage.locked
+                                      ? "Complete previous stages to unlock"
+                                      : status.status === "missing"
+                                        ? "Click to add information"
+                                        : status.status === "completed"
+                                          ? "All requirements met"
+                                          : status.label}
                                   </span>
-                                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                  {!stage.locked && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                                 </div>
                               </div>
                             </CardContent>
@@ -1133,7 +1165,6 @@ const MassProductionDetails = () => {
                 </CardContent>
               </Card>
             </motion.div>
-            // Add a new component for tracking summary with shadcn components
             <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
               <Card className="border shadow-sm">
                 <CardHeader className="bg-muted/30">
@@ -1371,7 +1402,7 @@ const MassProductionDetails = () => {
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     {stages
-                      .filter((stage) => getStageStatus(stage.data).status === "missing")
+                      .filter((stage) => !stage.locked && getStageStatus(stage.data).status === "missing")
                       .map((stage) => (
                         <Button
                           key={stage.id}
@@ -1385,7 +1416,7 @@ const MassProductionDetails = () => {
                       ))}
 
                     {stages
-                      .filter((stage) => getStageStatus(stage.data).status === "inProgress")
+                      .filter((stage) => !stage.locked && getStageStatus(stage.data).status === "inProgress")
                       .map((stage) => (
                         <Button
                           key={stage.id}
@@ -1398,16 +1429,33 @@ const MassProductionDetails = () => {
                         </Button>
                       ))}
 
+                    {/* Show locked stages information */}
+                    {stages
+                      .filter((stage) => stage.locked)
+                      .map((stage) => (
+                        <div
+                          key={stage.id}
+                          className="flex items-center justify-between p-3 border rounded-md border-muted bg-muted/30 opacity-60"
+                        >
+                          <div className="flex items-center">
+                            <Lock className="w-4 h-4 mr-2 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">{stage.name}</span>
+                          </div>
+                          <Badge variant="outline">Locked</Badge>
+                        </div>
+                      ))}
+
                     {stages.filter(
                       (stage) =>
-                        getStageStatus(stage.data).status === "missing" ||
-                        getStageStatus(stage.data).status === "inProgress",
-                    ).length === 0 && (
-                      <div className="col-span-2 p-4 text-center border border-green-200 rounded-md bg-green-50">
-                        <CheckCircle className="w-6 h-6 mx-auto mb-2 text-green-500" />
-                        <p className="font-medium text-green-800">All information is complete!</p>
-                      </div>
-                    )}
+                        (!stage.locked && getStageStatus(stage.data).status === "missing") ||
+                        (!stage.locked && getStageStatus(stage.data).status === "inProgress"),
+                    ).length === 0 &&
+                      stages.filter((stage) => stage.locked).length === 0 && (
+                        <div className="col-span-2 p-4 text-center border border-green-200 rounded-md bg-green-50">
+                          <CheckCircle className="w-6 h-6 mx-auto mb-2 text-green-500" />
+                          <p className="font-medium text-green-800">All available information is complete!</p>
+                        </div>
+                      )}
                   </div>
                 </CardContent>
               </Card>
