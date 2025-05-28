@@ -718,6 +718,15 @@ const MassPdCreate = () => {
           processedKickOffData[field].task.filePath = processedKickOffData[field].task.filePath.name
         }
       })
+      // Inject MLO date as "Planned Date" in KickOff -> modificationLaunchOrder
+if (formData.mlo) {
+  Object.keys(processedKickOffData).forEach((field) => {
+    if (processedKickOffData[field]?.task) {
+      processedKickOffData[field].task.planned = formData.mlo
+    }
+  })
+}
+
 
       // Create kick-off record
       const kickOffResponse = await createKickOff(processedKickOffData)
@@ -729,6 +738,13 @@ const MassPdCreate = () => {
           processedDesignData[field].task.filePath = processedDesignData[field].task.filePath.name
         }
       })
+if (formData.tko) {
+  Object.keys(processedDesignData).forEach((field) => {
+    if (processedDesignData[field]?.task) {
+      processedDesignData[field].task.planned = formData.tko
+    }
+  })
+}
 
       // Create design record
       const designResponse = await createDesign(processedDesignData)
@@ -740,6 +756,14 @@ const MassPdCreate = () => {
           processedFacilitiesData[field].task.filePath = processedFacilitiesData[field].task.filePath.name
         }
       })
+      if (formData.cv) {
+  Object.keys(processedFacilitiesData).forEach((field) => {
+    if (processedFacilitiesData[field]?.task) {
+      processedFacilitiesData[field].task.planned = formData.cv
+    }
+  })
+}
+
 
       // Create facilities record
       const facilitiesResponse = await createfacilities(processedFacilitiesData)
@@ -751,6 +775,14 @@ const MassPdCreate = () => {
           processedPPTuningData[field].task.filePath = processedPPTuningData[field].task.filePath.name
         }
       })
+      if (formData.pt1) {
+  Object.keys(processedPPTuningData).forEach((field) => {
+    if (processedPPTuningData[field]?.task) {
+      processedPPTuningData[field].task.planned = formData.pt1
+    }
+  })
+}
+
 
       // Create P_P_Tuning record
       const ppTuningResponse = await createP_P_Tuning(processedPPTuningData)
@@ -762,6 +794,13 @@ const MassPdCreate = () => {
           processedProcessQualifData[field].task.filePath = processedProcessQualifData[field].task.filePath.name
         }
       })
+if (formData.pt2) {
+  Object.keys(processedProcessQualifData).forEach((field) => {
+    if (processedProcessQualifData[field]?.task) {
+      processedProcessQualifData[field].task.planned = formData.pt2
+    }
+  })
+}
 
       // Create process qualification record
       const processQualifResponse = await createQualificationProcess(processedProcessQualifData)
@@ -774,6 +813,14 @@ const MassPdCreate = () => {
             processedQualificationConfirmationData[field].task.filePath.name
         }
       })
+      if (formData.sop) {
+  Object.keys(processedQualificationConfirmationData).forEach((field) => {
+    if (processedQualificationConfirmationData[field]?.task) {
+      processedQualificationConfirmationData[field].task.planned = formData.sop
+    }
+  })
+}
+
 
       // Create qualification confirmation record
       const qualificationConfirmationResponse = await createQualificationConfirmation(
