@@ -18,6 +18,10 @@ import { format } from "date-fns"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import MainLayout from "@/components/MainLayout"
+import { getAvailableRoles, getUsersByRole } from "../../apis/taskApi"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Users, UserCheck } from "lucide-react"
 
 const p_p_tuningFields = [
   "product_process_tuning",
@@ -57,6 +61,11 @@ const EditP_P_Tuning = () => {
   const [submitting, setSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState(p_p_tuningFields[0])
   const [massProductionId, setMassProductionId] = useState(null)
+  const [selectedRole, setSelectedRole] = useState("")
+  const [availableRoles, setAvailableRoles] = useState([])
+  const [usersByRole, setUsersByRole] = useState([])
+  const [selectedUsers, setSelectedUsers] = useState([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
 
   const [formData, setFormData] = useState(() => {
     const initialState = {}
@@ -113,6 +122,48 @@ const EditP_P_Tuning = () => {
       }
     }
   }, [])
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const roles = await getAvailableRoles()
+        setAvailableRoles(roles)
+      } catch (error) {
+        console.error("Error fetching roles:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load available roles",
+          variant: "destructive",
+        })
+      }
+    }
+    fetchRoles()
+  }, [])
+
+  useEffect(() => {
+    const fetchUsersByRole = async () => {
+      if (!selectedRole) {
+        setUsersByRole([])
+        return
+      }
+
+      setLoadingUsers(true)
+      try {
+        const users = await getUsersByRole(selectedRole)
+        setUsersByRole(users)
+      } catch (error) {
+        console.error("Error fetching users by role:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load users for selected role",
+          variant: "destructive",
+        })
+      } finally {
+        setLoadingUsers(false)
+      }
+    }
+    fetchUsersByRole()
+  }, [selectedRole])
 
   const fetchP_P_Tuning = async () => {
     setLoading(true)
@@ -180,6 +231,39 @@ const EditP_P_Tuning = () => {
         task: { ...formData[field].task, filePath: e.target.files[0] },
       },
     })
+  }
+
+  const handleUserSelection = (userId) => {
+    setSelectedUsers((prev) => {
+      if (prev.includes(userId)) {
+        return prev.filter((id) => id !== userId)
+      } else {
+        return [...prev, userId]
+      }
+    })
+  }
+
+  const handleAssignUsers = () => {
+    // Update the current active tab's task with selected users
+    setFormData({
+      ...formData,
+      [activeTab]: {
+        ...formData[activeTab],
+        task: {
+          ...formData[activeTab].task,
+          assignedUsers: selectedUsers,
+        },
+      },
+    })
+
+    toast({
+      title: "Success",
+      description: `${selectedUsers.length} users assigned to ${activeTab}`,
+    })
+
+    // Clear selections
+    setSelectedUsers([])
+    setSelectedRole("")
   }
 
   const handleSubmit = async (e) => {
@@ -315,6 +399,7 @@ const EditP_P_Tuning = () => {
                     <TabsList>
                       <TabsTrigger value="status">Status</TabsTrigger>
                       <TabsTrigger value="details">Task Details</TabsTrigger>
+                      <TabsTrigger value="users">Assign Users</TabsTrigger>
                     </TabsList>
                     <TabsContent value="status" className="pt-4">
                       <div className="flex items-center space-x-2">
@@ -333,31 +418,15 @@ const EditP_P_Tuning = () => {
                         transition={{ duration: 0.3 }}
                         className="space-y-6"
                       >
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                          <div className="space-y-2">
-                            <Label htmlFor={`${activeTab}-responsible`}>Responsible</Label>
-                            <Input
-                              id={`${activeTab}-responsible`}
-                              type="text"
-                              value={formData[activeTab]?.task.responsible || ""}
-                              onChange={(e) => handleTaskChange(e, activeTab, "responsible")}
-                              placeholder="Enter responsible person"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor={`${activeTab}-check`}>Completion Status</Label>
-                            <div className="flex items-center pt-2 space-x-2">
-                              <Checkbox
-                                id={`${activeTab}-check`}
-                                checked={formData[activeTab]?.task.check || false}
-                                onCheckedChange={(checked) =>
-                                  handleTaskChange({ target: { checked } }, activeTab, "check")
-                                }
-                              />
-                              <Label htmlFor={`${activeTab}-check`}>Mark as Completed</Label>
-                            </div>
-                          </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`${activeTab}-responsible`}>Responsible</Label>
+                          <Input
+                            id={`${activeTab}-responsible`}
+                            type="text"
+                            value={formData[activeTab]?.task.responsible || ""}
+                            onChange={(e) => handleTaskChange(e, activeTab, "responsible")}
+                            placeholder="Enter responsible person"
+                          />
                         </div>
 
                         <Separator />
@@ -466,6 +535,151 @@ const EditP_P_Tuning = () => {
                                 "No file chosen"}
                             </span>
                           </div>
+                        </div>
+                      </motion.div>
+                    </TabsContent>
+                    <TabsContent value="users" className="pt-4 space-y-6">
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-6"
+                      >
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="role-select">Select Role</Label>
+                            <Select value={selectedRole} onValueChange={setSelectedRole}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose a role to see users" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableRoles.map((role) => (
+                                  <SelectItem key={role} value={role}>
+                                    {role}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {selectedRole && (
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between">
+                                <Label>Users with role: {selectedRole}</Label>
+                                {selectedUsers.length > 0 && (
+                                  <Badge variant="secondary">{selectedUsers.length} selected</Badge>
+                                )}
+                              </div>
+
+                              {loadingUsers ? (
+                                <div className="flex items-center justify-center py-8">
+                                  <Loader2 className="w-6 h-6 animate-spin" />
+                                  <span className="ml-2">Loading users...</span>
+                                </div>
+                              ) : usersByRole.length === 0 ? (
+                                <div className="py-8 text-center text-muted-foreground">
+                                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                  <p>No users found with role: {selectedRole}</p>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 gap-2 overflow-y-auto max-h-64">
+                                  {usersByRole.map((user) => (
+                                    <div
+                                      key={user._id}
+                                      className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
+                                        selectedUsers.includes(user._id)
+                                          ? "bg-primary/10 border-primary"
+                                          : "hover:bg-muted"
+                                      }`}
+                                      onClick={() => handleUserSelection(user._id)}
+                                    >
+                                      <div className="flex items-center space-x-3">
+                                        <div
+                                          className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                            selectedUsers.includes(user._id)
+                                              ? "bg-primary border-primary"
+                                              : "border-muted-foreground"
+                                          }`}
+                                        >
+                                          {selectedUsers.includes(user._id) && (
+                                            <UserCheck className="w-3 h-3 text-primary-foreground" />
+                                          )}
+                                        </div>
+                                        <div>
+                                          <p className="font-medium">{user.username}</p>
+                                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-wrap gap-1">
+                                        {user.roles.map((role) => (
+                                          <Badge key={role} variant="outline" className="text-xs">
+                                            {role}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {selectedUsers.length > 0 && (
+                                <div className="flex justify-end space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedUsers([])
+                                      setSelectedRole("")
+                                    }}
+                                  >
+                                    Clear Selection
+                                  </Button>
+                                  <Button onClick={handleAssignUsers}>
+                                    Assign {selectedUsers.length} User{selectedUsers.length !== 1 ? "s" : ""}
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {formData[activeTab]?.task?.assignedUsers?.length > 0 && (
+                            <div className="space-y-2">
+                              <Label>Currently Assigned Users</Label>
+                              <div className="flex flex-wrap gap-2">
+                                {formData[activeTab].task.assignedUsers.map((userId) => {
+                                  const user = usersByRole.find((u) => u._id === userId) || {
+                                    _id: userId,
+                                    username: `User ${userId}`,
+                                    email: "",
+                                  }
+                                  return (
+                                    <Badge key={userId} variant="secondary" className="flex items-center gap-1">
+                                      {user.username}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setFormData({
+                                            ...formData,
+                                            [activeTab]: {
+                                              ...formData[activeTab],
+                                              task: {
+                                                ...formData[activeTab].task,
+                                                assignedUsers: formData[activeTab].task.assignedUsers.filter(
+                                                  (id) => id !== userId,
+                                                ),
+                                              },
+                                            },
+                                          })
+                                        }}
+                                        className="ml-1 hover:text-destructive"
+                                      >
+                                        ×
+                                      </button>
+                                    </Badge>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </motion.div>
                     </TabsContent>
