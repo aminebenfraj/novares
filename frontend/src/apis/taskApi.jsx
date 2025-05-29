@@ -26,3 +26,13 @@ export const updateTask = (id, data) => {
 export const deleteTask = (id) => {
   return apiRequest("DELETE", `${BASE_URL}/${id}`);
 };
+
+// ✅ Get all available roles
+export const getAvailableRoles = () => {
+  return apiRequest("GET", `${BASE_URL}/roles`);
+};
+
+// ✅ Get users by role
+export const getUsersByRole = (role) => {
+  return apiRequest("GET", `${BASE_URL}/users/by-role/${role}`);
+};
