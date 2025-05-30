@@ -432,7 +432,7 @@ function CreatePedido() {
                               <Label className="text-sm text-muted-foreground">Provider</Label>
                               <p className="font-medium">
                                 {pedido.proveedor
-                                  ? materials.find((m) => m.supplier?._id === pedido.proveedor)?.supplier?.name || "N/A"
+                                  ? materials.find((m) => m.supplier?._id === pedido.proveedor)?.supplier?.companyName || "N/A"
                                   : "N/A"}
                               </p>
                             </div>

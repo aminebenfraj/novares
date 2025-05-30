@@ -532,27 +532,6 @@ export default function PedidoDetails() {
                   </dl>
                 </CardContent>
               </Card>
-
-              <Card className="overflow-hidden border-2 border-muted">
-                <CardHeader className="pb-2 bg-muted/30">
-                  <CardTitle className="flex items-center text-lg">
-                    <Briefcase className="w-5 h-5 mr-2 text-primary" />
-                    Provider Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <dl className="divide-y">
-                    <div className="p-4">
-                      <dt className="mb-1 font-medium text-muted-foreground">Provider</dt>
-                      <dd className="font-semibold">{pedido.proveedor}</dd>
-                    </div>
-                    <div className="p-4">
-                      <dt className="mb-1 font-medium text-muted-foreground">Provider Description</dt>
-                      <dd className="text-sm">{pedido.descripcionProveedor || "N/A"}</dd>
-                    </div>
-                  </dl>
-                </CardContent>
-              </Card>
             </TabsContent>
 
             <TabsContent value="status" className="space-y-8">
