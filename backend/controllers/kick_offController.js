@@ -153,7 +153,7 @@ exports.updateKickOff = async (req, res) => {
     )
 
     // Step 3: Process email notifications for newly assigned users
-    await processEmailNotifications(kickOffData, previousAssignedUsers)
+    await processEmailNotifications(kickOffData, previousAssignedUsers, "Kick-Off")
 
     res.status(200).json({ message: "Kick-Off and Tasks updated", data: existingKickOff })
   } catch (error) {
@@ -163,7 +163,7 @@ exports.updateKickOff = async (req, res) => {
 }
 
 // Helper function to process email notifications
-async function processEmailNotifications(kickOffData, previousAssignedUsers) {
+async function processEmailNotifications(kickOffData, previousAssignedUsers, sectionName) {
   try {
     // Field config for better email content
     const fieldConfig = {}
@@ -200,6 +200,9 @@ async function processEmailNotifications(kickOffData, previousAssignedUsers) {
                 username: user.username || user.name || "Team Member",
                 taskName: fieldConfig[field]?.label || field,
                 taskDescription: fieldConfig[field]?.description || "Task assignment for kick-off process",
+                sectionName: sectionName,
+                sectionUrl: "/kick-off",
+                specificInstruction: `you should login and check the ${sectionName} section ${fieldConfig[field]?.label} tab`,
               })
 
               console.log(`✅ Email sent to ${user.email} for task: ${field}`)

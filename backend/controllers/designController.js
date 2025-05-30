@@ -1,5 +1,7 @@
 const Design = require("../models/DesignModel")
 const Task = require("../models/Task")
+const User = require("../models/UserModel")
+const { sendTaskAssignmentEmail } = require("../utils/emailServicetask")
 const mongoose = require("mongoose")
 
 const designFields = [
@@ -48,7 +50,7 @@ exports.createDesign = async (req, res) => {
     // ✅ Step 3: Save the Design entry
     const newDesign = new Design(formattedDesignData)
     await newDesign.save()
-    
+
     console.log("✅ Design created successfully:", newDesign)
 
     res.status(201).json({
@@ -111,10 +113,24 @@ exports.updateDesign = async (req, res) => {
     const designData = req.body
     const designId = req.params.id
 
-    const existingDesign = await Design.findById(designId)
+    const existingDesign = await Design.findById(designId).populate({
+      path: designFields.map((field) => `${field}.task`).join(" "),
+      model: "Task",
+    })
+
     if (!existingDesign) {
       return res.status(404).json({ message: "Design not found" })
     }
+
+    // Store the previous state to compare assigned users for email notifications
+    const previousAssignedUsers = {}
+    designFields.forEach((field) => {
+      if (existingDesign[field]?.task?.assignedUsers) {
+        previousAssignedUsers[field] = [...existingDesign[field].task.assignedUsers]
+      } else {
+        previousAssignedUsers[field] = []
+      }
+    })
 
     // Step 1: Update design fields dynamically
     designFields.forEach((field) => {
@@ -140,9 +156,77 @@ exports.updateDesign = async (req, res) => {
       }),
     )
 
+    // Step 3: Process email notifications for newly assigned users
+    await processEmailNotifications(designData, previousAssignedUsers, "Design")
+
     res.status(200).json({ message: "Design and Tasks updated", data: existingDesign })
   } catch (error) {
     res.status(500).json({ message: "Error updating Design", error: error.message })
+  }
+}
+
+// Helper function to process email notifications
+async function processEmailNotifications(designData, previousAssignedUsers, sectionName) {
+  try {
+    // Field config for better email content
+    const fieldConfig = {}
+    designFields.forEach((field) => {
+      fieldConfig[field] = {
+        label: field
+          .replace(/([A-Z])/g, " $1")
+          .replace(/_/g, " ")
+          .trim(),
+        description: `Configuration for ${field
+          .replace(/([A-Z])/g, " $1")
+          .replace(/_/g, " ")
+          .trim()
+          .toLowerCase()}`,
+      }
+    })
+
+    // Process each field to find newly assigned users
+    for (const field of designFields) {
+      const currentAssignedUsers = designData[field]?.task?.assignedUsers || []
+      const previousUsers = previousAssignedUsers[field] || []
+
+      // Find newly assigned users (users in current but not in previous)
+      const newlyAssignedUsers = currentAssignedUsers.filter((userId) => !previousUsers.includes(userId))
+
+      if (newlyAssignedUsers.length > 0) {
+        console.log(`📧 Found ${newlyAssignedUsers.length} newly assigned users for field: ${field}`)
+
+        // Get user details for each newly assigned user
+        for (const userId of newlyAssignedUsers) {
+          try {
+            const user = await User.findById(userId)
+
+            if (user && user.email) {
+              // Send email notification
+              await sendTaskAssignmentEmail({
+                to: user.email,
+                username: user.username || user.name || "Team Member",
+                taskName: fieldConfig[field]?.label || field,
+                taskDescription: fieldConfig[field]?.description || "Task assignment for design process",
+                sectionName: sectionName,
+                sectionUrl: "/design",
+                specificInstruction: `you should login and check the ${sectionName} section ${fieldConfig[field]?.label} tab`,
+              })
+
+              console.log(`✅ Email sent to ${user.email} for task: ${field}`)
+            } else {
+              console.log(`⚠️ User not found or no email for userId: ${userId}`)
+            }
+          } catch (emailError) {
+            console.error(`❌ Error sending email for user ${userId}:`, emailError)
+          }
+        }
+      }
+    }
+
+    return true
+  } catch (error) {
+    console.error("❌ Error processing email notifications:", error)
+    return false
   }
 }
 
@@ -166,4 +250,3 @@ exports.deleteDesign = async (req, res) => {
     res.status(500).json({ message: "Error deleting Design", error: error.message })
   }
 }
-
