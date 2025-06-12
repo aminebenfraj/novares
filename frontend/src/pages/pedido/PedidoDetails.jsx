@@ -471,10 +471,6 @@ export default function PedidoDetails() {
                     </div>
                   )}
                   <div className="mt-4 text-center">
-                    <p className="mb-2 text-sm font-medium">Direct Link:</p>
-                    <p className="p-2 font-mono text-xs break-all rounded-md bg-muted">
-                      {window.location.origin}/pedido/{id}
-                    </p>
                     <p className="mt-4 text-sm text-muted-foreground">
                       Scan with your phone's camera to quickly access this order's details
                     </p>
