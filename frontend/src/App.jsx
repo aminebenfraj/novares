@@ -943,7 +943,7 @@ function App() {
           }
         />
         <Route
-          path="/documentation/edit/:id"
+          path="/readiness/:readinessId/documentation/edit/:id"
           element={
             <ProtectedRoute requiredRoles={productionRoles}>
               <EditDocumentation />
@@ -961,7 +961,7 @@ function App() {
           }
         />
         <Route
-          path="/logistics/edit/:id"
+          path="/readiness/:readinessId/logistics/edit/:id"
           element={
             <ProtectedRoute requiredRoles={logisticRoles}>
               <EditLogistics />
@@ -979,7 +979,7 @@ function App() {
           }
         />
         <Route
-          path="/maintenance/edit/:id"
+          path="/readiness/:readinessId/maintenance/edit/:id"
           element={
             <ProtectedRoute requiredRoles={productionRoles}>
               <EditMaintenance />
@@ -997,7 +997,7 @@ function App() {
           }
         />
         <Route
-          path="/packaging/edit/:id"
+          path="/readiness/:readinessId/packaging/edit/:id"
           element={
             <ProtectedRoute requiredRoles={productionRoles}>
               <EditPackaging />
@@ -1015,7 +1015,7 @@ function App() {
           }
         />
         <Route
-          path="/process-status-industrials/edit/:id"
+          path="/readiness/:readinessId/process-status-industrials/edit/:id"
           element={
             <ProtectedRoute requiredRoles={productionRoles}>
               <EditProcessStatusIndustrials />
@@ -1033,7 +1033,7 @@ function App() {
           }
         />
         <Route
-          path="/product-process/edit/:id"
+          path="/readiness/:readinessId/product-process/edit/:id"
           element={
             <ProtectedRoute requiredRoles={productionRoles}>
               <EditProductProcess />
@@ -1051,7 +1051,7 @@ function App() {
           }
         />
         <Route
-          path="/run-at-rate/edit/:id"
+          path="/readiness/:readinessId/run-at-rate/edit/:id"
           element={
             <ProtectedRoute requiredRoles={productionRoles}>
               <EditRunAtRateProduction />
@@ -1069,7 +1069,7 @@ function App() {
           }
         />
         <Route
-          path="/safety/edit/:id"
+          path="/readiness/:readinessId/safety/edit/:id"
           element={
             <ProtectedRoute requiredRoles={productionRoles}>
               <EditSafety />
@@ -1087,7 +1087,7 @@ function App() {
           }
         />
         <Route
-          path="/supply/edit/:id"
+          path="/readiness/:readinessId/supply/edit/:id"
           element={
             <ProtectedRoute requiredRoles={logisticRoles}>
               <EditSupp />
@@ -1105,7 +1105,7 @@ function App() {
           }
         />
         <Route
-          path="/training/edit/:id"
+          path="/readiness/:readinessId/training/edit/:id"
           element={
             <ProtectedRoute requiredRoles={productionRoles}>
               <EditTraining />
@@ -1123,7 +1123,7 @@ function App() {
           }
         />
         <Route
-          path="/tooling-status/edit/:id"
+          path="/readiness/:readinessId/tooling-status/edit/:id"
           element={
             <ProtectedRoute requiredRoles={productionRoles}>
               <EditToolingStatus />

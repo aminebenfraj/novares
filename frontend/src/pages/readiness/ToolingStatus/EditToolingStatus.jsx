@@ -75,17 +75,8 @@ function EditToolingStatusPage() {
   const [activeTab, setActiveTab] = useState("manufacturedPartsAtLastRelease")
   const [toolingStatus, setToolingStatus] = useState(null)
 
-  // Add readinessId state
-  const [readinessId, setReadinessId] = useState(null)
 
-  // Add useEffect to extract readinessId from URL query parameters
-  useEffect(() => {
-    // Get the readinessId from the URL query parameters
-    const queryParams = new URLSearchParams(window.location.search)
-    const id = queryParams.get("readinessId")
-    console.log("Extracted readinessId from URL:", id)
-    setReadinessId(id)
-  }, [])
+
 
   // Fetch tooling status data
   useEffect(() => {
@@ -94,22 +85,6 @@ function EditToolingStatusPage() {
         setIsLoading(true)
         const data = await getToolingStatusById(params.id)
         setToolingStatus(data)
-
-        // Extract readinessId from the tooling status object
-        console.log("Tooling status data:", data)
-
-        // Check for possible readiness reference fields
-        if (data._readinessId) {
-          console.log("Found readinessId in _readinessId:", data._readinessId)
-          setReadinessId(data._readinessId)
-        } else if (data.readinessId) {
-          console.log("Found readinessId in readinessId:", data.readinessId)
-          setReadinessId(data.readinessId)
-        } else if (data.readiness) {
-          const readinessRef = typeof data.readiness === "object" ? data.readiness._id : data.readiness
-          console.log("Found readinessId in readiness:", readinessRef)
-          setReadinessId(readinessRef)
-        }
       } catch (error) {
         console.error("Error fetching tooling status record:", error)
         toast({
@@ -141,34 +116,9 @@ function EditToolingStatusPage() {
       })
 
       // Navigate back to readiness details page if readinessId is available
-      if (readinessId) {
-        console.log("Navigating to readiness detail:", readinessId)
-        navigate(`/readiness/detail/${readinessId}`)
-      } else {
-        // If we couldn't extract the readinessId, try to get it from the API response
-        try {
-          // Make an API call to get all readiness entries
-          const readinessEntries = await getAllReadiness()
+     
+        navigate(`/readiness/detail/${params.readinessId}`)
 
-          // Find the readiness entry that references this tooling status record
-          const readinessEntry = readinessEntries.find(
-            (entry) =>
-              entry.ToolingStatus === params.id || (entry.ToolingStatus && entry.ToolingStatus._id === params.id),
-          )
-
-          if (readinessEntry) {
-            console.log("Found readiness entry:", readinessEntry)
-            navigate(`/readiness/detail/${readinessEntry._id}`)
-            return
-          }
-        } catch (error) {
-          console.error("Error finding readiness entry:", error)
-        }
-
-        // Fallback to tooling status details page if readinessId is not available
-        console.log("No readinessId found, navigating to tooling status detail")
-        navigate(`/tooling-status/${params.id}`)
-      }
     } catch (error) {
       console.error("Error updating tooling status record:", error)
       toast({
@@ -246,30 +196,8 @@ function EditToolingStatusPage() {
                 variant="outline"
                 size="icon"
                 onClick={() => {
-                  if (readinessId) {
-                    console.log("Back button: Navigating to readiness detail:", readinessId)
-                    navigate(`/readiness/detail/${readinessId}`)
-                  } else {
-                    // If no readinessId is available, try to find it from all readiness entries
-                    getAllReadiness()
-                      .then((readinessEntries) => {
-                        const readinessEntry = readinessEntries.find(
-                          (entry) =>
-                            entry.ToolingStatus === params.id ||
-                            (entry.ToolingStatus && entry.ToolingStatus._id === params.id),
-                        )
-                        if (readinessEntry) {
-                          console.log("Found matching readiness entry:", readinessEntry._id)
-                          navigate(`/readiness/detail/${readinessEntry._id}`)
-                        } else {
-                          navigate(`/tooling-status/${params.id}`)
-                        }
-                      })
-                      .catch((error) => {
-                        console.error("Error finding readiness entry:", error)
-                        navigate(`/tooling-status/${params.id}`)
-                      })
-                  }
+                
+                    navigate(`/readiness/detail/${params.readinessId}`)
                 }}
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -707,29 +635,9 @@ function EditToolingStatusPage() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      if (readinessId) {
-                        navigate(`/readiness/detail/${readinessId}`)
-                      } else {
-                        // If no readinessId is available, try to find it from all readiness entries
-                        getAllReadiness()
-                          .then((readinessEntries) => {
-                            const readinessEntry = readinessEntries.find(
-                              (entry) =>
-                                entry.ToolingStatus === params.id ||
-                                (entry.ToolingStatus && entry.ToolingStatus._id === params.id),
-                            )
-                            if (readinessEntry) {
-                              console.log("Found matching readiness entry:", readinessEntry._id)
-                              navigate(`/readiness/detail/${readinessEntry._id}`)
-                            } else {
-                              navigate(`/tooling-status/${params.id}`)
-                            }
-                          })
-                          .catch((error) => {
-                            console.error("Error finding readiness entry:", error)
-                            navigate(`/tooling-status/${params.id}`)
-                          })
-                      }
+                     
+                        navigate(`/readiness/detail/${params.readinessId}`)
+                     
                     }}
                   >
                     Cancel

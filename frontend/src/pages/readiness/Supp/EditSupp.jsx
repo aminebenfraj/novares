@@ -57,41 +57,8 @@ function EditSuppPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("componentsRawMaterialAvailable")
   const [supp, setSupp] = useState(null)
-  const [readinessId, setReadinessId] = useState(null)
 
-  // Fetch all readiness entries to find the one containing this supp
-  const findReadinessIdForSupp = async (suppId) => {
-    try {
-      console.log("Fetching all readiness entries to find the one containing supp ID:", suppId)
-      const entries = await getAllReadiness()
-      console.log("Fetched readiness entries:", entries)
-
-      // Loop through all entries to find the one containing our supp
-      for (const entry of entries) {
-        console.log("Checking entry:", entry._id)
-
-        // Check if this entry has a Suppliers object
-        if (entry.Suppliers && entry.Suppliers._id === suppId) {
-          console.log("Found matching readiness entry via Suppliers object:", entry._id)
-          setReadinessId(entry._id)
-          return entry._id
-        }
-
-        // Some entries might have the Suppliers directly as a property
-        if (entry.Supp === suppId || (entry.Supp && entry.Supp._id === suppId)) {
-          console.log("Found matching readiness entry via direct Supp reference:", entry._id)
-          setReadinessId(entry._id)
-          return entry._id
-        }
-      }
-
-      console.log("No matching readiness entry found for supp:", suppId)
-      return null
-    } catch (error) {
-      console.error("Error finding readiness entry for supp:", error)
-      return null
-    }
-  }
+  
 
   // Fetch supp data
   const fetchSupp = async () => {
@@ -101,8 +68,6 @@ function EditSuppPage() {
       setSupp(data)
       console.log("Supply data loaded successfully:", data)
 
-      // Try to find the readiness ID for this supp
-      await findReadinessIdForSupp(params.id)
     } catch (error) {
       console.error("Error fetching supply record:", error)
       toast({
@@ -135,22 +100,8 @@ function EditSuppPage() {
       })
 
       // Navigate back to readiness details page if readinessId is available
-      if (readinessId) {
-        console.log("Navigating to readiness detail:", readinessId)
-        navigate(`/readiness/detail/${readinessId}`)
-      } else {
-        // If we couldn't extract the readinessId, try to find it one more time
-        const foundReadinessId = await findReadinessIdForSupp(params.id)
-
-        if (foundReadinessId) {
-          console.log("Found readiness ID at submit time:", foundReadinessId)
-          navigate(`/readiness/detail/${foundReadinessId}`)
-        } else {
-          // Fallback to supply details page if readinessId is not available
-          console.log("No readinessId found, navigating to supply detail")
-          navigate(`/supply/${params.id}`)
-        }
-      }
+      
+        navigate(`/readiness/detail/${params.readinessId}`)
     } catch (error) {
       console.error("Error updating supply record:", error)
       toast({
@@ -206,11 +157,8 @@ function EditSuppPage() {
           <CardFooter>
             <Button
               onClick={() => {
-                if (readinessId) {
-                  navigate(`/readiness/detail/${readinessId}`)
-                } else {
-                  navigate("/supply")
-                }
+              
+                  navigate(`/readiness/detail/${params.readinessId}`)
               }}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -231,12 +179,9 @@ function EditSuppPage() {
               variant="outline"
               size="icon"
               onClick={() => {
-                if (readinessId) {
-                  console.log("Back button: Navigating to readiness detail:", readinessId)
-                  navigate(`/readiness/detail/${readinessId}`)
-                } else {
-                  navigate(`/supply/${params.id}`)
-                }
+               
+                  navigate(`/readiness/detail/${params.readinessId}`)
+               
               }}
             >
               <ArrowLeft className="w-4 h-4" />
@@ -539,12 +484,9 @@ function EditSuppPage() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    if (readinessId) {
-                      console.log("Cancel button: Navigating to readiness detail:", readinessId)
-                      navigate(`/readiness/detail/${readinessId}`)
-                    } else {
-                      navigate(`/supply/${params.id}`)
-                    }
+                 
+                      navigate(`/readiness/detail/${params.readinessId}`)
+                   
                   }}
                 >
                   Cancel
