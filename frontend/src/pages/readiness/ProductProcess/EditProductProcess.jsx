@@ -20,39 +20,39 @@ import MainLayout from "@/components/MainLayout"
 // Define the field labels and descriptions for better UI
 const fieldConfig = {
   technicalReview: {
-    label: "Technical Review Product/Process with RETEX of previous/similar Product/Process",
+    label: "Process with RETEX",
     description: "BD-PR-A01 Technical review",
   },
   dfmea: {
-    label: "DFMEA validated/approved via ENTERPROJ",
+    label: "DFMEA validated",
     description: "SKILL PRO",
   },
   pfmea: {
-    label: "PFMEA validated /approved via ENTERPROJ",
+    label: "PFMEA validated",
     description: "SKILL PRO",
   },
   injectionTools: {
-    label: "Injection Tools  technical specifications & official  TKO ",
+    label: "Injection Tools ",
     description: "BD-PD-B02",
   },
   paintingProcess: {
-    label: "Painting Process specifications & Official TKO",
+    label: "Painting Process specifications",
     description: "BD-PM-A08",
   },
   assyMachine: {
-    label: "Assy Machine  general technical specifications & official  TKO ",
+    label: "Assy Machine  general  ",
     description: "BD-PD-E02",
   },
   checkingFixture: {
-    label: " Checking Fixture general technical specifications & official  TKO ",
+    label: " Checking Fixture general technical ",
     description: "BD-PD-A02",
   },
   industrialCapacity: {
-    label: "Industrial Capacity validated acc. SMART MAC POWER ",
+    label: "Industrial Capacity",
     description: "BD-PI-F03",
   },
   skillsDeployment: {
-    label: "Skills deployment for Support Function if new technologies Product and/or Process",
+    label: "Skills deployment for Support Function",
     description: "TD-HR-K01",
   },
 }
