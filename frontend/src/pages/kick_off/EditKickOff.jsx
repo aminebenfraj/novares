@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Upload, CalendarIcon, ArrowLeft, Save, Loader2, CheckCircle, XCircle } from "lucide-react"
+import { Upload, CalendarIcon, ArrowLeft, Save, Loader2, CheckCircle, XCircle } from 'lucide-react'
 import { format } from "date-fns"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
@@ -21,7 +21,7 @@ import MainLayout from "@/components/MainLayout"
 import { getAvailableRoles, getUsersByRole } from "../../apis/taskApi"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Users, UserCheck } from "lucide-react"
+import { Users, UserCheck } from 'lucide-react'
 
 const kickOffFields = [
   "timeScheduleApproved",
@@ -421,19 +421,7 @@ const EditKickOff = () => {
                             />
                           </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor={`${activeTab}-check`}>Completion Status</Label>
-                            <div className="flex items-center pt-2 space-x-2">
-                              <Checkbox
-                                id={`${activeTab}-check`}
-                                checked={formData[activeTab]?.task.check || false}
-                                onCheckedChange={(checked) =>
-                                  handleTaskChange({ target: { checked } }, activeTab, "check")
-                                }
-                              />
-                              <Label htmlFor={`${activeTab}-check`}>Mark as Completed</Label>
-                            </div>
-                          </div>
+                          
                         </div>
 
                         <Separator />
