@@ -155,12 +155,14 @@ import EditToolingStatus from "./pages/readiness/ToolingStatus/EditToolingStatus
 
 // Logistic Pages
 import Call from "./pages/logistic/call"
+import { Manager } from "socket.io-client"
 
 function App() {
   // Define role groups for different sections
   const adminRoles = ["Admin"]
   const productionRoles = [
-    "Admin", 
+    "Admin",
+    "Manager",
     "PRODUCCION", 
     "Manufacturing Eng. Manager", 
     "Manufacturing Eng. Leader",
@@ -178,7 +180,7 @@ function App() {
     "Quality Leader UAP2",
     "Quality Leader UAP3"]
  const logisticRoles = ["Admin"]
-  const inventoryRoles = ["Admin"]
+  const inventoryRoles = ["Admin","Manager"]
   const qualityRoles = ["Admin"]
 
   return (

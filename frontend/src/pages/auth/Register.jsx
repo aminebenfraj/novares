@@ -12,13 +12,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
-import { BadgeIcon as IdCard, User, Mail, Lock, Loader2, Info, Eye, EyeOff } from "lucide-react"
+import { BadgeIcon as IdCard, User, Mail, Lock, Loader2, Info, Eye, EyeOff, CheckCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { register } from "@/lib/Auth"
 
 export default function Register() {
   const navigate = useNavigate()
   const [serverError, setServerError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
   const [passwordValue, setPasswordValue] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -39,22 +40,88 @@ export default function Register() {
 
   const onSubmit = async (data) => {
     setServerError("")
+    setSuccessMessage("")
+
     try {
       console.log("Attempting to register user with data:", {
         license: data.license,
         username: data.username,
         email: data.email,
-        password: "***" // Not logging actual password
-      });
-      
+        password: "***", // Not logging actual password
+      })
+
       // Call register function from AuthContext with proper arguments
       const result = await register(data.license, data.username, data.email, data.password)
-      
-      
-        navigate("/login")
+
+      if (result.success) {
+        setSuccessMessage("Account created successfully! Redirecting to login page...")
+        // Clear the form
+        form.reset()
+        // Redirect after a shorter delay to show success message
+        setTimeout(() => {
+          navigate("/login")
+        }, 1500)
+      }
     } catch (error) {
-      console.error("Registration failed:", error);
-      setServerError(error.message || "Registration failed. Please try again.");
+      console.error("Registration failed:", error)
+
+      // Handle specific error types and set field-specific errors
+      if (error.message) {
+        const message = error.message.toLowerCase()
+
+        if (message.includes("license already exists") || message.includes("license is already taken")) {
+          form.setError("license", {
+            type: "manual",
+            message: "User with this license already exists. Please use a different license.",
+          })
+        } else if (message.includes("username already exists") || message.includes("username is already taken")) {
+          form.setError("username", {
+            type: "manual",
+            message: "User with this username already exists. Please choose a different one.",
+          })
+        } else if (message.includes("email already exists") || message.includes("email is already taken")) {
+          form.setError("email", {
+            type: "manual",
+            message: "User with this email already exists. Please use a different email address.",
+          })
+        } else if (message.includes("invalid email") || message.includes("email format")) {
+          form.setError("email", {
+            type: "manual",
+            message: "Please enter a valid email address.",
+          })
+        } else if (message.includes("password too weak") || message.includes("password requirements")) {
+          form.setError("password", {
+            type: "manual",
+            message: "Your password doesn't meet the security requirements.",
+          })
+        } else if (message.includes("invalid license format")) {
+          form.setError("license", {
+            type: "manual",
+            message: "Please enter a valid license format.",
+          })
+        } else if (message.includes("username too short")) {
+          form.setError("username", {
+            type: "manual",
+            message: "Username must be at least 3 characters long.",
+          })
+        } else if (message.includes("username invalid characters")) {
+          form.setError("username", {
+            type: "manual",
+            message: "Username can only contain letters, numbers, and underscores.",
+          })
+        } else {
+          // For network errors or other general errors, still show at the top
+          if (message.includes("network") || message.includes("connection")) {
+            setServerError("Unable to connect. Please check your internet connection and try again.")
+          } else if (message.includes("server error") || message.includes("internal error")) {
+            setServerError("Our servers are experiencing issues. Please try again in a few minutes.")
+          } else {
+            setServerError("Unable to create account. Please check your information and try again.")
+          }
+        }
+      } else {
+        setServerError("Unable to create account. Please try again.")
+      }
     }
   }
 
@@ -115,8 +182,35 @@ export default function Register() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                     >
-                      <Alert variant="destructive" className="mb-6 text-white bg-red-500">
+                      <Alert variant="destructive" className="mb-6">
                         <AlertDescription>{serverError}</AlertDescription>
+                      </Alert>
+                    </motion.div>
+                  )}
+                  {successMessage && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                    >
+                      <Alert className="mb-6 border-green-200 bg-green-50 text-green-800">
+                        <CheckCircle className="w-4 h-4" />
+                        <AlertDescription>
+                          <div className="flex flex-col space-y-2">
+                            <span>{successMessage}</span>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">You will be redirected automatically in a few seconds.</span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate("/login")}
+                                className="text-green-700 border-green-300 hover:bg-green-100"
+                              >
+                                Go to Login Now
+                              </Button>
+                            </div>
+                          </div>
+                        </AlertDescription>
                       </Alert>
                     </motion.div>
                   )}

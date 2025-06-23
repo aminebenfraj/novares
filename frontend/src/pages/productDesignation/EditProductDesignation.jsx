@@ -1,34 +1,36 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useForm } from "react-hook-form"
 import { useParams, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
-import { getPDById, updatePD } from "@/apis/ProductDesignation-api"
+import MainLayout from "@/components/MainLayout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Save, ArrowLeft } from "lucide-react"
+import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { getPDById, updatePD } from "@/apis/ProductDesignation-api"
+import { FileText, Save, Loader2, Hash } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 
-export default function EditProductDesignation({ onSuccess }) {
+const EditProductDesignation = () => {
   const { id: productId } = useParams()
-  const navigate = useNavigate()
+  const [partName, setPartName] = useState("")
+  const [reference, setReference] = useState("")
+  const [partNameError, setPartNameError] = useState("")
   const [isLoading, setIsLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState("")
-
-  const form = useForm({
-    defaultValues: {
-      part_name: "",
-      reference: "",
-    },
-  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const navigate = useNavigate()
+  const { toast } = useToast()
 
   useEffect(() => {
     if (!productId) {
-      setErrorMessage("Invalid Product ID.")
-      setIsLoading(false)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Invalid Product ID.",
+      })
+      navigate("/pd")
       return
     }
 
@@ -36,116 +38,164 @@ export default function EditProductDesignation({ onSuccess }) {
       try {
         const product = await getPDById(productId)
         if (!product) {
-          setErrorMessage("Product not found.")
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Product not found.",
+          })
+          navigate("/pd")
           return
         }
-        // Only set the editable fields in the form
-        form.reset({
-          part_name: product.part_name,
-          reference: product.reference || "",
-        })
+        setPartName(product.part_name)
+        setReference(product.reference || "")
       } catch (error) {
         console.error("Error fetching product:", error)
-        setErrorMessage("Failed to load product. Please try again.")
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load product. Please try again.",
+        })
+        navigate("/pd")
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchProduct()
-  }, [productId, form])
+  }, [productId, navigate, toast])
 
-  const onSubmit = async (data) => {
-    setErrorMessage("")
+  const validateForm = () => {
+    if (!partName.trim()) {
+      setPartNameError("Part name is required")
+      return false
+    }
 
+    if (partName.trim().length < 2) {
+      setPartNameError("Part name must be at least 2 characters")
+      return false
+    }
+
+    setPartNameError("")
+    return true
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!validateForm()) {
+      return
+    }
+
+    setIsSubmitting(true)
     try {
-      await updatePD(productId, data)
-      if (onSuccess) {
-        onSuccess()
-      } else {
-        navigate("/pd")
-      }
+      await updatePD(productId, {
+        part_name: partName.trim(),
+        reference: reference.trim() || null,
+      })
+
+      toast({
+        title: "Success",
+        description: "Product designation updated successfully!",
+      })
+      setTimeout(() => navigate("/pd"), 1000)
     } catch (error) {
-      console.error("Error updating product:", error)
-      setErrorMessage(error.message || "Failed to update product. Please try again.")
+      console.error("Failed to update product designation:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update product designation. Please try again.",
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-zinc-900">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin dark:text-blue-400" />
-      </div>
+      <MainLayout>
+        <div className="container py-8 mx-auto">
+          <div className="max-w-md mx-auto">
+            <Card className="shadow-lg border-zinc-200 dark:border-zinc-700">
+              <CardContent className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <Loader2 className="w-8 h-8 mx-auto mb-4 text-zinc-600 animate-spin" />
+                  <p className="text-zinc-600">Loading product details...</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </MainLayout>
     )
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-zinc-900">
-      <Card className="w-full max-w-md bg-white shadow-xl dark:bg-zinc-800">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-            Edit Product Designation
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {errorMessage && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{errorMessage}</AlertDescription>
-            </Alert>
-          )}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="part_name"
-                rules={{ required: "Part name is required" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-zinc-700 dark:text-zinc-300">Part Name</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        className="border-gray-300 bg-gray-50 dark:bg-zinc-700 dark:border-zinc-600 focus:ring-blue-500 dark:focus:ring-blue-400"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="reference"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-zinc-700 dark:text-zinc-300">Reference</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        className="border-gray-300 bg-gray-50 dark:bg-zinc-700 dark:border-zinc-600 focus:ring-blue-500 dark:focus:ring-blue-400"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex justify-between pt-4">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate("/pd")}
-                    className="text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back
+    <MainLayout>
+      <Toaster />
+      <div className="container py-8 mx-auto">
+        <div className="max-w-md mx-auto">
+          <Card className="shadow-lg border-zinc-200 dark:border-zinc-700">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                Edit Product Designation
+              </CardTitle>
+              <CardDescription>Update the product designation details</CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSubmit}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="part_name" className={partNameError ? "text-red-500" : ""}>
+                    Part Name <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <FileText
+                      className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
+                        partNameError ? "text-red-500" : "text-zinc-500 dark:text-zinc-400"
+                      }`}
+                    />
+                    <Input
+                      id="part_name"
+                      type="text"
+                      value={partName}
+                      onChange={(e) => {
+                        setPartName(e.target.value)
+                        if (partNameError) setPartNameError("")
+                      }}
+                      className={`w-full pl-10 ${partNameError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                      placeholder="Enter part name"
+                    />
+                  </div>
+                  {partNameError && <p className="mt-1 text-sm text-red-500">{partNameError}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reference">Reference</Label>
+                  <div className="relative">
+                    <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-500 dark:text-zinc-400" />
+                    <Input
+                      id="reference"
+                      type="text"
+                      value={reference}
+                      onChange={(e) => setReference(e.target.value)}
+                      className="w-full pl-10"
+                      placeholder="Enter reference number (optional)"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button type="button" variant="outline" onClick={() => navigate("/pd")}>
+                    Cancel
                   </Button>
                 </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     type="submit"
-                    className="text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                    className="text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+                    disabled={isSubmitting}
                   >
-                    {form.formState.isSubmitting ? (
+                    {isSubmitting ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         Updating...
@@ -158,11 +208,13 @@ export default function EditProductDesignation({ onSuccess }) {
                     )}
                   </Button>
                 </motion.div>
-              </div>
+              </CardFooter>
             </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
+          </Card>
+        </div>
+      </div>
+    </MainLayout>
   )
 }
+
+export default EditProductDesignation
