@@ -179,9 +179,9 @@ function App() {
     "Quality Leader UAP1",
     "Quality Leader UAP2",
     "Quality Leader UAP3"]
- const logisticRoles = ["Admin"]
+ const logisticRoles = ["Admin","LOGISTICA","PRODUCCION"]
   const inventoryRoles = ["Admin","Manager"]
-  const qualityRoles = ["Admin"]
+  const qualityRoles = ["Admin","Manager"]
 
   return (
     <AuthProvider>
