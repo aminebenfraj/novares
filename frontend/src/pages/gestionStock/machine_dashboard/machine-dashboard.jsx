@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import {
+  deleteAllocation,
   getAllAllocations,
   getMachineStockHistory,
   updateAllocation,
@@ -466,6 +467,7 @@ const MachineDashboard = () => {
           lowStockMaterials: 0,
           totalAllocatedStock: 0,
           lastUpdated: null,
+          allocation:allocation
         })
       }
 
@@ -720,8 +722,8 @@ const MachineDashboard = () => {
     setIsDeleteDialogOpen(true)
   }
 
-  const handleDeleteMachine = () => {
-    // This would normally call an API to delete the machine
+  const handleDeleteMachine = async () => {
+    await deleteAllocation(selectedMachineForDelete.allocation._id)
     toast({
       title: "Machine deleted",
       description: `${selectedMachineForDelete.name} has been deleted successfully`,
@@ -1472,7 +1474,7 @@ const MachineDashboard = () => {
                               </div>
                               <div className="flex items-center gap-4">
                                 <Badge variant={getStatusColor(machine.status)}>{machine.status || "Unknown"}</Badge>
-                                <DropdownMenu>
+                                <DropdownMenu modal={false}>
                                   <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="icon">
                                       <MoreHorizontal className="w-4 h-4" />
@@ -1484,7 +1486,7 @@ const MachineDashboard = () => {
                                       View Details
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild>
-                                      <Link to={`/machine/edit/${machine._id}`}>
+                                      <Link to={`/machinematerial/edit/${machine.allocation._id}`}>
                                         <Edit className="w-4 h-4 mr-2" />
                                         Edit Machine
                                       </Link>
