@@ -369,7 +369,6 @@ const MachineDashboard = () => {
   })
 
   // Print mode
-  const [isPrintMode, setIsPrintMode] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -400,16 +399,7 @@ const MachineDashboard = () => {
     }
   }, [selectedMachine, materialSearchTerm, allocations, materials])
 
-  // Handle print mode
-  useEffect(() => {
-    if (isPrintMode) {
-      // Trigger print dialog
-      setTimeout(() => {
-        window.print()
-        setIsPrintMode(false)
-      }, 500)
-    }
-  }, [isPrintMode])
+ 
 
   const fetchData = async () => {
     try {
@@ -934,9 +924,6 @@ const MachineDashboard = () => {
     })
   }
 
-  const printDashboard = () => {
-    setIsPrintMode(true)
-  }
 
   // Animation variants
   const containerVariants = {
@@ -967,7 +954,6 @@ const MachineDashboard = () => {
 
   return (
     <MainLayout>
-      <div className={`container py-8 mx-auto ${isPrintMode ? "print-mode" : ""}`}>
         <Toaster />
 
         {/* Help Dialog */}
@@ -1086,19 +1072,7 @@ const MachineDashboard = () => {
               </Tooltip>
             </TooltipProvider>
 
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" onClick={printDashboard}>
-                    <Printer className="w-4 h-4 mr-2" />
-                    Print
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Print current view</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+           
 
             {activeView === "machines" && (
               <>
@@ -2462,27 +2436,9 @@ const MachineDashboard = () => {
           </TooltipProvider>
         </div>
 
-        {/* Print Styles */}
-        <style jsx global>{`
-          @media print {
-            body * {
-              visibility: hidden;
-            }
-            .container, .container * {
-              visibility: visible;
-            }
-            .print-mode {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-            }
-            .print-hide {
-              display: none !important;
-            }
-          }
-        `}</style>
-      </div>
+      
+       
+      
     </MainLayout>
   )
 }
