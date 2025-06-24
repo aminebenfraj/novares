@@ -19,7 +19,6 @@ import { getAllpd } from "../../apis/ProductDesignation-api"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import MainLayout from "@/components/MainLayout"
-import ContactUs from "@/components/ContactUs"
 
 // UI Components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -1486,7 +1485,6 @@ const MassProductionDetails = () => {
             )}
           </motion.div>
         </div>
-        <ContactUs />
       </div>
     </MainLayout>
   )
