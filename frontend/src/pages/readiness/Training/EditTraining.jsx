@@ -55,17 +55,6 @@ function EditTrainingPage() {
   const [activeTab, setActiveTab] = useState("visualControlQualification")
   const [training, setTraining] = useState(null)
 
-  // Add readinessId state
-  const [readinessId, setReadinessId] = useState(null)
-
-  // Add useEffect to extract readinessId from URL query parameters
-  useEffect(() => {
-    // Get the readinessId from the URL query parameters
-    const queryParams = new URLSearchParams(window.location.search)
-    const id = queryParams.get("readinessId")
-    console.log("Extracted readinessId from URL:", id)
-    setReadinessId(id)
-  }, [])
 
   // Fetch training data
   useEffect(() => {
@@ -74,22 +63,6 @@ function EditTrainingPage() {
         setIsLoading(true)
         const data = await getTrainingById(params.id)
         setTraining(data)
-
-        // Extract readinessId from the training object
-        console.log("Training data:", data)
-
-        // Check for possible readiness reference fields
-        if (data._readinessId) {
-          console.log("Found readinessId in _readinessId:", data._readinessId)
-          setReadinessId(data._readinessId)
-        } else if (data.readinessId) {
-          console.log("Found readinessId in readinessId:", data.readinessId)
-          setReadinessId(data.readinessId)
-        } else if (data.readiness) {
-          const readinessRef = typeof data.readiness === "object" ? data.readiness._id : data.readiness
-          console.log("Found readinessId in readiness:", readinessRef)
-          setReadinessId(readinessRef)
-        }
       } catch (error) {
         console.error("Error fetching training record:", error)
         toast({
@@ -119,35 +92,7 @@ function EditTrainingPage() {
         title: "Success",
         description: "Training record updated successfully",
       })
-
-      // Navigate back to readiness details page if readinessId is available
-      if (readinessId) {
-        console.log("Navigating to readiness detail:", readinessId)
-        navigate(`/readiness/detail/${readinessId}`)
-      } else {
-        // If we couldn't extract the readinessId, try to get it from the API response
-        try {
-          // Make an API call to get all readiness entries
-          const readinessEntries = await getAllReadiness()
-
-          // Find the readiness entry that references this training record
-          const readinessEntry = readinessEntries.find(
-            (entry) => entry.Training === params.id || (entry.Training && entry.Training._id === params.id),
-          )
-
-          if (readinessEntry) {
-            console.log("Found readiness entry:", readinessEntry)
-            navigate(`/readiness/detail/${readinessEntry._id}`)
-            return
-          }
-        } catch (error) {
-          console.error("Error finding readiness entry:", error)
-        }
-
-        // Fallback to training details page if readinessId is not available
-        console.log("No readinessId found, navigating to training detail")
-        navigate(`/training/${params.id}`)
-      }
+        navigate(`/readiness/detail/${params.readinessId}`)
     } catch (error) {
       console.error("Error updating training record:", error)
       toast({
@@ -225,29 +170,9 @@ function EditTrainingPage() {
                 variant="outline"
                 size="icon"
                 onClick={() => {
-                  if (readinessId) {
-                    console.log("Back button: Navigating to readiness detail:", readinessId)
-                    navigate(`/readiness/detail/${readinessId}`)
-                  } else {
-                    // If no readinessId is available, try to find it from all readiness entries
-                    getAllReadiness()
-                      .then((readinessEntries) => {
-                        const readinessEntry = readinessEntries.find(
-                          (entry) =>
-                            entry.Training === params.id || (entry.Training && entry.Training._id === params.id),
-                        )
-                        if (readinessEntry) {
-                          console.log("Found matching readiness entry:", readinessEntry._id)
-                          navigate(`/readiness/detail/${readinessEntry._id}`)
-                        } else {
-                          navigate(`/training/${params.id}`)
-                        }
-                      })
-                      .catch((error) => {
-                        console.error("Error finding readiness entry:", error)
-                        navigate(`/training/${params.id}`)
-                      })
-                  }
+                 
+                    navigate(`/readiness/detail/${params.readinessId}`)
+                  
                 }}
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -515,28 +440,9 @@ function EditTrainingPage() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      if (readinessId) {
-                        navigate(`/readiness/detail/${readinessId}`)
-                      } else {
-                        // If no readinessId is available, try to find it from all readiness entries
-                        getAllReadiness()
-                          .then((readinessEntries) => {
-                            const readinessEntry = readinessEntries.find(
-                              (entry) =>
-                                entry.Training === params.id || (entry.Training && entry.Training._id === params.id),
-                            )
-                            if (readinessEntry) {
-                              console.log("Found matching readiness entry:", readinessEntry._id)
-                              navigate(`/readiness/detail/${readinessEntry._id}`)
-                            } else {
-                              navigate(`/training/${params.id}`)
-                            }
-                          })
-                          .catch((error) => {
-                            console.error("Error finding readiness entry:", error)
-                            navigate(`/training/${params.id}`)
-                          })
-                      }
+                    
+                        navigate(`/readiness/detail/${params.readinessId}`)
+                    
                     }}
                   >
                     Cancel

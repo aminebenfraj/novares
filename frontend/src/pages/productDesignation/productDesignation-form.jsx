@@ -1,125 +1,162 @@
 "use client"
 
 import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { Loader2 } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { motion } from "framer-motion"
+import MainLayout from "@/components/MainLayout"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
 import { createPD } from "../../apis/ProductDesignation-api"
-import { Navbar } from "../../components/Navbar"
-import ContactUs from "../../components/ContactUs"
+import { FileText, Sparkles, Loader2, Hash } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 
-export default function ProductForm() {
+const CreateProductDesignation = () => {
+  const [partName, setPartName] = useState("")
+  const [reference, setReference] = useState("")
+  const [partNameError, setPartNameError] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitSuccess, setSubmitSuccess] = useState(false)
-  const [errorMessage, setErrorMessage] = useState("")
+  const navigate = useNavigate()
+  const { toast } = useToast()
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm({
-    defaultValues: {
-      part_name: "",
-      reference: "",
-    },
-  })
+  const validateForm = () => {
+    if (!partName.trim()) {
+      setPartNameError("Part name is required")
+      return false
+    }
 
-  const onSubmit = async (data) => {
-    console.log("Form submitted with data:", data)
+    if (partName.trim().length < 2) {
+      setPartNameError("Part name must be at least 2 characters")
+      return false
+    }
+
+    setPartNameError("")
+    return true
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!validateForm()) {
+      return
+    }
+
     setIsSubmitting(true)
-    setErrorMessage("")
-    setSubmitSuccess(false)
-
     try {
-      const response = await createPD(data)
-      console.log("API response:", response)
+      const response = await createPD({
+        part_name: partName.trim(),
+        reference: reference.trim() || null,
+      })
 
       if (response && response.error) {
-        throw new Error(response.message || "Failed to create product")
+        throw new Error(response.message || "Failed to create product designation")
       }
 
-      setSubmitSuccess(true)
-      reset()
+      toast({
+        title: "Success",
+        description: "Product designation created successfully!",
+      })
+      setTimeout(() => navigate("/pd"), 1000)
     } catch (error) {
-      console.error("Error submitting form:", error)
-      setErrorMessage(error.message || "Something went wrong.")
+      console.error("Failed to create product designation:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to create product designation. Please try again.",
+      })
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Navbar />
-      <div className="container max-w-4xl px-4 py-8 mx-auto">
-        <div className="overflow-hidden bg-white rounded-lg shadow-xl">
-          <div className="px-4 py-5 sm:p-6">
-            <h2 className="mb-6 text-2xl font-bold text-gray-900">Product Designation</h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div>
-                <label htmlFor="part_name" className="block mb-1 text-sm font-medium text-gray-700">
-                  Part Name
-                </label>
-                <input
-                  type="text"
-                  id="part_name"
-                  {...register("part_name", { required: "Part name is required" })}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter part name"
-                />
-                {errors.part_name && <p className="mt-1 text-sm text-red-600">{errors.part_name.message}</p>}
-              </div>
-              <div>
-                <label htmlFor="reference" className="block mb-1 text-sm font-medium text-gray-700">
-                  Reference (Optional)
-                </label>
-                <input
-                  type="text"
-                  id="reference"
-                  {...register("reference")}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter reference number"
-                />
-                {errors.reference && <p className="mt-1 text-sm text-red-600">{errors.reference.message}</p>}
-              </div>
-              <div className="flex justify-end pt-4 space-x-3">
-                <button
-                  type="button"
-                  onClick={() => reset()}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Reset
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="inline w-4 h-4 mr-2 animate-spin" />
-                      Submitting
-                    </>
-                  ) : (
-                    "Submit"
-                  )}
-                </button>
-              </div>
+    <MainLayout>
+      <Toaster />
+      <div className="container py-8 mx-auto">
+        <div className="max-w-md mx-auto">
+          <Card className="shadow-lg border-zinc-200 dark:border-zinc-700">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                Create Product Designation
+              </CardTitle>
+              <CardDescription>Add a new product designation to the system</CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSubmit}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="part_name" className={partNameError ? "text-red-500" : ""}>
+                    Part Name <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <FileText
+                      className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
+                        partNameError ? "text-red-500" : "text-zinc-500 dark:text-zinc-400"
+                      }`}
+                    />
+                    <Input
+                      id="part_name"
+                      type="text"
+                      value={partName}
+                      onChange={(e) => {
+                        setPartName(e.target.value)
+                        if (partNameError) setPartNameError("")
+                      }}
+                      className={`w-full pl-10 ${partNameError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                      placeholder="Enter part name"
+                    />
+                  </div>
+                  {partNameError && <p className="mt-1 text-sm text-red-500">{partNameError}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reference">Reference</Label>
+                  <div className="relative">
+                    <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-500 dark:text-zinc-400" />
+                    <Input
+                      id="reference"
+                      type="text"
+                      value={reference}
+                      onChange={(e) => setReference(e.target.value)}
+                      className="w-full pl-10"
+                      placeholder="Enter reference number (optional)"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button type="button" variant="outline" onClick={() => navigate("/pd")}>
+                    Cancel
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    type="submit"
+                    className="text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Create Product
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+              </CardFooter>
             </form>
-            {submitSuccess && (
-              <div className="p-4 mt-4 border border-green-200 rounded-md bg-green-50">
-                <p className="text-sm text-green-600">Product designation submitted successfully!</p>
-              </div>
-            )}
-            {errorMessage && (
-              <div className="p-4 mt-4 border border-red-200 rounded-md bg-red-50">
-                <p className="text-sm text-red-600">{errorMessage}</p>
-              </div>
-            )}
-          </div>
+          </Card>
         </div>
       </div>
-      <ContactUs />
-    </div>
+    </MainLayout>
   )
 }
+
+export default CreateProductDesignation

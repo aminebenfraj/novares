@@ -18,6 +18,15 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+import {
   Download,
   Filter,
   Loader2,
@@ -51,6 +60,14 @@ const CallDashboard = () => {
     machineId: "all",
     date: "",
     status: "all",
+  })
+
+  // Pagination state - Added from MassProductionList
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
   })
 
   // Ref for the interval timer
@@ -87,6 +104,11 @@ const CallDashboard = () => {
     }
   }, [isLogistics])
 
+  // Reset to page 1 when filters change - Added from MassProductionList
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, page: 1 }))
+  }, [filters, activeTab])
+
   const fetchMachines = async () => {
     try {
       console.log("Fetching machines...")
@@ -122,19 +144,52 @@ const CallDashboard = () => {
     }
   }
 
+  // Updated fetchCalls to handle pagination - Modified from MassProductionList
   const fetchCalls = async (silent = false) => {
     try {
       if (!silent) setLoading(true)
       if (silent) setRefreshing(true)
 
-      // Convert filter values for API
-      const apiFilters = { ...filters }
+      // Convert filter values for API and add pagination
+      const apiFilters = {
+        ...filters,
+        page: pagination.page,
+        limit: pagination.limit,
+      }
       if (apiFilters.machineId === "all") delete apiFilters.machineId
       if (apiFilters.status === "all") delete apiFilters.status
       if (!apiFilters.date) delete apiFilters.date
 
-      const callsData = await getCalls(apiFilters)
-      setCalls(callsData)
+      const response = await getCalls(apiFilters)
+
+      // Handle paginated response
+      if (response && response.data) {
+        setCalls(response.data)
+
+        // Update pagination info if provided by API
+        if (response.pagination) {
+          setPagination({
+            page: response.pagination.page,
+            limit: response.pagination.limit,
+            total: response.pagination.total,
+            totalPages: response.pagination.totalPages,
+          })
+        }
+      } else if (Array.isArray(response)) {
+        // If API returns array directly, handle client-side pagination
+        const startIndex = (pagination.page - 1) * pagination.limit
+        const endIndex = startIndex + pagination.limit
+        const paginatedCalls = response.slice(startIndex, endIndex)
+
+        setCalls(paginatedCalls)
+        setPagination((prev) => ({
+          ...prev,
+          total: response.length,
+          totalPages: Math.ceil(response.length / pagination.limit),
+        }))
+      } else {
+        setCalls([])
+      }
     } catch (error) {
       console.error("Error fetching calls:", error)
       setCalls([])
@@ -217,8 +272,8 @@ const CallDashboard = () => {
         }
       }
 
-      // Add the new call to the calls array
-      setCalls((prevCalls) => [newCall, ...prevCalls])
+      // Refresh the calls list to get updated data with pagination
+      fetchCalls()
 
       // Reset the selected machine
       setSelectedMachine(null)
@@ -388,17 +443,26 @@ const CallDashboard = () => {
         return "outline"
     }
   }
+
   const handleDeleteCall = async (id) => {
     const confirm = window.confirm("¿Estás seguro de que quieres eliminar esta llamada?")
     if (!confirm) return
 
     try {
       await deleteCall(id)
-      alert("Llamada eliminada correctamente")
+      toast({
+        title: "Llamada eliminada",
+        description: "La llamada ha sido eliminada correctamente",
+        variant: "success",
+      })
       fetchCalls() // Refresh the list after deletion
     } catch (error) {
       console.error("Error al eliminar la llamada:", error)
-      alert("Error al eliminar la llamada")
+      toast({
+        title: "Error",
+        description: "Error al eliminar la llamada",
+        variant: "destructive",
+      })
     }
   }
 
@@ -448,6 +512,7 @@ const CallDashboard = () => {
       })
     }
   }
+
   // Get status icon
   const getStatusIcon = (status) => {
     switch (status) {
@@ -470,6 +535,89 @@ const CallDashboard = () => {
     if (activeTab === "expired") return call.status === "Expirada"
     return true
   })
+
+  // Render pagination controls - Added from MassProductionList
+  const renderPagination = () => {
+    if (pagination.totalPages <= 1) return null
+
+    return (
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              onClick={() => setPagination((prev) => ({ ...prev, page: Math.max(prev.page - 1, 1) }))}
+              disabled={pagination.page === 1}
+              className={pagination.page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            />
+          </PaginationItem>
+
+          {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
+            // Show first page, last page, current page, and pages around current
+            let pageToShow
+
+            if (pagination.totalPages <= 5) {
+              // If 5 or fewer pages, show all
+              pageToShow = i + 1
+            } else if (pagination.page <= 3) {
+              // If near start, show first 5
+              pageToShow = i + 1
+              if (i === 4)
+                return (
+                  <PaginationItem key="ellipsis-end">
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )
+            } else if (pagination.page >= pagination.totalPages - 2) {
+              // If near end, show last 5
+              pageToShow = pagination.totalPages - 4 + i
+              if (i === 0)
+                return (
+                  <PaginationItem key="ellipsis-start">
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )
+            } else {
+              // If in middle, show current and surrounding
+              pageToShow = pagination.page - 2 + i
+              if (i === 0)
+                return (
+                  <PaginationItem key="ellipsis-start">
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )
+              if (i === 4)
+                return (
+                  <PaginationItem key="ellipsis-end">
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )
+            }
+
+            return (
+              <PaginationItem key={pageToShow}>
+                <PaginationLink
+                  isActive={pagination.page === pageToShow}
+                  onClick={() => setPagination((prev) => ({ ...prev, page: pageToShow }))}
+                >
+                  {pageToShow}
+                </PaginationLink>
+              </PaginationItem>
+            )
+          })}
+
+          <PaginationItem>
+            <PaginationNext
+              onClick={() => setPagination((prev) => ({ ...prev, page: Math.min(prev.page + 1, prev.totalPages) }))}
+              disabled={pagination.page === pagination.totalPages}
+              className={
+                pagination.page === pagination.totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"
+              }
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    )
+  }
 
   // If user is not authenticated or doesn't have either role, show loading or unauthorized message
   if (!user) {
@@ -736,6 +884,20 @@ const CallDashboard = () => {
                 </TabsList>
               </Tabs>
 
+              {/* Pagination info - Added from MassProductionList */}
+              <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+                <span>
+                  Mostrando {pagination.total > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0}-
+                  {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} llamadas
+                </span>
+                {loading && (
+                  <div className="flex items-center gap-1 text-primary">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>Cargando</span>
+                  </div>
+                )}
+              </div>
+
               <div className="border rounded-md">
                 <Table>
                   <TableHeader>
@@ -833,7 +995,7 @@ const CallDashboard = () => {
                             <TableCell>
                               <Button variant="ghost" size="icon" onClick={() => handleDeleteCall(call._id)}>
                                 <Trash2 className="w-4 h-4 text-red-500" />
-                              </Button>{" "}
+                              </Button>
                             </TableCell>
                           </motion.tr>
                         ))}
@@ -842,6 +1004,9 @@ const CallDashboard = () => {
                   </TableBody>
                 </Table>
               </div>
+
+              {/* Pagination Controls - Added from MassProductionList */}
+              <div className="flex justify-center mt-6">{renderPagination()}</div>
             </CardContent>
           </Card>
         </motion.div>

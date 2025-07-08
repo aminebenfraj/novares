@@ -41,7 +41,7 @@ const MaterialMachineDetails = () => {
           description: "Allocation not found",
           variant: "destructive",
         })
-        navigate("/machinematerial")
+        // navigate("/machinematerial")
         return
       }
 

@@ -92,7 +92,7 @@ const MaterialMachineEdit = () => {
           description: "Allocation not found",
           variant: "destructive",
         })
-        navigate("/machinematerial")
+        // navigate("/machinematerial")
         return
       }
 

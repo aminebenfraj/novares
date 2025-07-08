@@ -58,16 +58,7 @@ function EditRunAtRateProductionPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("qualityWallInPlace")
   const [runAtRate, setRunAtRate] = useState(null)
-  const [readinessId, setReadinessId] = useState(null)
 
-  // Add useEffect to extract readinessId from URL query parameters after the existing useState declarations
-  useEffect(() => {
-    // Get the readinessId from the URL query parameters
-    const queryParams = new URLSearchParams(window.location.search)
-    const id = queryParams.get("readinessId")
-    console.log("Extracted readinessId from URL:", id)
-    setReadinessId(id)
-  }, [])
 
   // Fetch run-at-rate production data
   useEffect(() => {
@@ -79,19 +70,6 @@ function EditRunAtRateProductionPage() {
 
         // Extract readinessId from the run-at-rate production object
         console.log("Run-at-rate production data:", data)
-
-        // Check for possible readiness reference fields
-        if (data._readinessId) {
-          console.log("Found readinessId in _readinessId:", data._readinessId)
-          setReadinessId(data._readinessId)
-        } else if (data.readinessId) {
-          console.log("Found readinessId in readinessId:", data.readinessId)
-          setReadinessId(data.readinessId)
-        } else if (data.readiness) {
-          const readinessRef = typeof data.readiness === "object" ? data.readiness._id : data.readiness
-          console.log("Found readinessId in readiness:", readinessRef)
-          setReadinessId(readinessRef)
-        }
       } catch (error) {
         console.error("Error fetching run-at-rate production:", error)
         toast({
@@ -121,37 +99,7 @@ function EditRunAtRateProductionPage() {
         title: "Success",
         description: "Run-at-rate production updated successfully",
       })
-
-      // Navigate back to readiness details page if readinessId is available
-      if (readinessId) {
-        console.log("Navigating to readiness detail:", readinessId)
-        navigate(`/readiness/detail/${readinessId}`)
-      } else {
-        // If we couldn't extract the readinessId, try to get it from the API response
-        try {
-          // Make an API call to get all readiness entries
-          const readinessEntries = await getAllReadiness()
-
-          // Find the readiness entry that references this run-at-rate production
-          const readinessEntry = readinessEntries.find(
-            (entry) =>
-              entry.RunAtRateProduction === params.id ||
-              (entry.RunAtRateProduction && entry.RunAtRateProduction._id === params.id),
-          )
-
-          if (readinessEntry) {
-            console.log("Found readiness entry:", readinessEntry)
-            navigate(`/readiness/detail/${readinessEntry._id}`)
-            return
-          }
-        } catch (error) {
-          console.error("Error finding readiness entry:", error)
-        }
-
-        // Fallback to run-at-rate production details page if readinessId is not available
-        console.log("No readinessId found, navigating to run-at-rate production detail")
-        navigate(`/run-at-rate/${params.id}`)
-      }
+        navigate(`/readiness/detail/${params.readinessId}`)
     } catch (error) {
       console.error("Error updating run-at-rate production:", error)
       toast({
@@ -229,30 +177,9 @@ function EditRunAtRateProductionPage() {
                 variant="outline"
                 size="icon"
                 onClick={() => {
-                  if (readinessId) {
-                    console.log("Back button: Navigating to readiness detail:", readinessId)
-                    navigate(`/readiness/detail/${readinessId}`)
-                  } else {
-                    // If no readinessId is available, try to find it from all readiness entries
-                    getAllReadiness()
-                      .then((readinessEntries) => {
-                        const readinessEntry = readinessEntries.find(
-                          (entry) =>
-                            entry.RunAtRateProduction === params.id ||
-                            (entry.RunAtRateProduction && entry.RunAtRateProduction._id === params.id),
-                        )
-                        if (readinessEntry) {
-                          console.log("Found matching readiness entry:", readinessEntry._id)
-                          navigate(`/readiness/detail/${readinessEntry._id}`)
-                        } else {
-                          navigate(`/run-at-rate/${params.id}`)
-                        }
-                      })
-                      .catch((error) => {
-                        console.error("Error finding readiness entry:", error)
-                        navigate(`/run-at-rate/${params.id}`)
-                      })
-                  }
+                 
+                    navigate(`/readiness/detail/${params.readinessId}`)
+                 
                 }}
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -561,7 +488,7 @@ function EditRunAtRateProductionPage() {
                     variant="outline"
                     onClick={() => {
                       if (readinessId) {
-                        navigate(`/readiness/detail/${readinessId}`)
+                        navigate(`/readiness/detail/${params.readinessId}`)
                       } else {
                         // If no readinessId is available, try to find it from all readiness entries
                         getAllReadiness()

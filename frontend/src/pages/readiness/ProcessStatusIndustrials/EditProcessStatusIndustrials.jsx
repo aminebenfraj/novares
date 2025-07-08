@@ -81,17 +81,6 @@ function EditProcessStatusIndustrialsPage() {
   const [activeTab, setActiveTab] = useState("processComplete")
   const [processStatus, setProcessStatus] = useState(null)
 
-  // Add readinessId state
-  const [readinessId, setReadinessId] = useState(null)
-
-  // Add useEffect to extract readinessId from URL query parameters after the existing useState declarations
-  useEffect(() => {
-    // Get the readinessId from the URL query parameters
-    const queryParams = new URLSearchParams(window.location.search)
-    const id = queryParams.get("readinessId")
-    console.log("Extracted readinessId from URL:", id)
-    setReadinessId(id)
-  }, [])
 
   // Fetch process status data
   useEffect(() => {
@@ -103,19 +92,6 @@ function EditProcessStatusIndustrialsPage() {
 
         // Extract readinessId from the process status object
         console.log("Process status data:", data)
-
-        // Check for possible readiness reference fields
-        if (data._readinessId) {
-          console.log("Found readinessId in _readinessId:", data._readinessId)
-          setReadinessId(data._readinessId)
-        } else if (data.readinessId) {
-          console.log("Found readinessId in readinessId:", data.readinessId)
-          setReadinessId(data.readinessId)
-        } else if (data.readiness) {
-          const readinessRef = typeof data.readiness === "object" ? data.readiness._id : data.readiness
-          console.log("Found readinessId in readiness:", readinessRef)
-          setReadinessId(readinessRef)
-        }
       } catch (error) {
         console.error("Error fetching process status:", error)
         toast({
@@ -147,35 +123,10 @@ function EditProcessStatusIndustrialsPage() {
       })
 
       // Navigate back to readiness details page if readinessId is available
-      if (readinessId) {
-        console.log("Navigating to readiness detail:", readinessId)
-        navigate(`/readiness/detail/${readinessId}`)
-      } else {
-        // If we couldn't extract the readinessId, try to get it from the API response
-        try {
-          // Make an API call to get all readiness entries
-          const readinessEntries = await getAllReadiness()
-
-          // Find the readiness entry that references this process status
-          const readinessEntry = readinessEntries.find(
-            (entry) =>
-              entry.ProcessStatusIndustrials === params.id ||
-              (entry.ProcessStatusIndustrials && entry.ProcessStatusIndustrials._id === params.id),
-          )
-
-          if (readinessEntry) {
-            console.log("Found readiness entry:", readinessEntry)
-            navigate(`/readiness/detail/${readinessEntry._id}`)
-            return
-          }
-        } catch (error) {
-          console.error("Error finding readiness entry:", error)
-        }
-
-        // Fallback to process status details page if readinessId is not available
-        console.log("No readinessId found, navigating to process status detail")
-        navigate(`/process-status-industrials/${params.id}`)
-      }
+      
+        navigate(`/readiness/detail/${params.readinessId}`)
+     
+  
     } catch (error) {
       console.error("Error updating process status:", error)
       toast({
@@ -253,30 +204,9 @@ function EditProcessStatusIndustrialsPage() {
                 variant="outline"
                 size="icon"
                 onClick={() => {
-                  if (readinessId) {
-                    console.log("Back button: Navigating to readiness detail:", readinessId)
-                    navigate(`/readiness/detail/${readinessId}`)
-                  } else {
-                    // If no readinessId is available, try to find it from all readiness entries
-                    getAllReadiness()
-                      .then((readinessEntries) => {
-                        const readinessEntry = readinessEntries.find(
-                          (entry) =>
-                            entry.ProcessStatusIndustrials === params.id ||
-                            (entry.ProcessStatusIndustrials && entry.ProcessStatusIndustrials._id === params.id),
-                        )
-                        if (readinessEntry) {
-                          console.log("Found matching readiness entry:", readinessEntry._id)
-                          navigate(`/readiness/detail/${readinessEntry._id}`)
-                        } else {
-                          navigate(`/process-status-industrials/${params.id}`)
-                        }
-                      })
-                      .catch((error) => {
-                        console.error("Error finding readiness entry:", error)
-                        navigate(`/process-status-industrials/${params.id}`)
-                      })
-                  }
+                  
+                    navigate(`/readiness/detail/${params.readinessId}`)
+                
                 }}
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -744,7 +674,7 @@ function EditProcessStatusIndustrialsPage() {
                     variant="outline"
                     onClick={() => {
                       if (readinessId) {
-                        navigate(`/readiness/detail/${readinessId}`)
+                        navigate(`/readiness/detail/${params.readinessId}`)
                       } else {
                         // If no readinessId is available, try to find it from all readiness entries
                         getAllReadiness()

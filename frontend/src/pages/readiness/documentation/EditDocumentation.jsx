@@ -60,70 +60,29 @@ const validationFieldLabels = {
 
 function EditDocumentationPage() {
   const navigate = useNavigate()
-  const params = useParams()
+  const {id,readinessId} = useParams()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("workStandardsInPlace")
   const [documentation, setDocumentation] = useState(null)
-  const [readinessId, setReadinessId] = useState(null)
 
   // Fetch documentation data and try to find readiness ID
   useEffect(() => {
     const fetchData = async () => {
-      if (!params.id) return
+      if (!id) return
 
       try {
         setIsLoading(true)
 
-        // First, check URL query parameters for readinessId
-        const queryParams = new URLSearchParams(window.location.search)
-        const urlReadinessId = queryParams.get("readinessId")
-        if (urlReadinessId) {
-          console.log("Found readinessId in URL:", urlReadinessId)
-          setReadinessId(urlReadinessId)
-        }
+
 
         // Fetch documentation data
-        const data = await getDocumentationById(params.id)
+        const data = await getDocumentationById(id)
         setDocumentation(data)
         console.log("Documentation data:", data)
 
-        // If we don't have readinessId from URL, try to find it in the documentation
-        if (!urlReadinessId) {
-          if (data._readinessId) {
-            console.log("Found readinessId in _readinessId:", data._readinessId)
-            setReadinessId(data._readinessId)
-          } else if (data.readinessId) {
-            console.log("Found readinessId in readinessId:", data.readinessId)
-            setReadinessId(data.readinessId)
-          } else if (data.readiness) {
-            const readinessRef = typeof data.readiness === "object" ? data.readiness._id : data.readiness
-            console.log("Found readinessId in readiness:", readinessRef)
-            setReadinessId(readinessRef)
-          } else {
-            // If still no readinessId, try to find it in all readiness entries
-            try {
-              const readinessEntries = await getAllReadiness()
-              console.log("Searching through readiness entries for documentation ID:", params.id)
-
-              // Find the readiness entry that contains this documentation ID
-              for (const entry of readinessEntries) {
-                if (
-                  entry.Documentation &&
-                  ((typeof entry.Documentation === "object" && entry.Documentation._id === params.id) ||
-                    entry.Documentation === params.id)
-                ) {
-                  console.log("Found matching readiness entry:", entry._id)
-                  setReadinessId(entry._id)
-                  break
-                }
-              }
-            } catch (error) {
-              console.error("Error searching readiness entries:", error)
-            }
-          }
-        }
+       
       } catch (error) {
         console.error("Error fetching documentation:", error)
         toast({
@@ -137,7 +96,7 @@ function EditDocumentationPage() {
     }
 
     fetchData()
-  }, [params.id, toast])
+  }, [id, toast])
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -145,7 +104,7 @@ function EditDocumentationPage() {
     setIsSaving(true)
 
     try {
-      await updateDocumentation(params.id, documentation)
+      await updateDocumentation(id, documentation)
 
       toast({
         title: "Success",
@@ -165,8 +124,8 @@ function EditDocumentationPage() {
           for (const entry of readinessEntries) {
             if (
               entry.Documentation &&
-              ((typeof entry.Documentation === "object" && entry.Documentation._id === params.id) ||
-                entry.Documentation === params.id)
+              ((typeof entry.Documentation === "object" && entry.Documentation._id === id) ||
+                entry.Documentation === id)
             ) {
               console.log("Found matching readiness entry at submit time:", entry._id)
               foundId = entry._id
@@ -178,11 +137,11 @@ function EditDocumentationPage() {
             navigate(`/readiness/detail/${foundId}`)
           } else {
             // Fallback to documentation details page
-            navigate(`/documentation/${params.id}`)
+            navigate(`/documentation/${id}`)
           }
         } catch (error) {
           console.error("Error finding readiness entry:", error)
-          navigate(`/documentation/${params.id}`)
+          navigate(`/documentation/${id}`)
         }
       }
     } catch (error) {
@@ -265,7 +224,7 @@ function EditDocumentationPage() {
                     console.log("Back button: Navigating to readiness detail:", readinessId)
                     navigate(`/readiness/detail/${readinessId}`)
                   } else {
-                    navigate(`/documentation/${params.id}`)
+                    navigate(`/documentation/${id}`)
                   }
                 }}
               >
@@ -486,7 +445,7 @@ function EditDocumentationPage() {
                         console.log("Cancel button: Navigating to readiness detail:", readinessId)
                         navigate(`/readiness/detail/${readinessId}`)
                       } else {
-                        navigate(`/documentation/${params.id}`)
+                        navigate(`/documentation/${id}`)
                       }
                     }}
                   >
